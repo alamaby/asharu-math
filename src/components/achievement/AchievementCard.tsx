@@ -1,4 +1,3 @@
-import { achievementShareText } from '../../lib/achievements'
 import type { AchievementDefinition } from '../../types'
 import ShareAchievement from './ShareAchievement'
 
@@ -6,6 +5,8 @@ interface AchievementCardProps {
   achievement: AchievementDefinition
   /** Tanggal (ISO) saat terbuka; null berarti masih terkunci */
   unlockedDate: string | null
+  /** Nama panggilan anak untuk kartu/teks yang dibagikan */
+  childName: string | null
 }
 
 function formatDate(iso: string): string {
@@ -14,7 +15,7 @@ function formatDate(iso: string): string {
   return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-export default function AchievementCard({ achievement, unlockedDate }: AchievementCardProps) {
+export default function AchievementCard({ achievement, unlockedDate, childName }: AchievementCardProps) {
   const unlocked = unlockedDate !== null
 
   return (
@@ -42,7 +43,7 @@ export default function AchievementCard({ achievement, unlockedDate }: Achieveme
           )}
         </div>
       </div>
-      {unlocked && <ShareAchievement text={achievementShareText(achievement)} />}
+      {unlocked && <ShareAchievement achievement={achievement} childName={childName} />}
     </article>
   )
 }

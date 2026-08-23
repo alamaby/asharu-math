@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import ChildNameForm from '../components/common/ChildNameForm'
 import MascotBubble from '../components/layout/MascotBubble'
 import { LEVELS, getLevel } from '../data/levels'
 import { getAchievement } from '../lib/achievements'
@@ -6,18 +8,67 @@ import { useProgress } from '../state/ProgressContext'
 
 export default function HomeScreen() {
   const { navigate, goToTab } = useNavigation()
-  const { progress } = useProgress()
+  const { progress, setChildName } = useProgress()
+  const [editingName, setEditingName] = useState(false)
+  const [skippedName, setSkippedName] = useState(false)
 
   const completedCount = progress.completedLevelIds.length
   const lastLevel = progress.lastLevelId ? getLevel(progress.lastLevelId) : undefined
   const recentAchievements = Object.entries(progress.unlockedAchievements)
     .sort((a, b) => b[1].localeCompare(a[1]))
     .slice(0, 3)
+  const showNameForm = progress.childName === null && !skippedName
 
   return (
     <div className="space-y-5">
       <section className="pt-2">
-        <MascotBubble text="Halo! Aku Asya. Yuk, belajar berhitung bersusun! Mulai dari satuan, lalu lanjut ke puluhan." mood="cheer" />
+        {showNameForm || (editingName && progress.childName !== null) ? (
+          <div className="space-y-3">
+            <MascotBubble
+              text={
+                progress.childName
+                  ? `Halo, ${progress.childName}! Mau ganti nama? Tulis yang baru di bawah ya.`
+                  : 'Halo! Aku Asya. Sebelum mulai, siapa namamu?'
+              }
+              mood="cheer"
+            />
+            <div className="rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm md:p-5">
+              <ChildNameForm
+                initialName={progress.childName}
+                onSave={(name) => {
+                  setChildName(name)
+                  setEditingName(false)
+                  setSkippedName(false)
+                }}
+                onSkip={
+                  progress.childName === null
+                    ? () => setSkippedName(true)
+                    : () => setEditingName(false)
+                }
+              />
+            </div>
+          </div>
+        ) : (
+          <MascotBubble
+            text={
+              progress.childName
+                ? `Halo, ${progress.childName}! Yuk, belajar berhitung bersusun! Mulai dari satuan, lalu lanjut ke puluhan.`
+                : 'Halo! Aku Asya. Yuk, belajar berhitung bersusun! Mulai dari satuan, lalu lanjut ke puluhan.'
+            }
+            mood="cheer"
+          />
+        )}
+        {progress.childName !== null && !editingName && (
+          <div className="mt-2 text-center">
+            <button
+              type="button"
+              onClick={() => setEditingName(true)}
+              className="min-h-11 rounded-2xl px-3 text-xs font-bold text-slate-400 hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
+            >
+              ✏️ Ubah nama
+            </button>
+          </div>
+        )}
       </section>
 
       <section aria-label="Ringkasan progres" className="grid grid-cols-3 gap-2">

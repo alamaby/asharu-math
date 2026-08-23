@@ -7,6 +7,7 @@ import {
   touchDayStreak,
   validateProgress,
 } from '../src/lib/storage'
+import type { UserProgress } from '../src/types'
 
 function storageStub(initial: string | null = null) {
   let data = initial
@@ -71,6 +72,7 @@ describe('saveProgress dan loadProgress — roundtrip', () => {
     const storage = storageStub()
     const progress = {
       ...defaultProgress(),
+      childName: 'Budi',
       completedLevelIds: ['level-1'],
       totalCorrect: 12,
       bestStreak: 7,
@@ -79,6 +81,22 @@ describe('saveProgress dan loadProgress — roundtrip', () => {
     }
     expect(saveProgress(progress, storage)).toBe(true)
     expect(loadProgress(storage)).toEqual(progress)
+  })
+
+  it('data lama tanpa childName tetap valid dan dinormalisasi menjadi null', () => {
+    const storage = storageStub()
+    const legacy = defaultProgress()
+    delete (legacy as Partial<UserProgress>).childName
+    storage.setItem(STORAGE_KEY, JSON.stringify(legacy))
+    const loaded = loadProgress(storage)
+    expect(loaded.childName).toBeNull()
+    expect(loaded.totalCorrect).toBe(legacy.totalCorrect)
+  })
+
+  it('childName dicoret spasi dan dibatasi 20 karakter', () => {
+    expect(validateProgress({ ...defaultProgress(), childName: '  Budi  ' })?.childName).toBe('Budi')
+    expect(validateProgress({ ...defaultProgress(), childName: 'a'.repeat(40) })?.childName).toHaveLength(20)
+    expect(validateProgress({ ...defaultProgress(), childName: 123 })).toBeNull()
   })
 
   it('menyimpan lewat penyimpanan bawaan window', () => {

@@ -16,6 +16,7 @@ export default function AchievementsScreen() {
             key={achievement.id}
             achievement={achievement}
             unlockedDate={progress.unlockedAchievements[achievement.id] ?? null}
+            childName={progress.childName}
           />
         ))}
       </div>

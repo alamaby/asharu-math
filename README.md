@@ -9,6 +9,8 @@ meminjam (borrow). Seluruh antarmuka menggunakan Bahasa Indonesia yang sederhana
 - **Mode Belajar langkah demi langkah** dengan maskot Asya: satu kotak aktif pada satu waktu, petunjuk bertahap, dan penjelasan meminjam/menyimpan.
 - **Mode Latihan** dengan konfigurasi: jenis soal (tambah/kurang/campuran), jumlah digit (2–4), jumlah soal (5–20), dan kesulitan (tanpa/dengan menyimpan-meminjam).
 - **Buat Soal Sendiri**: ketik dua angka dan kerjakan bersusun di layar.
+- **Sapaan nama anak** (opsional, hanya tersimpan di perangkat) yang ikut pada kartu pencapaian saat dibagikan.
+- **Berbagi pencapaian**: kartu gambar PNG 1080×1080 bernama anak (Web Share API dengan fallback unduh), tombol langsung WhatsApp/Facebook/X/Telegram, dan salin teks.
 - **11 level bertahap + Level Tantangan** adaptif yang menyesuaikan kesulitan dengan performa anak.
 - **9 pencapaian (achievement)** yang bisa dibagikan lewat Web Share API dengan fallback "Salin Pencapaian".
 - **Progres tersimpan lokal** (localStorage) — tanpa server, tanpa akun, tanpa data pribadi anak.
@@ -63,6 +65,14 @@ npm run preview   # pratayang hasil build di http://localhost:4173
 3. Vercel otomatis mendeteksi Vite (Framework Preset: **Vite**, Build Command: `npm run build`, Output Directory: `dist`).
 4. Klik **Deploy** — selesai, tanpa environment variable apa pun.
 
+### Domain kustom `math.asharu.id`
+
+1. Di dashboard Vercel proyek ini, buka **Settings → Domains → Add** dan masukkan `math.asharu.id`.
+2. Pada pengelola DNS pemilik `asharu.id`, tambahkan record:
+   `CNAME math → cname.vercel-dns.com`
+3. Tunggu propagasi DNS (biasanya beberapa menit sampai beberapa jam); Vercel otomatis menerbitkan SSL.
+4. Aplikasi kanonik berjalan di **https://math.asharu.id** — seluruh tautan berbagi pencapaian (WhatsApp, Facebook, X, Telegram) dan meta Open Graph sudah memakai alamat ini.
+
 Alternatif CLI:
 
 ```bash
@@ -85,6 +95,9 @@ src/
     storage.ts          localStorage terversi: validasi bentuk + fallback data rusak
     achievements.ts     Definisi & evaluasi achievement
     share.ts            Web Share API + fallback clipboard
+    socialShare.ts      Tautan berbagi WhatsApp/Facebook/X/Telegram
+    shareImage.ts       Kartu pencapaian 1080x1080 (canvas → PNG) bernama anak
+    site.ts             URL kanonik math.asharu.id
     sound.ts            Efek suara ringan via Web Audio (tanpa file aset)
     scoring.ts          Perhitungan bintang
   data/levels.ts  Definisi Level 1–11 + Level Tantangan adaptif

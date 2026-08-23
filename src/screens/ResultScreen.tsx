@@ -56,7 +56,14 @@ export default function ResultScreen({ summary }: ResultScreenProps) {
             {summary.newAchievementIds.map((id) => {
               const achievement = getAchievement(id)
               if (!achievement) return null
-              return <AchievementCard key={id} achievement={achievement} unlockedDate={new Date().toISOString()} />
+              return (
+                <AchievementCard
+                  key={id}
+                  achievement={achievement}
+                  unlockedDate={new Date().toISOString()}
+                  childName={progress.childName}
+                />
+              )
             })}
           </div>
         </section>

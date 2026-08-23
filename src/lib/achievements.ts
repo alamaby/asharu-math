@@ -1,4 +1,5 @@
 import type { AchievementDefinition, AchievementStats, UserProgress } from '../types'
+import { SITE_URL } from './site'
 
 export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
   {
@@ -92,6 +93,7 @@ export function evaluateNewAchievements(progress: UserProgress): AchievementDefi
   )
 }
 
-export function achievementShareText(achievement: AchievementDefinition): string {
-  return `Aku mendapatkan pencapaian '${achievement.name}' di Asharu Math! Yuk, belajar matematika bersama!`
+export function achievementShareText(achievement: AchievementDefinition, childName?: string | null): string {
+  const intro = childName ? `Namaku ${childName}. ` : ''
+  return `${intro}Aku mendapatkan pencapaian '${achievement.name}' di Asharu Math! Yuk, belajar matematika bersama di ${SITE_URL}`
 }

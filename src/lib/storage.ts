@@ -6,6 +6,7 @@ export const CURRENT_VERSION = 1
 export function defaultProgress(): UserProgress {
   return {
     version: CURRENT_VERSION,
+    childName: null,
     completedLevelIds: [],
     bestScores: {},
     totalCorrect: 0,
@@ -80,8 +81,19 @@ export function validateProgress(value: unknown): UserProgress | null {
   if (typeof value.animationsEnabled !== 'boolean') return null
   if (value.lastLevelId !== null && typeof value.lastLevelId !== 'string') return null
   if (value.lastActiveDate !== null && typeof value.lastActiveDate !== 'string') return null
+  // childName bersifat opsional agar data lama tanpa field ini tetap valid
+  if (value.childName !== undefined && value.childName !== null && typeof value.childName !== 'string') {
+    return null
+  }
 
-  return value as unknown as UserProgress
+  const normalized: UserProgress = value as unknown as UserProgress
+  if (typeof normalized.childName === 'string') {
+    const trimmed = normalized.childName.trim().slice(0, 20)
+    normalized.childName = trimmed.length > 0 ? trimmed : null
+  } else {
+    normalized.childName = null
+  }
+  return normalized
 }
 
 interface StorageLike {

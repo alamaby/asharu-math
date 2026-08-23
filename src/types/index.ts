@@ -127,6 +127,8 @@ export interface PracticeRecord {
 
 export interface UserProgress {
   version: 1
+  /** Nama panggilan anak (opsional); hanya tersimpan di perangkat ini */
+  childName: string | null
   completedLevelIds: string[]
   bestScores: Record<string, number>
   totalCorrect: number

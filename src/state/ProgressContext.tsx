@@ -32,6 +32,8 @@ interface ProgressContextValue {
   completeLevel: (levelId: string, stars: number) => AchievementDefinition[]
   markLevelStarted: (levelId: string) => void
   setPreferences: (prefs: { soundEnabled?: boolean; animationsEnabled?: boolean }) => void
+  /** Menyimpan nama panggilan anak; null untuk menghapus */
+  setChildName: (name: string | null) => void
   resetProgress: () => void
 }
 
@@ -121,6 +123,17 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     [update],
   )
 
+  const setChildName = useCallback(
+    (name: string | null) => {
+      update((current) => {
+        if (name === null) return { ...current, childName: null }
+        const trimmed = name.trim().slice(0, 20)
+        return trimmed.length > 0 ? { ...current, childName: trimmed } : current
+      })
+    },
+    [update],
+  )
+
   const resetProgress = useCallback(() => {
     clearProgress()
     const fresh = defaultProgress()
@@ -137,8 +150,16 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   }, [progress.soundEnabled])
 
   const value = useMemo<ProgressContextValue>(
-    () => ({ progress, recordAnswer, completeLevel, markLevelStarted, setPreferences, resetProgress }),
-    [progress, recordAnswer, completeLevel, markLevelStarted, setPreferences, resetProgress],
+    () => ({
+      progress,
+      recordAnswer,
+      completeLevel,
+      markLevelStarted,
+      setPreferences,
+      setChildName,
+      resetProgress,
+    }),
+    [progress, recordAnswer, completeLevel, markLevelStarted, setPreferences, setChildName, resetProgress],
   )
 
   return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>

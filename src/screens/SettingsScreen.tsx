@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ChildNameForm from '../components/common/ChildNameForm'
 import ConfirmDialog from '../components/common/ConfirmDialog'
 import { useProgress } from '../state/ProgressContext'
 
@@ -29,12 +30,31 @@ function Toggle(props: { checked: boolean; onChange: (value: boolean) => void; l
 }
 
 export default function SettingsScreen() {
-  const { progress, setPreferences, resetProgress } = useProgress()
+  const { progress, setPreferences, setChildName, resetProgress } = useProgress()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   return (
     <div className="space-y-4">
       <h1 className="pt-1 text-lg font-black text-slate-800">Pengaturan</h1>
+
+      <section aria-label="Nama anak" className="rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm">
+        <h2 className="text-sm font-black text-slate-800">Nama Anak ✏️</h2>
+        <p className="mt-1 text-xs font-semibold text-slate-500">
+          Nama panggilan dipakai untuk sapaan dan kartu pencapaian saat dibagikan. Tidak wajib diisi.
+        </p>
+        <div className="mt-3">
+          <ChildNameForm initialName={progress.childName} onSave={(name) => setChildName(name)} />
+          {progress.childName !== null && (
+            <button
+              type="button"
+              onClick={() => setChildName(null)}
+              className="mt-2 min-h-11 rounded-2xl border-2 border-amber-200 bg-amber-50 px-4 text-sm font-bold text-amber-800 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200"
+            >
+              🗑️ Hapus nama
+            </button>
+          )}
+        </div>
+      </section>
 
       <section aria-label="Preferensi" className="space-y-2">
         <Toggle
