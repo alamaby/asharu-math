@@ -18,6 +18,8 @@ interface ProblemResult {
   wrongAttempts: number
 }
 
+export type { LearnState }
+
 interface LearnState {
   problems: MathProblem[]
   problemIndex: number
@@ -32,11 +34,16 @@ interface LearnState {
   wrongInProblem: number
   feedback: Feedback | null
   stepComplete: boolean
+  /**
+   * Ditambah setiap kali langkah selesai dengan BENAR (bukan diungkap).
+   * Komponen memakainya untuk auto-lanjut; null berarti tidak ada jadwal.
+   */
+  autoAdvanceToken: number | null
   results: ProblemResult[]
   finished: boolean
 }
 
-type LearnAction =
+export type LearnAction =
   | { type: 'digit'; digit: number }
   | { type: 'backspace' }
   | { type: 'choose'; answer: 'bisa' | 'tidak-bisa' }
@@ -85,13 +92,14 @@ function freshProblemState(
   }
 }
 
-function initState(problems: MathProblem[]): LearnState {
+export function initState(problems: MathProblem[]): LearnState {
   return {
     problems,
     problemIndex: 0,
     stepIndex: 0,
     results: [],
     finished: false,
+    autoAdvanceToken: null,
     ...freshProblemState(problems[0]),
   }
 }
@@ -136,6 +144,7 @@ function replayTo(state: LearnState, targetIndex: number): LearnState {
     attempts: 0,
     stepComplete: isAutoCompleteStep(step) || filled,
     feedback: null,
+    autoAdvanceToken: null,
   }
 }
 
@@ -144,12 +153,13 @@ function digitHint(given: number, expected: number, attempts: number): string {
   return `Petunjuk: angka yang benar ${expected > given ? 'lebih besar' : 'lebih kecil'} dari ${given}.`
 }
 
-function learnReducer(state: LearnState, action: LearnAction): LearnState {
+export function learnReducer(state: LearnState, action: LearnAction): LearnState {
   if (state.finished) return state
   const problem = state.problems[state.problemIndex]
   if (!problem) return state
   const step = problem.learningSteps[state.stepIndex]
   if (!step) return state
+  const nextToken = (): number => (state.autoAdvanceToken ?? 0) + 1
 
   switch (action.type) {
     case 'digit': {
@@ -169,6 +179,7 @@ function learnReducer(state: LearnState, action: LearnAction): LearnState {
             stepComplete: true,
             attempts: 0,
             feedback: { kind: 'correct', text: 'Benar! Hebat!' },
+            autoAdvanceToken: nextToken(),
           }
         }
         const attempts = state.attempts + 1
@@ -206,6 +217,7 @@ function learnReducer(state: LearnState, action: LearnAction): LearnState {
             stepComplete: true,
             attempts: 0,
             feedback: { kind: 'correct', text: 'Bagus sekali! Simpanannya sudah benar.' },
+            autoAdvanceToken: nextToken(),
           }
         }
         const attempts = state.attempts + 1
@@ -264,6 +276,7 @@ function learnReducer(state: LearnState, action: LearnAction): LearnState {
             kind: 'correct',
             text: `Betul! ${step.top} tidak cukup dikurangi ${step.bottom}, jadi kita perlu meminjam.`,
           },
+          autoAdvanceToken: nextToken(),
         }
       }
       const attempts = state.attempts + 1
@@ -301,7 +314,13 @@ function learnReducer(state: LearnState, action: LearnAction): LearnState {
           step.expected >= 10
             ? `Bagus! Tulis ${step.expected % 10} di kotak jawaban, lalu simpan ${Math.floor(step.expected / 10)}.`
             : 'Bagus! Sekarang tulis hasilnya di kotak jawaban.'
-        return { ...state, stepComplete: true, attempts: 0, feedback: { kind: 'correct', text } }
+        return {
+          ...state,
+          stepComplete: true,
+          attempts: 0,
+          feedback: { kind: 'correct', text },
+          autoAdvanceToken: nextToken(),
+        }
       }
       const attempts = state.attempts + 1
       const wrongInProblem = state.wrongInProblem + 1
@@ -318,8 +337,8 @@ function learnReducer(state: LearnState, action: LearnAction): LearnState {
       const hint =
         state.interim === ''
           ? 'Isi dulu hasil hitungannya ya.'
-          : `Petunjuk: hasilnya ${given < step.expected ? 'lebih besar' : 'lebih kecil'} dari ${state.interim}.`
-      return { ...state, attempts, wrongInProblem, feedback: { kind: 'wrong', text: hint } }
+          : `Belum tepat. ${sumText} bukan ${state.interim}. Coba hitung lagi ya!`
+      return { ...state, interim: '', attempts, wrongInProblem, feedback: { kind: 'wrong', text: hint } }
     }
 
     case 'next': {
@@ -335,6 +354,7 @@ function learnReducer(state: LearnState, action: LearnAction): LearnState {
           interim: '',
           stepComplete: isAutoCompleteStep(nextStep),
           feedback: null,
+          autoAdvanceToken: null,
         }
         if (nextStep.kind === 'borrow-explain') {
           const values = [...updated.borrowValues]
@@ -355,9 +375,16 @@ function learnReducer(state: LearnState, action: LearnAction): LearnState {
       const nextProblemIndex = state.problemIndex + 1
       if (nextProblemIndex < state.problems.length) {
         const nextProblem = state.problems[nextProblemIndex]
-        return { ...state, results, problemIndex: nextProblemIndex, stepIndex: 0, ...freshProblemState(nextProblem) }
+        return {
+          ...state,
+          results,
+          problemIndex: nextProblemIndex,
+          stepIndex: 0,
+          autoAdvanceToken: null,
+          ...freshProblemState(nextProblem),
+        }
       }
-      return { ...state, results, finished: true }
+      return { ...state, results, finished: true, autoAdvanceToken: null }
     }
 
     case 'prev': {
@@ -372,6 +399,7 @@ function learnReducer(state: LearnState, action: LearnAction): LearnState {
         interim: '',
         feedback: null,
         stepComplete: isAutoCompleteStep(step),
+        autoAdvanceToken: null,
       }
       if (step.kind === 'answer-digit') {
         const answers = [...state.answers]
@@ -438,6 +466,29 @@ export default function LearnScreen({ levelId, problems: providedProblems, initi
   useEffect(() => {
     if (isReview) playCelebrate()
   }, [isReview])
+
+  // Auto-periksa Kotak Hitung begitu jumlah digit yang diketik pas
+  // dengan panjang jawaban yang diharapkan (pola input OTP).
+  const autoCheckedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (state.interim === '') {
+      autoCheckedRef.current = null
+      return
+    }
+    if (step?.kind !== 'interim-sum' || state.stepComplete) return
+    if (state.interim.length !== String(step.expected).length) return
+    if (autoCheckedRef.current === state.interim) return
+    autoCheckedRef.current = state.interim
+    dispatch({ type: 'check-interim' })
+  }, [state.interim, state.stepComplete, step])
+
+  // Auto-lanjut ke langkah berikutnya segera setelah jawaban benar,
+  // agar anak cukup mengetik tanpa menekan Periksa lalu Berikutnya.
+  useEffect(() => {
+    if (state.autoAdvanceToken === null) return
+    const timer = window.setTimeout(() => dispatch({ type: 'next' }), 700)
+    return () => window.clearTimeout(timer)
+  }, [state.autoAdvanceToken])
 
   useEffect(() => {
     if (!state.finished || reportedRef.current) return
@@ -538,55 +589,59 @@ export default function LearnScreen({ levelId, problems: providedProblems, initi
   }
 
   return (
-    <div className="space-y-4">
-      <section aria-label="Progres sesi" className="space-y-1.5">
-        <div className="flex items-baseline justify-between">
-          <h1 className="text-base font-black text-slate-800 md:text-lg">{screenTitle}</h1>
-          <p className="text-xs font-bold text-slate-500">
-            Soal {state.problemIndex + 1} dari {state.problems.length}
-          </p>
-        </div>
-        <ProgressBar
-          value={(state.problemIndex + (state.stepIndex + 1) / problem.learningSteps.length) / state.problems.length}
-          label={`Progres belajar, soal ${state.problemIndex + 1} dari ${state.problems.length}`}
-        />
-      </section>
+    <div className="solve-split">
+      <div className="solve-main">
+        <section aria-label="Progres sesi" className="space-y-1.5">
+          <div className="flex items-baseline justify-between">
+            <h1 className="text-base font-black text-slate-800 md:text-lg">{screenTitle}</h1>
+            <p className="text-xs font-bold text-slate-500">
+              Soal {state.problemIndex + 1} dari {state.problems.length}
+            </p>
+          </div>
+          <ProgressBar
+            value={(state.problemIndex + (state.stepIndex + 1) / problem.learningSteps.length) / state.problems.length}
+            label={`Progres belajar, soal ${state.problemIndex + 1} dari ${state.problems.length}`}
+          />
+        </section>
 
-      <div className="flex justify-center rounded-3xl border-2 border-sky-100 bg-white p-3 shadow-sm md:p-5">
-        <VerticalMathProblem
-          problem={problem}
-          answers={state.answers}
-          carries={state.carries}
-          activeCell={activeCell}
-          doneAnswerColumns={state.doneAnswerColumns}
-          borrowValues={state.borrowValues}
-          highlightColumn={highlightColumn}
+        <div className="flex justify-center rounded-3xl border-2 border-sky-100 bg-white p-3 shadow-sm md:p-5">
+          <VerticalMathProblem
+            problem={problem}
+            answers={state.answers}
+            carries={state.carries}
+            activeCell={activeCell}
+            doneAnswerColumns={state.doneAnswerColumns}
+            borrowValues={state.borrowValues}
+            highlightColumn={highlightColumn}
+          />
+        </div>
+
+        <FeedbackMessage feedback={state.feedback} />
+
+        <StepGuide
+          instruction={step?.instruction ?? ''}
+          mood={mood}
+          interim={interim}
+          choice={choice}
+          canGoBack={state.stepIndex > 0}
+          canGoNext={state.stepComplete}
+          pulseNext={step?.kind === 'intro' || state.stepComplete}
+          onBack={() => dispatch({ type: 'prev' })}
+          onRepeat={() => dispatch({ type: 'repeat' })}
+          onNext={() => dispatch({ type: 'next' })}
         />
       </div>
 
-      <FeedbackMessage feedback={state.feedback} />
-
-      <StepGuide
-        instruction={step?.instruction ?? ''}
-        mood={mood}
-        interim={interim}
-        choice={choice}
-        canGoBack={state.stepIndex > 0}
-        canGoNext={state.stepComplete}
-        pulseNext={step?.kind === 'intro' || state.stepComplete}
-        onBack={() => dispatch({ type: 'prev' })}
-        onRepeat={() => dispatch({ type: 'repeat' })}
-        onNext={() => dispatch({ type: 'next' })}
-      />
-
-      <NumericKeypad
-        onDigit={(digit) => dispatch({ type: 'digit', digit })}
-        onBackspace={() => dispatch({ type: 'backspace' })}
-        onCheck={onCheck}
-        checkDisabled={!canCheck}
-        checkLabel="Periksa"
-        digitsDisabled={!acceptsDigits}
-      />
+      <div className="solve-side">
+        <NumericKeypad
+          onDigit={(digit) => dispatch({ type: 'digit', digit })}
+          onBackspace={() => dispatch({ type: 'backspace' })}
+          onCheck={onCheck}
+          checkDisabled={!canCheck}
+          checkLabel="Periksa"
+          digitsDisabled={!acceptsDigits}
+        />
+      </div>
     </div>
   )
 }

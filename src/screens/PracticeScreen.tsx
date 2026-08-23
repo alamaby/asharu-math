@@ -231,7 +231,7 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
       const praise = PRAISES[Math.floor(Math.random() * PRAISES.length)]
       updateSession({ locked: true, feedback: { kind: 'correct', text: praise }, hint: null, wrongCols: [] })
       const snapshot = session
-      timeoutRef.current = window.setTimeout(() => finishProblem(snapshot), 1500)
+      timeoutRef.current = window.setTimeout(() => finishProblem(snapshot), 1000)
       return
     }
     playWrong()
@@ -428,64 +428,68 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
     session.locked || required.some((columnIndex) => session.given[columnIndex] === null)
 
   return (
-    <div className="space-y-4">
-      <section aria-label="Progres latihan" className="space-y-1.5">
-        <div className="flex items-baseline justify-between">
-          <h1 className="text-base font-black text-slate-800 md:text-lg">{session.title}</h1>
-          <p className="text-xs font-bold text-slate-500">
-            Soal {session.index + 1} dari {session.problems.length}
-          </p>
-        </div>
-        <ProgressBar value={session.index / session.problems.length} label={`Progres latihan`} />
-      </section>
+    <div className="solve-split">
+      <div className="solve-main">
+        <section aria-label="Progres latihan" className="space-y-1.5">
+          <div className="flex items-baseline justify-between">
+            <h1 className="text-base font-black text-slate-800 md:text-lg">{session.title}</h1>
+            <p className="text-xs font-bold text-slate-500">
+              Soal {session.index + 1} dari {session.problems.length}
+            </p>
+          </div>
+          <ProgressBar value={session.index / session.problems.length} label={`Progres latihan`} />
+        </section>
 
-      <div className="flex justify-center rounded-3xl border-2 border-sky-100 bg-white p-3 shadow-sm md:p-5">
-        <VerticalMathProblem
-          problem={problem}
-          answers={session.given}
-          activeCell={{ kind: 'answer', columnIndex: session.activeCol }}
-          wrongAnswerColumns={session.wrongCols}
-          onSelectAnswerCell={(columnIndex) => updateSession({ activeCol: columnIndex })}
-        />
+        <div className="flex justify-center rounded-3xl border-2 border-sky-100 bg-white p-3 shadow-sm md:p-5">
+          <VerticalMathProblem
+            problem={problem}
+            answers={session.given}
+            activeCell={{ kind: 'answer', columnIndex: session.activeCol }}
+            wrongAnswerColumns={session.wrongCols}
+            onSelectAnswerCell={(columnIndex) => updateSession({ activeCol: columnIndex })}
+          />
+        </div>
+
+        <FeedbackMessage feedback={session.feedback} />
+        <HintPanel hint={session.hint} />
+
+        {session.offerHelp && (
+          <div className="animate-rise rounded-3xl border-2 border-violet-200 bg-violet-50 p-4">
+            <p className="text-sm font-bold text-violet-800">
+              Mau belajar soal ini langkah demi langkah bersama Asya?
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={switchToGuided}
+                className="min-h-11 flex-1 rounded-2xl border-b-4 border-violet-600 bg-violet-500 text-sm font-bold text-white hover:bg-violet-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300"
+              >
+                Ya, ayo belajar!
+              </button>
+              <button
+                type="button"
+                onClick={() => updateSession({ offerHelp: false })}
+                className="min-h-11 flex-1 rounded-2xl border-2 border-violet-200 bg-white text-sm font-bold text-violet-700 hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300"
+              >
+                Lanjut coba sendiri
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      <FeedbackMessage feedback={session.feedback} />
-      <HintPanel hint={session.hint} />
-
-      {session.offerHelp && (
-        <div className="animate-rise rounded-3xl border-2 border-violet-200 bg-violet-50 p-4">
-          <p className="text-sm font-bold text-violet-800">
-            Mau belajar soal ini langkah demi langkah bersama Asya?
-          </p>
-          <div className="mt-3 flex gap-2">
-            <button
-              type="button"
-              onClick={switchToGuided}
-              className="min-h-11 flex-1 rounded-2xl border-b-4 border-violet-600 bg-violet-500 text-sm font-bold text-white hover:bg-violet-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300"
-            >
-              Ya, ayo belajar!
-            </button>
-            <button
-              type="button"
-              onClick={() => updateSession({ offerHelp: false })}
-              className="min-h-11 flex-1 rounded-2xl border-2 border-violet-200 bg-white text-sm font-bold text-violet-700 hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300"
-            >
-              Lanjut coba sendiri
-            </button>
-          </div>
-        </div>
-      )}
-
-      <NumericKeypad
-        onDigit={handleDigit}
-        onBackspace={handleBackspace}
-        onCheck={handleCheck}
-        checkDisabled={checkDisabled}
-        checkLabel="Periksa"
-      />
-      <p className="text-center text-xs font-bold text-slate-400">
-        Ketuk kotak jawaban untuk memilih kolom. Isi dari kanan (satuan) dulu ya!
-      </p>
+      <div className="solve-side">
+        <NumericKeypad
+          onDigit={handleDigit}
+          onBackspace={handleBackspace}
+          onCheck={handleCheck}
+          checkDisabled={checkDisabled}
+          checkLabel="Periksa"
+        />
+        <p className="text-center text-xs font-bold text-slate-400">
+          Ketuk kotak jawaban untuk memilih kolom. Isi dari kanan (satuan) dulu ya!
+        </p>
+      </div>
     </div>
   )
 }
