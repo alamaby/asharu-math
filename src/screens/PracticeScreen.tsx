@@ -429,27 +429,27 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
 
   return (
     <div className="solve-split">
-      <div className="solve-main">
-        <section aria-label="Progres latihan" className="space-y-1.5">
-          <div className="flex items-baseline justify-between">
-            <h1 className="text-base font-black text-slate-800 md:text-lg">{session.title}</h1>
-            <p className="text-xs font-bold text-slate-500">
-              Soal {session.index + 1} dari {session.problems.length}
-            </p>
-          </div>
-          <ProgressBar value={session.index / session.problems.length} label={`Progres latihan`} />
-        </section>
-
-        <div className="flex justify-center rounded-3xl border-2 border-sky-100 bg-white p-3 shadow-sm md:p-5">
-          <VerticalMathProblem
-            problem={problem}
-            answers={session.given}
-            activeCell={{ kind: 'answer', columnIndex: session.activeCol }}
-            wrongAnswerColumns={session.wrongCols}
-            onSelectAnswerCell={(columnIndex) => updateSession({ activeCol: columnIndex })}
-          />
+      <section aria-label="Progres latihan" className="solve-progress space-y-1.5">
+        <div className="flex items-baseline justify-between">
+          <h1 className="text-base font-black text-slate-800 md:text-lg">{session.title}</h1>
+          <p className="text-xs font-bold text-slate-500">
+            Soal {session.index + 1} dari {session.problems.length}
+          </p>
         </div>
+        <ProgressBar value={session.index / session.problems.length} label={`Progres latihan`} />
+      </section>
 
+      <div className="solve-main flex justify-center rounded-3xl border-2 border-sky-100 bg-white p-3 shadow-sm md:p-5">
+        <VerticalMathProblem
+          problem={problem}
+          answers={session.given}
+          activeCell={{ kind: 'answer', columnIndex: session.activeCol }}
+          wrongAnswerColumns={session.wrongCols}
+          onSelectAnswerCell={(columnIndex) => updateSession({ activeCol: columnIndex })}
+        />
+      </div>
+
+      <div className="solve-feedback space-y-3">
         <FeedbackMessage feedback={session.feedback} />
         <HintPanel hint={session.hint} />
 
@@ -477,6 +477,8 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
           </div>
         )}
       </div>
+
+      <div className="solve-guide" />
 
       <div className="solve-side">
         <NumericKeypad

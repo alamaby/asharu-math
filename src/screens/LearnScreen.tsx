@@ -590,34 +590,36 @@ export default function LearnScreen({ levelId, problems: providedProblems, initi
 
   return (
     <div className="solve-split">
-      <div className="solve-main">
-        <section aria-label="Progres sesi" className="space-y-1.5">
-          <div className="flex items-baseline justify-between">
-            <h1 className="text-base font-black text-slate-800 md:text-lg">{screenTitle}</h1>
-            <p className="text-xs font-bold text-slate-500">
-              Soal {state.problemIndex + 1} dari {state.problems.length}
-            </p>
-          </div>
-          <ProgressBar
-            value={(state.problemIndex + (state.stepIndex + 1) / problem.learningSteps.length) / state.problems.length}
-            label={`Progres belajar, soal ${state.problemIndex + 1} dari ${state.problems.length}`}
-          />
-        </section>
-
-        <div className="flex justify-center rounded-3xl border-2 border-sky-100 bg-white p-3 shadow-sm md:p-5">
-          <VerticalMathProblem
-            problem={problem}
-            answers={state.answers}
-            carries={state.carries}
-            activeCell={activeCell}
-            doneAnswerColumns={state.doneAnswerColumns}
-            borrowValues={state.borrowValues}
-            highlightColumn={highlightColumn}
-          />
+      <section aria-label="Progres sesi" className="solve-progress space-y-1.5">
+        <div className="flex items-baseline justify-between">
+          <h1 className="text-base font-black text-slate-800 md:text-lg">{screenTitle}</h1>
+          <p className="text-xs font-bold text-slate-500">
+            Soal {state.problemIndex + 1} dari {state.problems.length}
+          </p>
         </div>
+        <ProgressBar
+          value={(state.problemIndex + (state.stepIndex + 1) / problem.learningSteps.length) / state.problems.length}
+          label={`Progres belajar, soal ${state.problemIndex + 1} dari ${state.problems.length}`}
+        />
+      </section>
 
+      <div className="solve-main flex justify-center rounded-3xl border-2 border-sky-100 bg-white p-3 shadow-sm md:p-5">
+        <VerticalMathProblem
+          problem={problem}
+          answers={state.answers}
+          carries={state.carries}
+          activeCell={activeCell}
+          doneAnswerColumns={state.doneAnswerColumns}
+          borrowValues={state.borrowValues}
+          highlightColumn={highlightColumn}
+        />
+      </div>
+
+      <div className="solve-feedback">
         <FeedbackMessage feedback={state.feedback} />
+      </div>
 
+      <div className="solve-guide">
         <StepGuide
           instruction={step?.instruction ?? ''}
           mood={mood}

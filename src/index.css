@@ -28,34 +28,44 @@ body {
 /*
  * Layar pengerjaan soal (Belajar & Latihan).
  * Ponsel potret: tersusun vertikal.
- * Tablet landscape / layar lebar-dan-pendek: soal di kiri, keypad di kanan
- * agar anak tidak perlu scroll naik-turun.
+ * Tablet landscape / layar lebar-dan-pendek: kartu soal dan keypad
+ * berbagi satu baris grid sehingga keduanya tepat di tengah vertikal
+ * yang sama — anak tidak perlu scroll naik-turun.
  */
 .solve-split {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 1rem;
+  grid-template-areas:
+    "progress"
+    "problem"
+    "feedback"
+    "guide"
+    "side";
+}
+.solve-split > .solve-progress {
+  grid-area: progress;
 }
 .solve-split > .solve-main {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  min-width: 0;
+  grid-area: problem;
+}
+.solve-split > .solve-feedback {
+  grid-area: feedback;
+}
+.solve-split > .solve-guide {
+  grid-area: guide;
 }
 .solve-split > .solve-side {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  grid-area: side;
 }
 @media (min-width: 760px) and (max-height: 900px) {
   .solve-split {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-  .solve-split > .solve-side {
-    width: 17rem;
-    position: sticky;
-    top: 4.5rem;
+    grid-template-areas:
+      "progress progress"
+      "problem side"
+      "feedback feedback"
+      "guide guide";
+    grid-template-columns: minmax(0, 1fr) 17rem;
+    align-items: center;
   }
 }
 

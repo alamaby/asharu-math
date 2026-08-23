@@ -116,17 +116,24 @@ describe('saveProgress dan loadProgress — roundtrip', () => {
 })
 
 describe('touchDayStreak', () => {
+  // Implementasi memakai tanggal lokal (WIB), jadi pengujian juga harus lokal —
+  // toISOString() akan meleset ketika tanggal UTC tertinggal dari tanggal lokal.
+  const tanggalLokal = (date: Date): string => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
   it('hari yang sama tidak menambah streak', () => {
-    const today = new Date().toISOString()
-    const progress = { ...defaultProgress(), lastActiveDate: today.slice(0, 10), dayStreak: 3 }
+    const progress = { ...defaultProgress(), lastActiveDate: tanggalLokal(new Date()), dayStreak: 3 }
     expect(touchDayStreak(progress).dayStreak).toBe(3)
   })
 
   it('besok menambah streak', () => {
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    const y = yesterday.toISOString().slice(0, 10)
-    const progress = { ...defaultProgress(), lastActiveDate: y, dayStreak: 2 }
+    const kemarin = new Date()
+    kemarin.setDate(kemarin.getDate() - 1)
+    const progress = { ...defaultProgress(), lastActiveDate: tanggalLokal(kemarin), dayStreak: 2 }
     expect(touchDayStreak(progress).dayStreak).toBe(3)
   })
 })
