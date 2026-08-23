@@ -1,6 +1,7 @@
 import { useNavigation } from '../../state/NavigationContext'
 import { useProgress } from '../../state/ProgressContext'
 import { setSoundEnabled } from '../../lib/sound'
+import Logo from './Logo'
 
 const NAV_ITEMS = [
   { tab: 'home', label: 'Beranda', icon: '🏠' },
@@ -46,7 +47,7 @@ export default function AppHeader() {
           <span className="w-2" aria-hidden="true" />
         )}
         <p className="flex items-center gap-1.5 text-lg font-black tracking-tight text-sky-700">
-          <span aria-hidden="true">⭐</span>
+          <Logo size={26} className="drop-shadow-sm" />
           Asharu Math
         </p>
         <nav aria-label="Navigasi utama" className="ml-auto hidden items-center gap-1 md:flex">
