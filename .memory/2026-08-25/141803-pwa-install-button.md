@@ -26,7 +26,8 @@ Menambah kemampuan pasang aplikasi dari browser smartphone (pertanyaan user: "ap
 - Uji manual perangkat nyata belum bisa dilakukan di lingkungan ini (checklist ada di plan).
 
 ## Blockers / Unresolved
-- Belum di-commit (menunggu instruksi user).
+- Tidak ada. Commit `c2148f9` sudah dipush ke `origin/main`.
+- Tindak lanjut: uji manual di perangkat Android/iOS setelah deploy Vercel berikutnya.
 
 ## Verification Performed
 - format ✅ · lint ✅ · typecheck ✅ · **161/161 test (22 file)** ✅ · build ✅

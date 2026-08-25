@@ -6,7 +6,7 @@ Format Version: 1
 ## Current State
 - Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage.
 - Kualitas: ESLint 9 + Prettier aktif; 161 test / 22 file lulus; CI GitHub Actions Node 20 & 22.
-- PWA aktif: installable (tombol di HomeScreen), offline via service worker auto-update, petunjuk iOS A2HS (belum di-commit).
+- PWA aktif: installable (tombol di HomeScreen), offline via service worker auto-update, petunjuk iOS A2HS (commit `c2148f9`, sudah push).
 
 ## Active Decisions
 - Susunan angka soal: operand disimpan sebagai string asli tanpa `reverse()`; perhitungan carry/borrow kanan-ke-kiri terpisah dari jalur tampilan (aturan kritis, jangan dilanggar).
@@ -17,9 +17,9 @@ Format Version: 1
 - PWA: auto-update senyap; ikon PWA digenerate dari favicon.svg via `npm run icons` (sharp); iOS tanpa prompt programatik → petunjuk A2HS dismissible.
 
 ## Open Items / Blockers
-- PWA belum di-commit.
 - Coverage report (`@vitest/coverage-v8`) belum dipasang (opsional).
-- Out of scope tercatat: resume sesi half-done; replay sesi saat header-back dari Result ke Learn; uji manual perangkat nyata (checklist di plan PWA).
+- Uji manual PWA di perangkat nyata setelah deploy Vercel berikutnya (checklist di plan).
+- Out of scope tercatat: resume sesi half-done; replay sesi saat header-back dari Result ke Learn.
 
 ## Recent Entries
 - [2026-08-25 14:18:03 — PWA install button](2026-08-25/141803-pwa-install-button.md)
