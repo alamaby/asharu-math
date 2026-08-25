@@ -113,3 +113,65 @@ describe('reducer mode belajar — alur ketik-sekali', () => {
     expect(s.answers.join('')).toBe('999') // kolom ribuan tetap kosong/null
   })
 })
+
+describe('reducer mode belajar — auto-lanjut dari review', () => {
+  function keReview(state: LearnState, problem: MathProblem): LearnState {
+    let s = state
+    for (let i = 0; i < problem.learningSteps.length - 1; i++) {
+      const step = problem.learningSteps[i]
+      if (step.kind === 'interim-sum') {
+        s = ketik(s, String(step.expected))
+        s = learnReducer(s, { type: 'check-interim' })
+      } else if (step.kind === 'answer-digit' || step.kind === 'carry-digit') {
+        s = learnReducer(s, digit(step.expectedDigit))
+      } else if (step.kind === 'borrow-question') {
+        s = learnReducer(s, { type: 'choose', answer: 'tidak-bisa' })
+      }
+      s = learnReducer(s, { type: 'next' })
+    }
+    return s
+  }
+
+  it('transisi masuk langkah review menjadwalkan auto-lanjut', () => {
+    const problem = buildProblem('addition', 23, 14)
+    const s = keReview(initState([problem]), problem)
+    expect(problem.learningSteps[s.stepIndex].kind).toBe('review')
+    expect(s.autoAdvanceToken).not.toBeNull()
+    expect(s.stepComplete).toBe(true)
+  })
+
+  it('next dari review soal terakhir langsung menyelesaikan sesi', () => {
+    const problem = buildProblem('addition', 23, 14)
+    const s = learnReducer(keReview(initState([problem]), problem), { type: 'next' })
+    expect(s.finished).toBe(true)
+    expect(s.results).toHaveLength(1)
+    expect(s.autoAdvanceToken).toBeNull()
+  })
+
+  it('next dari review soal non-terakhir pindah ke soal berikutnya tanpa token', () => {
+    const a = buildProblem('addition', 23, 14)
+    const b = buildProblem('addition', 12, 23)
+    let s = keReview(initState([a, b]), a)
+    expect(s.problemIndex).toBe(0)
+    s = learnReducer(s, { type: 'next' })
+    expect(s.problemIndex).toBe(1)
+    expect(s.finished).toBe(false)
+    expect(s.autoAdvanceToken).toBeNull()
+  })
+
+  it('kembali (prev) dari review membatalkan auto-lanjut', () => {
+    const problem = buildProblem('addition', 23, 14)
+    let s = keReview(initState([problem]), problem)
+    s = learnReducer(s, { type: 'prev' })
+    expect(s.autoAdvanceToken).toBeNull()
+    expect(problem.learningSteps[s.stepIndex].kind).not.toBe('review')
+  })
+
+  it('ulangi (repeat) dari review membatalkan auto-lanjut dan tetap di review', () => {
+    const problem = buildProblem('addition', 23, 14)
+    let s = keReview(initState([problem]), problem)
+    s = learnReducer(s, { type: 'repeat' })
+    expect(s.autoAdvanceToken).toBeNull()
+    expect(problem.learningSteps[s.stepIndex].kind).toBe('review')
+  })
+})

@@ -1,4 +1,5 @@
-import { useEffect, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import ConfirmDialog from '../components/common/ConfirmDialog'
 import FeedbackMessage, { type Feedback } from '../components/guide/FeedbackMessage'
 import ProgressBar from '../components/guide/ProgressBar'
 import StepGuide from '../components/guide/StepGuide'
@@ -379,6 +380,9 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
           updated.doneAnswerColumns = problem.columns
             .filter((column) => column.resultDigit !== null)
             .map((column) => column.index)
+          // Review ikut auto-lanjut agar sesi selalu tuntas tercatat selesai
+          // meski anak tidak menekan Berikutnya (mencegah level tidak tersimpan).
+          updated.autoAdvanceToken = nextToken()
         }
         return updated
       }
@@ -448,7 +452,8 @@ export default function LearnScreen({
   initialStats,
   title,
 }: LearnScreenProps) {
-  const { navigate } = useNavigation()
+  const { navigate, setLeaveGuard, confirmPendingNavigation, cancelPendingNavigation } =
+    useNavigation()
   const { progress, recordAnswer, completeLevel, markLevelStarted } = useProgress()
 
   const [problems] = useState<MathProblem[]>(() => {
@@ -478,6 +483,19 @@ export default function LearnScreen({
   useEffect(() => {
     if (levelId) markLevelStarted(levelId)
   }, [levelId, markLevelStarted])
+
+  // Guard keluar mid-session: selama sesi belum selesai, setiap usaha navigasi
+  // (bottom-nav, header back, dsb.) membuka dialog konfirmasi dulu.
+  const [exitDialogOpen, setExitDialogOpen] = useState(false)
+  const openExitDialog = useCallback(() => setExitDialogOpen(true), [])
+  useEffect(() => {
+    if (state.finished) {
+      setLeaveGuard(null)
+      return
+    }
+    setLeaveGuard(openExitDialog)
+    return () => setLeaveGuard(null)
+  }, [state.finished, setLeaveGuard, openExitDialog])
 
   useEffect(() => {
     if (!state.feedback) return
@@ -555,6 +573,8 @@ export default function LearnScreen({
       nextLevelId: getNextLevelId(levelId),
       newAchievementIds: [...new Set(newAchievementIds)],
     }
+    // Navigasi programatik ke result tidak boleh terbentur leave-guard
+    setLeaveGuard(null)
     navigate({ name: 'result', summary })
   }, [
     state.finished,
@@ -566,6 +586,7 @@ export default function LearnScreen({
     level,
     recordAnswer,
     completeLevel,
+    setLeaveGuard,
     navigate,
   ])
 
@@ -697,6 +718,23 @@ export default function LearnScreen({
           digitsDisabled={!acceptsDigits}
         />
       </div>
+
+      <ConfirmDialog
+        open={exitDialogOpen}
+        title="Keluar dari level?"
+        description="Level ini belum selesai, jadi progresnya belum tersimpan. Yuk lanjut supaya levelnya terbuka!"
+        confirmLabel="Ya, Keluar"
+        cancelLabel="Lanjut Belajar"
+        danger
+        onConfirm={() => {
+          setExitDialogOpen(false)
+          confirmPendingNavigation()
+        }}
+        onCancel={() => {
+          setExitDialogOpen(false)
+          cancelPendingNavigation()
+        }}
+      />
     </div>
   )
 }
