@@ -27,9 +27,25 @@ meminjam (borrow). Seluruh antarmuka menggunakan Bahasa Indonesia yang sederhana
 | Styling     | Tailwind CSS v4                                                      |
 | Unit test   | Vitest + @testing-library/react + jsdom                              |
 | Kualitas    | ESLint 9 (flat config) + Prettier + CI GitHub Actions (Node 20 & 22) |
+| PWA         | vite-plugin-pwa (manifest + service worker auto-update, offline)     |
 | Penyimpanan | localStorage (terversi + validasi + fallback)                        |
 
 Tidak ada backend, tidak ada API berbayar, tidak ada environment variable.
+
+## 📲 Pasang di Smartphone
+
+Aplikasi ini adalah **PWA** — bisa dipasang seperti aplikasi dan berjalan offline:
+
+- **Android (Chrome/Edge/Samsung Internet)**: buka [math.asharu.id](https://math.asharu.id), tekan tombol **📲 Pasang Aplikasi** di halaman utama, konfirmasi dialog peramban.
+- **iPhone/iPad (Safari)**: buka situsnya, tekan tombol **Bagikan**, lalu pilih **Tambahkan ke Layar Utama** (petunjuk ringkas juga tampil di halaman utama).
+- Setelah terpasang: ikon bintang muncul di layar utama, aplikasi terbuka layar penuh tanpa bilah peramban, dan tetap berfungsi tanpa internet.
+- Pembaruan diterapkan otomatis saat kunjungan berikutnya (service worker `autoUpdate`).
+
+Regenerasi ikon PWA setelah mengubah logo:
+
+```bash
+npm run icons   # butuh sharp; hasil di public/icons/
+```
 
 ## 📦 Instalasi Lokal
 

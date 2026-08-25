@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ChildNameForm from '../components/common/ChildNameForm'
+import InstallButton from '../components/common/InstallButton'
 import MascotBubble from '../components/layout/MascotBubble'
 import { LEVELS, getLevel } from '../data/levels'
 import { getAchievement } from '../lib/achievements'
@@ -112,6 +113,7 @@ export default function HomeScreen() {
         >
           ✏️ Latihan Soal
         </button>
+        <InstallButton />
       </section>
 
       {recentAchievements.length > 0 && (

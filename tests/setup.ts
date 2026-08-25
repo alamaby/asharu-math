@@ -44,3 +44,19 @@ if (incomplete) {
     writable: true,
   })
 }
+
+/** jsdom tidak menyediakan matchMedia; stub minimal untuk hook PWA & preferensi visual */
+if (typeof window.matchMedia !== 'function') {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener() {},
+    removeListener() {},
+    addEventListener() {},
+    removeEventListener() {},
+    dispatchEvent(): boolean {
+      return false
+    },
+  })) as unknown as typeof window.matchMedia
+}
