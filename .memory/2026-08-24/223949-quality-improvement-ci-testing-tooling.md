@@ -25,11 +25,11 @@ Menutup celah kualitas hasil analisa repo: tidak ada CI, tidak ada lint/format, 
 - Diff besar akibat format awal Prettier — diterima sebagai bagian perbaikan kualitas; commit terpisah disarankan bila diminta commit.
 
 ## Blockers / Unresolved
-- Belum di-commit (menunggu instruksi user).
 - PWA/offline (`vite-plugin-pwa`) dan coverage report ditunda menunggu keputusan eksplisit.
 
 ## Verification Performed
 - `npm run format:check` ✅ · `npm run lint` ✅ · `npm run typecheck` ✅ · `npm test` 142/142 ✅ · `npm run build` ✅
+- Commit `f909662` sudah dipush ke `origin/main`.
 
 ## Commit Proposal
 - `chore: tambah eslint/prettier, lengkapi unit & ui test hingga 142 kasus, dan ci github actions`

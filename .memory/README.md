@@ -6,7 +6,7 @@ Format Version: 1
 ## Current State
 - Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage.
 - Kualitas: ESLint 9 + Prettier aktif; 142 test / 20 file lulus; CI GitHub Actions Node 20 & 22 (format/lint/typecheck/test/build).
-- Perubahan belum di-commit (menunggu instruksi user).
+- Perubahan sudah di-commit & push sebagai `f909662` ke `origin/main`.
 
 ## Active Decisions
 - Susunan angka soal: operand disimpan sebagai string asli tanpa `reverse()`; perhitungan carry/borrow kanan-ke-kiri terpisah dari jalur tampilan (aturan kritis, jangan dilanggar).
@@ -16,7 +16,6 @@ Format Version: 1
 - PWA/offline (`vite-plugin-pwa`) dan coverage report ditunda menunggu keputusan eksplisit.
 
 ## Open Items / Blockers
-- Belum ada commit untuk pekerjaan kualitas ini.
 - Coverage report (`@vitest/coverage-v8`) belum dipasang (opsional).
 
 ## Recent Entries
