@@ -24,7 +24,7 @@ Menutup 8 temuan review implementasi bilingual (plan: `plans/2026-08-25-i18n-rev
 - Hapus konstanta PLACE_* setelah verifikasi pemakai tersisa nol.
 
 ## Blockers / Unresolved
-- Belum di-commit (menunggu instruksi user).
+- Tidak ada. Commit `e27cfd4` sudah dipush ke origin/main.
 
 ## Verification Performed
 - format ✅ · lint ✅ · typecheck ✅ · **172/172 test (23 file)** ✅ · build ✅

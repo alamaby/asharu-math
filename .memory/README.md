@@ -7,7 +7,7 @@ Format Version: 1
 - Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage.
 - Kualitas: ESLint 9 + Prettier aktif; 167 test / 23 file lulus; CI GitHub Actions Node 20 & 22.
 - PWA aktif: installable (tombol di HomeScreen), offline via service worker auto-update, petunjuk iOS A2HS.
-- i18n: dua bahasa ID(default)/EN switch instan; label nilai tempat & aria grid terlokalkan; ConfirmDialog label wajib; document.title brand konstan — belum di-commit.
+- i18n: dua bahasa ID(default)/EN switch instan; label nilai tempat & aria grid terlokalkan; ConfirmDialog label wajib; document.title brand konstan (commit `e27cfd4`, sudah push).
 
 ## Active Decisions
 - Susunan angka soal: operand disimpan sebagai string asli tanpa `reverse()`; perhitungan carry/borrow kanan-ke-kiri terpisah dari jalur tampilan (aturan kritis, jangan dilanggar).
@@ -19,7 +19,7 @@ Format Version: 1
 - i18n: custom t() tanpa dependensi (`src/i18n/`, dict id/en typed); UI chrome via dict, data domain (level/achievement) via LocalizedText pairs; LearningStep data murni diterjemahkan render-time (`stepInstruction`) agar switch instan; bahasa disimpan di UserProgress.language.
 
 ## Open Items / Blockers
-- i18n + fix review belum di-commit.
+
 - Coverage report (`@vitest/coverage-v8`) belum dipasang (opsional).
 - Uji manual PWA di perangkat nyata setelah deploy Vercel berikutnya (checklist di plan).
 - Out of scope tercatat: resume sesi half-done; replay sesi saat header-back dari Result ke Learn; judul sesi pada Result tidak ikut berubah bila bahasa diganti setelah sesi dimulai.

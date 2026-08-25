@@ -23,7 +23,7 @@ Menambah dukungan dua bahasa: Indonesia (default) dan Inggris, switch instan sel
 - SessionSummary.title tetap string dibuat saat mulai sesi (batas dokumentasi: judul hasil tidak ikut berubah jika bahasa diganti setelah sesi dimulai).
 
 ## Blockers / Unresolved
-- Belum di-commit (menunggu instruksi user).
+- Tidak ada. Commit `e27cfd4` sudah dipush ke origin/main.
 
 ## Verification Performed
 - format ✅ · lint ✅ · typecheck ✅ · **167/167 test (23 file)** ✅ · build ✅
