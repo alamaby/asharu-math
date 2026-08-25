@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
-import { PLACE_LABELS } from '../../lib/placeValue'
+import { useI18n } from '../../i18n/LanguageContext'
+import { usePlaceLabels } from '../../i18n/places'
 import type { PlaceValue } from '../../types'
 
 interface AnswerCellProps {
@@ -31,7 +32,9 @@ export default function AnswerCell({
   onSelect,
   testId,
 }: AnswerCellProps) {
-  const placeLabel = PLACE_LABELS[place]
+  const { t } = useI18n()
+  const { long: longPlace } = usePlaceLabels()
+  const placeLabel = longPlace(place)
   const stateClass = active
     ? 'border-sky-500 bg-sky-50 ring-4 ring-sky-200 text-sky-900'
     : done
@@ -62,7 +65,7 @@ export default function AnswerCell({
         onClick={onSelect}
         disabled={!onSelect}
         style={style}
-        aria-label={`Kotak jawaban ${placeLabel}${value === null ? ', kosong' : `, berisi ${value}`}`}
+        aria-label={t('answer.aria', { place: placeLabel, value })}
         className={`flex items-center justify-center rounded-xl border-2 text-3xl font-extrabold tabular-nums shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 disabled:cursor-default ${stateClass} ${
           onSelect ? 'cursor-pointer hover:border-sky-400' : ''
         }`}

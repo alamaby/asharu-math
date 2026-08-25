@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n/LanguageContext'
 import type { MascotMood } from '../layout/Mascot'
 import MascotBubble from '../layout/MascotBubble'
 
@@ -29,8 +30,9 @@ export default function StepGuide({
   onRepeat,
   onNext,
 }: StepGuideProps) {
+  const { t } = useI18n()
   return (
-    <section aria-label="Panduan langkah" className="space-y-3">
+    <section aria-label={t('guide.sectionAria')} className="space-y-3">
       <MascotBubble text={instruction} mood={mood} />
 
       {interim && (
@@ -44,10 +46,10 @@ export default function StepGuide({
             </span>
           )}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-500">Kotak Hitung:</span>
+            <span className="text-xs font-bold text-slate-500">{t('guide.countingBox')}</span>
             <div
               role="status"
-              aria-label={`Kotak hitung sementara${interim.value ? `, berisi ${interim.value}` : ', kosong'}`}
+              aria-label={t('guide.interimAria', { value: interim.value || null })}
               className={`flex h-16 w-24 items-center justify-center rounded-2xl border-2 text-3xl font-extrabold tabular-nums ${
                 interim.active
                   ? 'border-sky-500 bg-sky-50 text-sky-900 ring-4 ring-sky-200'
@@ -68,7 +70,7 @@ export default function StepGuide({
             onClick={() => choice.onChoose('bisa')}
             className="min-h-11 rounded-2xl border-2 border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 disabled:opacity-50"
           >
-            Bisa
+            {t('guide.canBorrow')}
           </button>
           <button
             type="button"
@@ -76,7 +78,7 @@ export default function StepGuide({
             onClick={() => choice.onChoose('tidak-bisa')}
             className="min-h-11 rounded-2xl border-2 border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 disabled:opacity-50"
           >
-            Tidak bisa
+            {t('guide.cannotBorrow')}
           </button>
         </div>
       )}
@@ -88,14 +90,14 @@ export default function StepGuide({
           disabled={!canGoBack}
           className="min-h-11 flex-1 rounded-2xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 disabled:opacity-40"
         >
-          ← Kembali
+          {t('guide.back')}
         </button>
         <button
           type="button"
           onClick={onRepeat}
           className="min-h-11 flex-1 rounded-2xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
         >
-          ↻ Ulangi Penjelasan
+          {t('guide.repeat')}
         </button>
         <button
           type="button"
@@ -105,7 +107,7 @@ export default function StepGuide({
             pulseNext && canGoNext ? 'motion-safe:animate-pulse' : ''
           }`}
         >
-          Berikutnya →
+          {t('guide.next')}
         </button>
       </div>
     </section>

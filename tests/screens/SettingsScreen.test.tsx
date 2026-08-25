@@ -1,9 +1,26 @@
 import { cleanup, fireEvent, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { defaultProgress, STORAGE_KEY } from '../../src/lib/storage'
 import SettingsScreen from '../../src/screens/SettingsScreen'
 import { renderScreenWithProviders } from '../helpers/renderWithProviders'
 
+beforeEach(() => {
+  window.localStorage.clear()
+})
+
 afterEach(cleanup)
+
+describe('SettingsScreen — bahasa Inggris', () => {
+  it('merender label EN saat preferensi language=en', () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...defaultProgress(), language: 'en' }),
+    )
+    renderScreenWithProviders(<SettingsScreen />)
+    expect(screen.getByText('Language 🌐')).not.toBeNull()
+    expect(screen.getByRole('switch', { name: /Sound/ })).not.toBeNull()
+  })
+})
 
 describe('SettingsScreen', () => {
   it('merender judul dan kedua saklar preferensi aktif secara default', () => {

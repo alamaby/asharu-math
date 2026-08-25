@@ -1,3 +1,5 @@
+import type { LocalizedText } from '../i18n/types'
+
 export type OperationType = 'addition' | 'subtraction'
 export type OperationChoice = OperationType | 'mixed'
 export type PlaceValue = 'thousands' | 'hundreds' | 'tens' | 'units'
@@ -22,7 +24,7 @@ export interface BorrowChange {
 }
 
 export type LearningStep =
-  | { kind: 'intro'; instruction: string }
+  | { kind: 'intro'; operation: OperationType; first: number; second: number }
   | {
       kind: 'interim-sum'
       columnIndex: number
@@ -31,21 +33,26 @@ export type LearningStep =
       addendB: number
       carryIn: number
       expected: number
-      instruction: string
     }
   | {
       kind: 'answer-digit'
       columnIndex: number
       place: PlaceValue
       expectedDigit: number
-      instruction: string
+      /** Konteks pengurangan untuk instruksi render-time */
+      sub?: {
+        mode: 'afterBorrow' | 'chainMid' | 'plain'
+        topAfter: number
+        bottom: number
+        topOriginal: number
+        effective: number
+      }
     }
   | {
       kind: 'carry-digit'
       columnIndex: number
       place: PlaceValue
       expectedDigit: number
-      instruction: string
     }
   | {
       kind: 'borrow-question'
@@ -54,16 +61,17 @@ export type LearningStep =
       top: number
       bottom: number
       canSubtract: boolean
-      instruction: string
     }
   | {
       kind: 'borrow-explain'
       columnIndex: number
       place: PlaceValue
+      /** Angka efektif kolom sebelum dipinjamkan */
+      top: number
+      bottom: number
       changes: BorrowChange[]
-      instruction: string
     }
-  | { kind: 'review'; instruction: string }
+  | { kind: 'review'; operation: OperationType; first: number; second: number; result: number }
 
 export interface MathProblem {
   id: string
@@ -92,9 +100,9 @@ export interface GeneratorSettings {
 export interface LevelDefinition {
   id: string
   number: number | null
-  name: string
-  goal: string
-  example: string
+  name: LocalizedText
+  goal: LocalizedText
+  example: LocalizedText
   questionCount: number
   settings: GeneratorSettings
 }
@@ -131,8 +139,8 @@ export interface AchievementStats {
 
 export interface AchievementDefinition {
   id: string
-  name: string
-  description: string
+  name: LocalizedText
+  description: LocalizedText
   icon: string
   check: (stats: AchievementStats) => boolean
 }
@@ -147,6 +155,8 @@ export interface UserProgress {
   version: 1
   /** Nama panggilan anak (opsional); hanya tersimpan di perangkat ini */
   childName: string | null
+  /** Bahasa antarmuka; default 'id' untuk data lama tanpa field ini */
+  language?: 'id' | 'en'
   completedLevelIds: string[]
   bestScores: Record<string, number>
   totalCorrect: number

@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import NumericKeypad from '../src/components/input/NumericKeypad'
+import { AllProviders } from './helpers/renderWithProviders'
 
 afterEach(cleanup)
 
@@ -9,7 +10,9 @@ function setup(overrides: Partial<Parameters<typeof NumericKeypad>[0]> = {}) {
   const onBackspace = vi.fn()
   const onCheck = vi.fn()
   render(
-    <NumericKeypad onDigit={onDigit} onBackspace={onBackspace} onCheck={onCheck} {...overrides} />,
+    <AllProviders>
+      <NumericKeypad onDigit={onDigit} onBackspace={onBackspace} onCheck={onCheck} {...overrides} />
+    </AllProviders>,
   )
   return { onDigit, onBackspace, onCheck }
 }

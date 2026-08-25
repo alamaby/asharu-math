@@ -7,20 +7,6 @@ export const PLACES_LEFT_TO_RIGHT: readonly PlaceValue[] = [
   'units',
 ]
 
-export const PLACE_LABELS: Record<PlaceValue, string> = {
-  thousands: 'ribuan',
-  hundreds: 'ratusan',
-  tens: 'puluhan',
-  units: 'satuan',
-}
-
-export const PLACE_SHORT_LABELS: Record<PlaceValue, string> = {
-  thousands: 'Rb',
-  hundreds: 'R',
-  tens: 'P',
-  units: 'S',
-}
-
 /**
  * Tempat nilai untuk kolom pada posisi `indexFromLeft` (0 = paling kiri)
  * dalam grid selebar `width` kolom. Contoh: width 2, index 0 → puluhan.

@@ -7,6 +7,7 @@ export function defaultProgress(): UserProgress {
   return {
     version: CURRENT_VERSION,
     childName: null,
+    language: 'id',
     completedLevelIds: [],
     bestScores: {},
     totalCorrect: 0,
@@ -81,12 +82,15 @@ export function validateProgress(value: unknown): UserProgress | null {
   if (typeof value.animationsEnabled !== 'boolean') return null
   if (value.lastLevelId !== null && typeof value.lastLevelId !== 'string') return null
   if (value.lastActiveDate !== null && typeof value.lastActiveDate !== 'string') return null
-  // childName bersifat opsional agar data lama tanpa field ini tetap valid
+  // childName & language bersifat opsional agar data lama tanpa field ini tetap valid
   if (
     value.childName !== undefined &&
     value.childName !== null &&
     typeof value.childName !== 'string'
   ) {
+    return null
+  }
+  if (value.language !== undefined && value.language !== 'id' && value.language !== 'en') {
     return null
   }
 
@@ -96,6 +100,9 @@ export function validateProgress(value: unknown): UserProgress | null {
     normalized.childName = trimmed.length > 0 ? trimmed : null
   } else {
     normalized.childName = null
+  }
+  if (normalized.language !== 'id' && normalized.language !== 'en') {
+    normalized.language = 'id'
   }
   return normalized
 }

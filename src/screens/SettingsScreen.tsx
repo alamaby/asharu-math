@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import ChildNameForm from '../components/common/ChildNameForm'
 import ConfirmDialog from '../components/common/ConfirmDialog'
+import { LANGUAGES, type Language } from '../i18n/types'
+import { useI18n } from '../i18n/LanguageContext'
 import { useProgress } from '../state/ProgressContext'
 
 function Toggle(props: {
@@ -36,21 +38,19 @@ function Toggle(props: {
 
 export default function SettingsScreen() {
   const { progress, setPreferences, setChildName, resetProgress } = useProgress()
+  const { lang, setLanguage, t } = useI18n()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   return (
     <div className="space-y-4">
-      <h1 className="pt-1 text-lg font-black text-slate-800">Pengaturan</h1>
+      <h1 className="pt-1 text-lg font-black text-slate-800">{t('settings.title')}</h1>
 
       <section
-        aria-label="Nama anak"
+        aria-label={t('settings.nameSection')}
         className="rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm"
       >
-        <h2 className="text-sm font-black text-slate-800">Nama Anak ✏️</h2>
-        <p className="mt-1 text-xs font-semibold text-slate-500">
-          Nama panggilan dipakai untuk sapaan dan kartu pencapaian saat dibagikan. Tidak wajib
-          diisi.
-        </p>
+        <h2 className="text-sm font-black text-slate-800">{t('settings.nameSection')}</h2>
+        <p className="mt-1 text-xs font-semibold text-slate-500">{t('settings.nameDesc')}</p>
         <div className="mt-3">
           <ChildNameForm initialName={progress.childName} onSave={(name) => setChildName(name)} />
           {progress.childName !== null && (
@@ -59,53 +59,81 @@ export default function SettingsScreen() {
               onClick={() => setChildName(null)}
               className="mt-2 min-h-11 rounded-2xl border-2 border-amber-200 bg-amber-50 px-4 text-sm font-bold text-amber-800 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200"
             >
-              🗑️ Hapus nama
+              {t('settings.deleteName')}
             </button>
           )}
         </div>
       </section>
 
-      <section aria-label="Preferensi" className="space-y-2">
+      <section
+        aria-label={t('settings.languageSection')}
+        className="space-y-2 rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm"
+      >
+        <h2 className="text-sm font-black text-slate-800">{t('settings.languageSection')}</h2>
+        <p className="text-xs font-semibold text-slate-500">{t('settings.languageDesc')}</p>
+        <div
+          role="group"
+          aria-label={t('settings.languageSection')}
+          className="flex flex-wrap gap-2"
+        >
+          {LANGUAGES.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={lang === option.value}
+              onClick={() => setLanguage(option.value as Language)}
+              className={`min-h-11 rounded-2xl border-2 px-4 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 ${
+                lang === option.value
+                  ? 'border-sky-500 bg-sky-100 text-sky-800'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-sky-50'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section aria-label={t('settings.sound')} className="space-y-2">
         <Toggle
           checked={progress.soundEnabled}
           onChange={(value) => setPreferences({ soundEnabled: value })}
-          label="Suara 🔊"
-          description="Bunyi ramah saat jawaban benar atau salah"
+          label={t('settings.sound')}
+          description={t('settings.soundDesc')}
         />
         <Toggle
           checked={progress.animationsEnabled}
           onChange={(value) => setPreferences({ animationsEnabled: value })}
-          label="Animasi ✨"
-          description="Animasi kecil yang menyenangkan (dimatikan juga mengikuti pengaturan perangkat)"
+          label={t('settings.animations')}
+          description={t('settings.animationsDesc')}
         />
       </section>
 
-      <section aria-label="Data" className="rounded-3xl border-2 border-rose-100 bg-rose-50 p-4">
-        <h2 className="text-sm font-black text-rose-800">Hapus Progres</h2>
-        <p className="mt-1 text-xs font-semibold text-rose-700">
-          Semua level, skor, dan pencapaian akan dihapus dari perangkat ini. Tindakan ini tidak bisa
-          dibatalkan.
-        </p>
+      <section
+        aria-label={t('settings.dataSection')}
+        className="rounded-3xl border-2 border-rose-100 bg-rose-50 p-4"
+      >
+        <h2 className="text-sm font-black text-rose-800">{t('settings.dataSection')}</h2>
+        <p className="mt-1 text-xs font-semibold text-rose-700">{t('settings.dataDesc')}</p>
         <button
           type="button"
           onClick={() => setConfirmOpen(true)}
           className="mt-3 min-h-11 rounded-2xl border-b-4 border-rose-600 bg-rose-500 px-4 text-sm font-bold text-white hover:bg-rose-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-300"
         >
-          🗑️ Hapus Progres
+          {t('settings.deleteProgress')}
         </button>
       </section>
 
       <p className="rounded-2xl bg-white p-4 text-xs font-semibold text-slate-500 shadow-sm">
-        🔒 Asharu Math menyimpan progres hanya di perangkat ini (localStorage) dan tidak
-        mengumpulkan nama, foto, maupun data pribadi anak lainnya.
+        {t('settings.privacyNote')}
       </p>
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Hapus semua progres?"
-        description="Level selesai, skor, dan pencapaian akan hilang. Kamu bisa mulai belajar lagi dari awal."
-        confirmLabel="Ya, hapus"
-        cancelLabel="Batal"
+        title={t('dialog.deleteTitle')}
+        description={t('dialog.deleteDesc')}
+        confirmLabel={t('dialog.confirmDelete')}
+        cancelLabel={t('dialog.cancel')}
         danger
         onConfirm={() => {
           resetProgress()

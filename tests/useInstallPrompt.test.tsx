@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import InstallButton from '../src/components/common/InstallButton'
 import { useInstallPrompt } from '../src/hooks/useInstallPrompt'
+import { AllProviders } from './helpers/renderWithProviders'
 
 const IOS_HINT_KEY = 'asharu-math:ios-install-hint-dismissed'
 
@@ -89,12 +90,20 @@ describe('useInstallPrompt', () => {
 
 describe('InstallButton', () => {
   it('tidak merender apa pun sebelum ada kemampuan install atau petunjuk', () => {
-    const { container } = render(<InstallButton />)
+    const { container } = render(
+      <AllProviders>
+        <InstallButton />
+      </AllProviders>,
+    )
     expect(container.querySelector('button')).toBeNull()
   })
 
   it('menampilkan tombol Pasang Aplikasi dan memicu dialog saat ditekan', () => {
-    render(<InstallButton />)
+    render(
+      <AllProviders>
+        <InstallButton />
+      </AllProviders>,
+    )
     fireBeforeInstallPrompt()
 
     const button = screen.getByRole('button', { name: /Pasang Aplikasi/ })
@@ -105,7 +114,11 @@ describe('InstallButton', () => {
   })
 
   it('tersembunyi setelah aplikasi terpasang', () => {
-    render(<InstallButton />)
+    render(
+      <AllProviders>
+        <InstallButton />
+      </AllProviders>,
+    )
     act(() => {
       window.dispatchEvent(new Event('appinstalled'))
     })
@@ -116,7 +129,11 @@ describe('InstallButton', () => {
     vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
       'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
     )
-    render(<InstallButton />)
+    render(
+      <AllProviders>
+        <InstallButton />
+      </AllProviders>,
+    )
 
     // iOS tidak pernah menerima beforeinstallprompt → langsung petunjuk
     expect(screen.queryByRole('button', { name: /Pasang Aplikasi/ })).toBeNull()

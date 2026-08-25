@@ -31,7 +31,11 @@ interface ProgressContextValue {
   /** Menandai level selesai; mengembalikan achievement yang baru terbuka */
   completeLevel: (levelId: string, stars: number) => AchievementDefinition[]
   markLevelStarted: (levelId: string) => void
-  setPreferences: (prefs: { soundEnabled?: boolean; animationsEnabled?: boolean }) => void
+  setPreferences: (prefs: {
+    soundEnabled?: boolean
+    animationsEnabled?: boolean
+    language?: 'id' | 'en'
+  }) => void
   /** Menyimpan nama panggilan anak; null untuk menghapus */
   setChildName: (name: string | null) => void
   resetProgress: () => void
@@ -119,7 +123,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   )
 
   const setPreferences = useCallback(
-    (prefs: { soundEnabled?: boolean; animationsEnabled?: boolean }) => {
+    (prefs: { soundEnabled?: boolean; animationsEnabled?: boolean; language?: 'id' | 'en' }) => {
       update((current) => ({ ...current, ...prefs }))
     },
     [update],

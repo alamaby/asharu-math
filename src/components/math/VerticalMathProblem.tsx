@@ -1,5 +1,5 @@
 import { useMemo, type CSSProperties } from 'react'
-import { PLACE_LABELS, PLACE_SHORT_LABELS } from '../../lib/placeValue'
+import { usePlaceLabels } from '../../i18n/places'
 import type { CellRef, MathProblem } from '../../types'
 import AnswerCell from './AnswerCell'
 import BorrowCell from './BorrowCell'
@@ -53,6 +53,7 @@ export default function VerticalMathProblem({
   const width = problem.columns.length
   const operatorColumn = width + 1
 
+  const { long: longPlace, short: shortPlace } = usePlaceLabels()
   const isAddition = problem.operation === 'addition'
   const doneSet = useMemo(() => new Set(doneAnswerColumns), [doneAnswerColumns])
   const wrongSet = useMemo(() => new Set(wrongAnswerColumns), [wrongAnswerColumns])
@@ -72,12 +73,12 @@ export default function VerticalMathProblem({
       className="flex h-6 items-end justify-center pb-0.5"
     >
       <span
-        title={PLACE_LABELS[column.place]}
+        title={longPlace(column.place)}
         className={`text-[0.65rem] font-extrabold uppercase tracking-wide ${
           column.used ? 'text-sky-600' : 'text-sky-600/30'
         }`}
       >
-        {PLACE_SHORT_LABELS[column.place]}
+        {shortPlace(column.place)}
       </span>
     </div>
   ))

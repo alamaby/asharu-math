@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n/LanguageContext'
 import { playTap } from '../../lib/sound'
 
 interface NumericKeypadProps {
@@ -5,6 +6,7 @@ interface NumericKeypadProps {
   onBackspace: () => void
   onCheck: () => void
   checkDisabled?: boolean
+  /** Override label tombol periksa; default dari kamus bahasa aktif */
   checkLabel?: string
   /** Nonaktifkan tombol angka & hapus saat langkah belum/tidak menerima input angka */
   digitsDisabled?: boolean
@@ -69,9 +71,11 @@ export default function NumericKeypad({
   onBackspace,
   onCheck,
   checkDisabled = false,
-  checkLabel = 'Periksa',
+  checkLabel,
   digitsDisabled = false,
 }: NumericKeypadProps) {
+  const { t } = useI18n()
+  const resolvedCheckLabel = checkLabel ?? t('keypad.checkDefault')
   const handleDigit = (digit: number) => {
     playTap()
     onDigit(digit)
@@ -80,7 +84,7 @@ export default function NumericKeypad({
   return (
     <div
       role="group"
-      aria-label="Keyboard angka"
+      aria-label={t('keypad.groupAria')}
       className="mx-auto grid w-full max-w-xs grid-cols-3 gap-2"
     >
       {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
@@ -90,7 +94,7 @@ export default function NumericKeypad({
           className={DIGIT_BUTTON_CLASS}
           onClick={() => handleDigit(digit)}
           disabled={digitsDisabled}
-          aria-label={`Angka ${digit}`}
+          aria-label={t('keypad.digit', { digit })}
         >
           {digit}
         </button>
@@ -103,17 +107,17 @@ export default function NumericKeypad({
           onBackspace()
         }}
         disabled={digitsDisabled}
-        aria-label="Hapus satu angka"
+        aria-label={t('keypad.backspace')}
       >
         <BackspaceIcon />
-        Hapus
+        {t('keypad.backspace')}
       </button>
       <button
         type="button"
         className={DIGIT_BUTTON_CLASS}
         onClick={() => handleDigit(0)}
         disabled={digitsDisabled}
-        aria-label="Angka 0"
+        aria-label={t('keypad.digit', { digit: 0 })}
       >
         0
       </button>
@@ -125,10 +129,10 @@ export default function NumericKeypad({
           onCheck()
         }}
         disabled={checkDisabled}
-        aria-label={checkLabel}
+        aria-label={resolvedCheckLabel}
       >
         <CheckIcon />
-        {checkLabel}
+        {resolvedCheckLabel}
       </button>
     </div>
   )

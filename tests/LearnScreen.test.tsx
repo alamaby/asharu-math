@@ -7,6 +7,7 @@ import { STORAGE_KEY } from '../src/lib/storage'
 import LearnScreen from '../src/screens/LearnScreen'
 import { NavigationProvider, useNavigation } from '../src/state/NavigationContext'
 import { ProgressProvider } from '../src/state/ProgressContext'
+import { LanguageProvider } from '../src/i18n/LanguageContext'
 import type { MathProblem } from '../src/types'
 
 function ScreenProbe() {
@@ -35,10 +36,12 @@ function renderLearn(ui: React.ReactElement, problems: MathProblem[]) {
   return render(
     <NavigationProvider>
       <ProgressProvider>
-        <NavigateToLearn levelId="level-1" problems={problems} />
-        {ui}
-        <BottomNavigation />
-        <ScreenProbe />
+        <LanguageProvider>
+          <NavigateToLearn levelId="level-1" problems={problems} />
+          {ui}
+          <BottomNavigation />
+          <ScreenProbe />
+        </LanguageProvider>
       </ProgressProvider>
     </NavigationProvider>,
   )
@@ -50,15 +53,14 @@ function miniProblem(): MathProblem {
   return {
     ...base,
     learningSteps: [
-      { kind: 'intro', instruction: 'Mulai' },
+      { kind: 'intro', operation: 'addition', first: 23, second: 14 },
       {
         kind: 'answer-digit',
         columnIndex: base.columns.length - 1,
         place: 'units',
         expectedDigit: 7,
-        instruction: 'Isi kotak satuan',
       },
-      { kind: 'review', instruction: 'Hebat, semua benar!' },
+      { kind: 'review', operation: 'addition', first: 23, second: 14, result: 37 },
     ],
   }
 }
@@ -68,7 +70,7 @@ function keLangkahJawaban() {
   const problems = [miniProblem()]
   const view = renderLearn(<LearnScreen levelId="level-1" problems={problems} />, problems)
   fireEvent.click(screen.getByRole('button', { name: 'Berikutnya →' }))
-  expect(screen.getByText('Isi kotak satuan')).not.toBeNull()
+  expect(screen.getByText(/kotak jawaban satuan/i)).not.toBeNull()
   return view
 }
 
@@ -91,7 +93,7 @@ describe('LearnScreen — penyelesaian level', () => {
 
     // Auto-lanjut 1: jawaban benar → review
     act(() => vi.advanceTimersByTime(700))
-    expect(screen.getByText('Hebat, semua benar!')).not.toBeNull()
+    expect(screen.getByText(/23 \+ 14 = 37/)).not.toBeNull()
 
     // Auto-lanjut 2: review → finished → result (completeLevel sudah jalan)
     act(() => vi.advanceTimersByTime(700))
@@ -100,6 +102,11 @@ describe('LearnScreen — penyelesaian level', () => {
     const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) as string)
     expect(saved.completedLevelIds).toContain('level-1')
     expect(saved.totalCorrect).toBeGreaterThanOrEqual(1)
+  })
+
+  it('sesi ad-hoc tanpa level memakai judul default terlokalkan', () => {
+    renderLearn(<LearnScreen levelId={null} problems={[miniProblem()]} />, [miniProblem()])
+    expect(screen.getByText('Belajar Langkah demi Langkah')).not.toBeNull()
   })
 
   it('keluar sebelum sesi selesai tidak mencatat level', () => {

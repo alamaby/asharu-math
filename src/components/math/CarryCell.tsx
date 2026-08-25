@@ -1,4 +1,5 @@
-import { PLACE_LABELS } from '../../lib/placeValue'
+import { useI18n } from '../../i18n/LanguageContext'
+import { usePlaceLabels } from '../../i18n/places'
 import type { PlaceValue } from '../../types'
 
 interface CarryCellProps {
@@ -14,14 +15,16 @@ interface CarryCellProps {
  * bukan di atas satuan, agar tidak membingungkan anak.
  */
 export default function CarryCell({ place, value, active = false, testId }: CarryCellProps) {
-  const placeLabel = PLACE_LABELS[place]
+  const { t } = useI18n()
+  const { long: longPlace } = usePlaceLabels()
+  const placeLabel = longPlace(place)
   const filled = value !== null
 
   return (
     <div
       data-testid={testId}
       role={active ? 'button' : undefined}
-      aria-label={`Kotak simpan ${placeLabel}${filled ? `, berisi ${value}` : ', kosong'}`}
+      aria-label={t('carry.aria', { place: placeLabel, value })}
       className={`flex h-6 w-[var(--cell-w)] items-center justify-center rounded-md border-2 text-base font-extrabold tabular-nums transition-colors ${
         filled
           ? 'border-solid border-violet-400 bg-violet-100 text-violet-700'

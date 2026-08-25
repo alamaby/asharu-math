@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useI18n } from '../../i18n/LanguageContext'
 import { achievementShareText } from '../../lib/achievements'
 import { shareText } from '../../lib/share'
 import { generateAchievementImage } from '../../lib/shareImage'
@@ -32,8 +33,9 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
+  const { lang, t } = useI18n()
 
-  const shareMessage = achievementShareText(achievement, childName)
+  const shareMessage = achievementShareText(achievement, childName, lang)
 
   /** Reset gambar lama sebelum membuka panel agar pratinjau selalu segar */
   const openSharePanel = () => {
@@ -47,7 +49,16 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
     closeRef.current?.focus()
     let revokeUrl: string | null = null
     let cancelled = false
-    void generateAchievementImage({ achievement, childName, date: new Date() }).then((blob) => {
+    void generateAchievementImage({
+      achievement,
+      childName,
+      date: new Date(),
+      labels: {
+        cardLabel: t('ach.cardLabel'),
+        greet: t('ach.greet', { name: childName }),
+      },
+      locale: lang === 'id' ? 'id-ID' : 'en-US',
+    }).then((blob) => {
       if (cancelled) return
       if (blob) {
         const url = URL.createObjectURL(blob)
@@ -65,7 +76,7 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
       window.removeEventListener('keydown', onKeyDown)
       if (revokeUrl) URL.revokeObjectURL(revokeUrl)
     }
-  }, [open, achievement, childName])
+  }, [open, achievement, childName, lang, t])
 
   const shareImage = async () => {
     if (!imageBlob) return
@@ -80,12 +91,12 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
         navigatorWithShare.canShare({ files: [file] })
       ) {
         await navigatorWithShare.share({ files: [file], text: shareMessage })
-        setMessage('Pencapaian berhasil dibagikan!')
+        setMessage(t('share.sharedOk'))
       } else {
         downloadImage()
       }
     } catch {
-      setMessage('Belum bisa membagikan sekarang. Coba unduh gambarnya ya.')
+      setMessage(t('share.shareFail'))
     } finally {
       setBusy(false)
     }
@@ -101,14 +112,12 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
     anchor.click()
     document.body.removeChild(anchor)
     URL.revokeObjectURL(url)
-    setMessage('Gambar pencapaian diunduh!')
+    setMessage(t('share.downloadOk'))
   }
 
   const handleCopy = async () => {
     const outcome = await copyText(shareMessage)
-    setMessage(
-      outcome === 'copied' ? 'Teks pencapaian sudah disalin!' : 'Belum bisa menyalin sekarang.',
-    )
+    setMessage(outcome === 'copied' ? t('share.copyOk') : t('share.copyFail'))
   }
 
   const legacyShare = async () => {
@@ -116,10 +125,10 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
     const outcome = await shareText(shareMessage)
     setMessage(
       outcome === 'shared'
-        ? 'Pencapaian berhasil dibagikan!'
+        ? t('share.sharedOk')
         : outcome === 'copied'
-          ? 'Teks pencapaian sudah disalin!'
-          : 'Belum bisa membagikan sekarang.',
+          ? t('share.copyOk')
+          : t('share.shareFail'),
     )
     setBusy(false)
   }
@@ -131,7 +140,7 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
         onClick={openSharePanel}
         className="min-h-11 rounded-2xl border-b-4 border-sky-600 bg-sky-500 px-4 text-sm font-bold text-white hover:bg-sky-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
       >
-        🔗 Bagikan
+        {t('share.open')}
       </button>
 
       {open && (
@@ -149,13 +158,13 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
           >
             <div className="flex items-start justify-between gap-2">
               <h2 id="share-dialog-title" className="text-lg font-black text-slate-800">
-                Bagikan Pencapaian 🎉
+                {t('share.title')}
               </h2>
               <button
                 ref={closeRef}
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="Tutup panel berbagi"
+                aria-label={t('share.closePanel')}
                 className="flex h-11 w-11 items-center justify-center rounded-full text-xl font-bold text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
               >
                 ✕
@@ -166,12 +175,12 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
               {imageUrl ? (
                 <img
                   src={imageUrl}
-                  alt={`Kartu pencapaian ${achievement.name}${childName ? ` milik ${childName}` : ''}`}
+                  alt={t('share.imageAlt', { name: achievement.name[lang], child: childName })}
                   className="w-56 rounded-2xl border-2 border-sky-100 shadow-md"
                 />
               ) : (
                 <div className="flex h-40 w-56 items-center justify-center rounded-2xl border-2 border-dashed border-sky-200 bg-sky-50 text-sm font-bold text-slate-400">
-                  Menyiapkan gambar…
+                  {t('share.preparing')}
                 </div>
               )}
             </div>
@@ -183,7 +192,7 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
                 disabled={busy || imageBlob === null}
                 className="min-h-12 w-full rounded-2xl border-b-4 border-emerald-600 bg-emerald-500 text-base font-black text-white hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300 disabled:opacity-40"
               >
-                📤 Bagikan Gambar
+                {t('share.sendImage')}
               </button>
               <button
                 type="button"
@@ -191,7 +200,7 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
                 disabled={imageBlob === null}
                 className="min-h-11 w-full rounded-2xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 disabled:opacity-40"
               >
-                ⬇️ Unduh Gambar
+                {t('share.downloadImage')}
               </button>
               <div className="grid grid-cols-2 gap-2">
                 <a
@@ -233,14 +242,14 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
                 disabled={busy}
                 className="min-h-11 w-full rounded-2xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 disabled:opacity-50"
               >
-                🔗 Bagikan lewat perangkat
+                {t('share.viaDevice')}
               </button>
               <button
                 type="button"
                 onClick={handleCopy}
                 className="min-h-11 w-full rounded-2xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
               >
-                📋 Salin Teks
+                {t('share.copyText')}
               </button>
             </div>
 

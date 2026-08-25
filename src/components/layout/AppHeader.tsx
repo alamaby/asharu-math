@@ -1,18 +1,24 @@
+import { useI18n } from '../../i18n/LanguageContext'
 import { useNavigation } from '../../state/NavigationContext'
 import { useProgress } from '../../state/ProgressContext'
 import { setSoundEnabled } from '../../lib/sound'
 import Logo from './Logo'
 
-const NAV_ITEMS = [
-  { tab: 'home', label: 'Beranda', icon: '🏠' },
-  { tab: 'levels', label: 'Belajar', icon: '📚' },
-  { tab: 'practice', label: 'Latihan', icon: '✏️' },
-  { tab: 'achievements', label: 'Pencapaian', icon: '🏆' },
-] as const
+const NAV_ITEMS: readonly {
+  tab: 'home' | 'levels' | 'practice' | 'achievements'
+  labelKey: 'tab.home' | 'tab.levels' | 'tab.practice' | 'tab.achievements'
+  icon: string
+}[] = [
+  { tab: 'home', labelKey: 'tab.home', icon: '🏠' },
+  { tab: 'levels', labelKey: 'tab.levels', icon: '📚' },
+  { tab: 'practice', labelKey: 'tab.practice', icon: '✏️' },
+  { tab: 'achievements', labelKey: 'tab.achievements', icon: '🏆' },
+]
 
 export default function AppHeader() {
   const { screen, canBack, back, goToTab } = useNavigation()
   const { progress, setPreferences } = useProgress()
+  const { t } = useI18n()
 
   const currentTab =
     screen.name === 'home'
@@ -38,7 +44,7 @@ export default function AppHeader() {
           <button
             type="button"
             onClick={back}
-            aria-label="Kembali"
+            aria-label={t('header.back')}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl font-bold text-slate-600 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
           >
             ←
@@ -50,7 +56,7 @@ export default function AppHeader() {
           <Logo size={26} className="drop-shadow-sm" />
           Asharu Math
         </p>
-        <nav aria-label="Navigasi utama" className="ml-auto hidden items-center gap-1 md:flex">
+        <nav aria-label={t('nav.mainAria')} className="ml-auto hidden items-center gap-1 md:flex">
           {NAV_ITEMS.map((item) => (
             <button
               key={item.tab}
@@ -64,7 +70,7 @@ export default function AppHeader() {
               } focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300`}
             >
               <span aria-hidden="true">{item.icon}</span>
-              {item.label}
+              {t(item.labelKey)}
             </button>
           ))}
         </nav>
@@ -73,7 +79,7 @@ export default function AppHeader() {
             type="button"
             onClick={toggleSound}
             aria-pressed={progress.soundEnabled}
-            aria-label={progress.soundEnabled ? 'Matikan suara' : 'Nyalakan suara'}
+            aria-label={progress.soundEnabled ? t('header.muteSound') : t('header.unmuteSound')}
             className="flex h-11 w-11 items-center justify-center rounded-full text-xl text-slate-600 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
           >
             {progress.soundEnabled ? '🔊' : '🔇'}

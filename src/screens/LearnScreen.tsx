@@ -7,6 +7,8 @@ import Mascot from '../components/layout/Mascot'
 import NumericKeypad from '../components/input/NumericKeypad'
 import VerticalMathProblem from '../components/math/VerticalMathProblem'
 import { buildChallengeSettings, getLevel, getNextLevelId } from '../data/levels'
+import { useI18n } from '../i18n/LanguageContext'
+import { stepInstruction } from '../i18n/steps'
 import { generateSession } from '../lib/problemGenerator'
 import { starsFor } from '../lib/scoring'
 import { playCelebrate, playCorrect, playWrong } from '../lib/sound'
@@ -455,6 +457,7 @@ export default function LearnScreen({
   const { navigate, setLeaveGuard, confirmPendingNavigation, cancelPendingNavigation } =
     useNavigation()
   const { progress, recordAnswer, completeLevel, markLevelStarted } = useProgress()
+  const { lang, t } = useI18n()
 
   const [problems] = useState<MathProblem[]>(() => {
     if (providedProblems && providedProblems.length > 0) return providedProblems
@@ -476,7 +479,7 @@ export default function LearnScreen({
   const reportedRef = useRef(false)
 
   const level = levelId ? getLevel(levelId) : undefined
-  const screenTitle = title ?? level?.name ?? 'Belajar Langkah demi Langkah'
+  const screenTitle = title ?? (level ? level.name[lang] : t('learn.adhocTitle'))
   const step = currentStepOf(state)
   const problem = state.problems[state.problemIndex]
 
@@ -616,8 +619,8 @@ export default function LearnScreen({
     return (
       <div className="animate-pop-in flex flex-col items-center gap-4 py-10 text-center">
         <Mascot mood="cheer" size={96} className="animate-celebrate" />
-        <h2 className="text-2xl font-black text-slate-800">Selesai! Kamu hebat! 🎉</h2>
-        <p className="text-sm font-bold text-slate-500">Menyiapkan hasil latihan…</p>
+        <h2 className="text-2xl font-black text-slate-800">{t('learn.finishedTitle')}</h2>
+        <p className="text-sm font-bold text-slate-500">{t('learn.preparingResult')}</p>
       </div>
     )
   }
@@ -661,11 +664,14 @@ export default function LearnScreen({
 
   return (
     <div className="solve-split">
-      <section aria-label="Progres sesi" className="solve-progress space-y-1.5">
+      <section aria-label={t('learn.sessionAria')} className="solve-progress space-y-1.5">
         <div className="flex items-baseline justify-between">
           <h1 className="text-base font-black text-slate-800 md:text-lg">{screenTitle}</h1>
           <p className="text-xs font-bold text-slate-500">
-            Soal {state.problemIndex + 1} dari {state.problems.length}
+            {t('learn.questionOf', {
+              current: state.problemIndex + 1,
+              total: state.problems.length,
+            })}
           </p>
         </div>
         <ProgressBar
@@ -673,7 +679,10 @@ export default function LearnScreen({
             (state.problemIndex + (state.stepIndex + 1) / problem.learningSteps.length) /
             state.problems.length
           }
-          label={`Progres belajar, soal ${state.problemIndex + 1} dari ${state.problems.length}`}
+          label={t('learn.progressLabel', {
+            current: state.problemIndex + 1,
+            total: state.problems.length,
+          })}
         />
       </section>
 
@@ -695,7 +704,7 @@ export default function LearnScreen({
 
       <div className="solve-guide">
         <StepGuide
-          instruction={step?.instruction ?? ''}
+          instruction={step ? stepInstruction(step, t, problem?.columns) : ''}
           mood={mood}
           interim={interim}
           choice={choice}
@@ -721,10 +730,10 @@ export default function LearnScreen({
 
       <ConfirmDialog
         open={exitDialogOpen}
-        title="Keluar dari level?"
-        description="Level ini belum selesai, jadi progresnya belum tersimpan. Yuk lanjut supaya levelnya terbuka!"
-        confirmLabel="Ya, Keluar"
-        cancelLabel="Lanjut Belajar"
+        title={t('learn.exitTitle')}
+        description={t('learn.exitDesc')}
+        confirmLabel={t('learn.exitConfirm')}
+        cancelLabel={t('learn.exitCancel')}
         danger
         onConfirm={() => {
           setExitDialogOpen(false)

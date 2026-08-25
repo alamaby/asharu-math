@@ -25,7 +25,7 @@ function stats(partial: Partial<AchievementStats>): AchievementStats {
 describe('ACHIEVEMENTS', () => {
   it('id dan nama unik', () => {
     const ids = ACHIEVEMENTS.map((a) => a.id)
-    const names = ACHIEVEMENTS.map((a) => a.name)
+    const names = ACHIEVEMENTS.map((a) => a.name.id)
     expect(new Set(ids).size).toBe(ids.length)
     expect(new Set(names).size).toBe(names.length)
   })
@@ -33,13 +33,16 @@ describe('ACHIEVEMENTS', () => {
   it('setiap definisi memiliki ikon dan deskripsi', () => {
     for (const a of ACHIEVEMENTS) {
       expect(a.icon.length).toBeGreaterThan(0)
-      expect(a.description.length).toBeGreaterThan(0)
+      expect(a.name.id.length).toBeGreaterThan(0)
+      expect(a.name.en.length).toBeGreaterThan(0)
+      expect(a.description.id.length).toBeGreaterThan(0)
+      expect(a.description.en.length).toBeGreaterThan(0)
       expect(typeof a.check).toBe('function')
     }
   })
 
   it('getAchievement menemukan berdasarkan id dan undefined untuk id asing', () => {
-    expect(getAchievement('langkah-pertama')?.name).toBe('Langkah Pertama')
+    expect(getAchievement('langkah-pertama')?.name.id).toBe('Langkah Pertama')
     expect(getAchievement('tidak-ada')).toBeUndefined()
   })
 })
@@ -108,14 +111,14 @@ describe('achievementShareText', () => {
   it('menyertakan nama anak jika ada', () => {
     const text = achievementShareText(achievement, 'Budi')
     expect(text).toContain('Namaku Budi.')
-    expect(text).toContain(achievement.name)
+    expect(text).toContain(achievement.name.id)
     expect(text).toContain(SITE_URL)
   })
 
   it('tanpa nama anak tetap lengkap dengan tautan situs', () => {
     const text = achievementShareText(achievement, null)
     expect(text).not.toContain('Namaku')
-    expect(text).toContain(achievement.name)
+    expect(text).toContain(achievement.name.id)
     expect(text).toContain(SITE_URL)
   })
 })

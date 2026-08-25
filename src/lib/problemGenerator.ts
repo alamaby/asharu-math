@@ -52,7 +52,7 @@ export function buildProblem(operation: OperationType, first: number, second: nu
     requiresCarry: operation === 'addition' && hasCarry(first, second),
     requiresBorrow: operation === 'subtraction' && hasBorrow(first, second),
     columns,
-    learningSteps: buildLearningSteps(operation, first, second, columns.length, resultText),
+    learningSteps: buildLearningSteps(operation, first, second, columns.length, result),
   }
 }
 

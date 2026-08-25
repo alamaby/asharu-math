@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useI18n } from '../../i18n/LanguageContext'
 
 interface ChildNameFormProps {
   initialName: string | null
@@ -12,6 +13,7 @@ interface ChildNameFormProps {
  * dan hanya tersimpan di perangkat (localStorage).
  */
 export default function ChildNameForm({ initialName, onSave, onSkip }: ChildNameFormProps) {
+  const { t } = useI18n()
   const [value, setValue] = useState(initialName ?? '')
   const [error, setError] = useState<string | null>(null)
 
@@ -19,7 +21,7 @@ export default function ChildNameForm({ initialName, onSave, onSkip }: ChildName
     event.preventDefault()
     const trimmed = value.trim()
     if (trimmed.length === 0) {
-      setError('Tulis dulu namamu ya.')
+      setError(t('form.errorEmpty'))
       return
     }
     onSave(trimmed.slice(0, 20))
@@ -28,7 +30,7 @@ export default function ChildNameForm({ initialName, onSave, onSkip }: ChildName
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <label htmlFor="child-name" className="block text-sm font-black text-slate-700">
-        Siapa namamu?
+        {t('form.label')}
       </label>
       <input
         id="child-name"
@@ -39,8 +41,8 @@ export default function ChildNameForm({ initialName, onSave, onSkip }: ChildName
         }}
         maxLength={20}
         autoComplete="off"
-        placeholder="Nama panggilan"
-        aria-label="Nama panggilan anak"
+        placeholder={t('form.placeholder')}
+        aria-label={t('form.ariaLabel')}
         className="h-12 w-full rounded-2xl border-2 border-sky-200 bg-white px-4 text-lg font-extrabold text-slate-800 placeholder:font-semibold placeholder:text-slate-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
       />
       {error && (
@@ -53,7 +55,7 @@ export default function ChildNameForm({ initialName, onSave, onSkip }: ChildName
           type="submit"
           className="min-h-12 flex-1 rounded-2xl border-b-4 border-sky-600 bg-sky-500 text-base font-black text-white hover:bg-sky-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
         >
-          Simpan Nama
+          {t('form.save')}
         </button>
         {onSkip && (
           <button
@@ -61,13 +63,11 @@ export default function ChildNameForm({ initialName, onSave, onSkip }: ChildName
             onClick={onSkip}
             className="min-h-12 rounded-2xl border-2 border-slate-200 bg-white px-4 text-sm font-bold text-slate-500 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
           >
-            Lewati dulu
+            {t('form.skip')}
           </button>
         )}
       </div>
-      <p className="text-xs font-semibold text-slate-400">
-        Nama hanya tersimpan di perangkat ini ya.
-      </p>
+      <p className="text-xs font-semibold text-slate-400">{t('form.deviceNote')}</p>
     </form>
   )
 }

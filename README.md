@@ -32,6 +32,12 @@ meminjam (borrow). Seluruh antarmuka menggunakan Bahasa Indonesia yang sederhana
 
 Tidak ada backend, tidak ada API berbayar, tidak ada environment variable.
 
+## 🌐 Dua Bahasa
+
+Antarmuka tersedia dalam **Bahasa Indonesia** (default) dan **English**. Ganti bahasa kapan saja
+melalui **Pengaturan → Bahasa** — perubahan langsung berlaku di seluruh aplikasi, termasuk
+instruksi langkah belajar dan kartu pencapaian. Preferensi tersimpan di perangkat.
+
 ## 📲 Pasang di Smartphone
 
 Aplikasi ini adalah **PWA** — bisa dipasang seperti aplikasi dan berjalan offline:

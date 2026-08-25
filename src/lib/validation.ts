@@ -1,5 +1,5 @@
+import type { TFunction } from '../i18n/core'
 import type { MathProblem } from '../types'
-import { PLACE_LABELS } from './placeValue'
 
 export interface AnswerCheckResult {
   allCorrect: boolean
@@ -25,42 +25,55 @@ export function checkAnswerDigits(
   return { allCorrect: wrongColumnIndexes.length === 0, wrongColumnIndexes }
 }
 
-const GENERIC_HINTS = [
-  'Ingat, mulai dari sebelah kanan.',
-  'Coba periksa kolom satuan dulu.',
-  'Hitung pelan-pelan satu kolom ya.',
-]
+const GENERIC_HINT_KEYS = ['hint.genericRight', 'hint.genericUnits', 'hint.genericSlow'] as const
+
+function placeLabel(t: TFunction, place: MathProblem['columns'][number]['place']): string {
+  switch (place) {
+    case 'units':
+      return t('place.units')
+    case 'tens':
+      return t('place.tens')
+    case 'hundreds':
+      return t('place.hundreds')
+    case 'thousands':
+      return t('place.thousands')
+  }
+}
 
 /**
  * Petunjuk bertahap: umum → tunjuk kolom → penjelasan detail → tawarkan
- * mode belajar langkah demi langkah.
+ * mode belajar langkah demi langkah. Hint bersifat transient (tidak
+ * disimpan), jadi diterjemahkan dengan bahasa aktif saat dibuat.
  */
 export function getHint(
   problem: MathProblem,
   attempt: number,
   wrongColumnIndexes: readonly number[],
+  t: TFunction,
 ): string {
   if (attempt <= 1) {
-    return GENERIC_HINTS[(attempt - 1 + GENERIC_HINTS.length) % GENERIC_HINTS.length]
+    const key =
+      GENERIC_HINT_KEYS[(attempt - 1 + GENERIC_HINT_KEYS.length) % GENERIC_HINT_KEYS.length]
+    return t(key)
   }
   if (attempt === 2) {
     const places = wrongColumnIndexes
       .map((index) => problem.columns[index])
       .filter((column) => column !== undefined)
-      .map((column) => PLACE_LABELS[column.place])
-    const placeText = places.length > 0 ? places.join(' dan ') : 'satuan'
-    return `Hampir benar! Periksa lagi kolom ${placeText}.`
+      .map((column) => placeLabel(t, column.place))
+    const placeText = places.length > 0 ? places.join(t('join.and')) : t('place.units')
+    return t('hint.places', { places: placeText })
   }
   if (attempt === 3) {
     if (problem.requiresCarry) {
-      return 'Apakah ada angka yang perlu disimpan? Coba hitung ulang dari satuan.'
+      return t('hint.carry')
     }
     if (problem.requiresBorrow) {
-      return 'Coba lihat kotak pinjamnya. Jika angka atas tidak cukup, pinjam 10 dari kolom sebelah kiri.'
+      return t('hint.borrow')
     }
-    return 'Jumlahkan tiap kolom dari kanan, lalu cocokkan satu per satu.'
+    return t('hint.columnwise')
   }
-  return 'Ayo belajar bersama langkah demi langkah supaya lebih mudah!'
+  return t('hint.guided')
 }
 
 export function shouldOfferGuidedMode(attempt: number): boolean {

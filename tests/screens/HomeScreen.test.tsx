@@ -1,9 +1,26 @@
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { defaultProgress, STORAGE_KEY } from '../../src/lib/storage'
 import HomeScreen from '../../src/screens/HomeScreen'
 import { renderScreenWithProviders } from '../helpers/renderWithProviders'
 
+beforeEach(() => {
+  window.localStorage.clear()
+})
+
 afterEach(cleanup)
+
+describe('HomeScreen — bahasa Inggris', () => {
+  it('merender label EN saat preferensi language=en', () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...defaultProgress(), language: 'en' }),
+    )
+    renderScreenWithProviders(<HomeScreen />)
+    expect(screen.getByRole('button', { name: /Start Learning/ })).not.toBeNull()
+    expect(screen.getByText('Correct answers')).not.toBeNull()
+  })
+})
 
 describe('HomeScreen', () => {
   it('menampilkan form nama saat nama anak belum diisi', () => {

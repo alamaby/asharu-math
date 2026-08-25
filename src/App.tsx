@@ -1,5 +1,6 @@
 import AppHeader from './components/layout/AppHeader'
 import BottomNavigation from './components/layout/BottomNavigation'
+import { LanguageProvider } from './i18n/LanguageContext'
 import AchievementsScreen from './screens/AchievementsScreen'
 import HomeScreen from './screens/HomeScreen'
 import LearnScreen from './screens/LearnScreen'
@@ -59,7 +60,9 @@ export default function App() {
   return (
     <NavigationProvider>
       <ProgressProvider>
-        <AppShell />
+        <LanguageProvider>
+          <AppShell />
+        </LanguageProvider>
       </ProgressProvider>
     </NavigationProvider>
   )

@@ -5,6 +5,10 @@ export interface AchievementImageData {
   achievement: AchievementDefinition
   childName: string | null
   date: Date
+  /** Label kartu dalam bahasa aktif (dari t()); default Indonesia */
+  labels?: { cardLabel: string; greet: string }
+  /** Locale untuk format tanggal kartu */
+  locale?: string
 }
 
 const CANVAS_SIZE = 1080
@@ -45,6 +49,8 @@ export async function generateAchievementImage(data: AchievementImageData): Prom
   if (!ctx) return null
 
   const { achievement, childName, date } = data
+  const cardLabel = data.labels?.cardLabel ?? 'P E N C A P A I A N'
+  const greet = data.labels?.greet ?? (childName ? `Hebat, ${childName}!` : 'Hebat!')
 
   // Latar gradasi biru ceria + aksen gelembung
   const gradient = ctx.createLinearGradient(0, 0, CANVAS_SIZE, CANVAS_SIZE)
@@ -88,25 +94,25 @@ export async function generateAchievementImage(data: AchievementImageData): Prom
   // Label kecil
   ctx.font = '800 38px "Nunito", "Segoe UI", sans-serif'
   ctx.fillStyle = '#0284c7'
-  ctx.fillText('P E N C A P A I A N', CANVAS_SIZE / 2, 520)
+  ctx.fillText(cardLabel, CANVAS_SIZE / 2, 520)
 
   // Sapaan dengan nama anak
   ctx.font = '900 64px "Nunito", "Segoe UI", sans-serif'
   ctx.fillStyle = '#0f172a'
-  ctx.fillText(childName ? `Hebat, ${childName}!` : 'Hebat!', CANVAS_SIZE / 2, 610)
+  ctx.fillText(greet, CANVAS_SIZE / 2, 610)
 
   // Nama achievement
   ctx.font = '800 54px "Nunito", "Segoe UI", sans-serif'
   ctx.fillStyle = '#b45309'
-  ctx.fillText(achievement.name, CANVAS_SIZE / 2, 700)
+  ctx.fillText(achievement.name[localeOf(data.locale)], CANVAS_SIZE / 2, 700)
 
   // Deskripsi singkat
   ctx.font = '600 32px "Nunito", "Segoe UI", sans-serif'
   ctx.fillStyle = '#64748b'
-  ctx.fillText(achievement.description, CANVAS_SIZE / 2, 770)
+  ctx.fillText(achievement.description[localeOf(data.locale)], CANVAS_SIZE / 2, 770)
 
   // Tanggal
-  const dateString = date.toLocaleDateString('id-ID', {
+  const dateString = date.toLocaleDateString(data.locale ?? 'id-ID', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -123,4 +129,8 @@ export async function generateAchievementImage(data: AchievementImageData): Prom
   return new Promise<Blob | null>((resolve) => {
     canvas.toBlob((blob) => resolve(blob), 'image/png')
   })
+}
+
+function localeOf(locale?: string): 'id' | 'en' {
+  return locale === 'en-US' ? 'en' : 'id'
 }

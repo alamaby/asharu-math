@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n/LanguageContext'
 export type MascotMood = 'happy' | 'cheer' | 'think'
 
 interface MascotProps {
@@ -8,6 +9,7 @@ interface MascotProps {
 
 /** Maskot bulat ceria "Asya" pendamping belajar anak. */
 export default function Mascot({ mood = 'happy', size = 64, className }: MascotProps) {
+  const { t } = useI18n()
   const eyes = () => {
     if (mood === 'cheer') {
       return (
@@ -46,7 +48,7 @@ export default function Mascot({ mood = 'happy', size = 64, className }: MascotP
       height={size}
       className={className}
       role="img"
-      aria-label="Asya, maskot Asharu Math"
+      aria-label={t('mascot.aria')}
     >
       <circle cx="32" cy="34" r="26" fill="#fcd34d" stroke="#f59e0b" strokeWidth="3" />
       <path d="M10 28q6-14 22-14t22 14" fill="#fde68a" stroke="none" />

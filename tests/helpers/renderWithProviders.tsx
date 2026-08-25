@@ -1,5 +1,6 @@
 import { render } from '@testing-library/react'
 import type { ReactElement } from 'react'
+import { LanguageProvider } from '../../src/i18n/LanguageContext'
 import { NavigationProvider, useNavigation } from '../../src/state/NavigationContext'
 import { ProgressProvider } from '../../src/state/ProgressContext'
 
@@ -14,13 +15,21 @@ function ScreenProbe() {
   )
 }
 
-export function renderScreenWithProviders(ui: ReactElement) {
-  return render(
+export function AllProviders({ children }: { children: ReactElement | ReactElement[] }) {
+  return (
     <NavigationProvider>
       <ProgressProvider>
-        {ui}
-        <ScreenProbe />
+        <LanguageProvider>{children}</LanguageProvider>
       </ProgressProvider>
-    </NavigationProvider>,
+    </NavigationProvider>
+  )
+}
+
+export function renderScreenWithProviders(ui: ReactElement) {
+  return render(
+    <AllProviders>
+      {ui}
+      <ScreenProbe />
+    </AllProviders>,
   )
 }

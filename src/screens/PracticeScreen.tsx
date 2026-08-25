@@ -5,6 +5,7 @@ import ProgressBar from '../components/guide/ProgressBar'
 import MascotBubble from '../components/layout/MascotBubble'
 import NumericKeypad from '../components/input/NumericKeypad'
 import VerticalMathProblem from '../components/math/VerticalMathProblem'
+import { useI18n } from '../i18n/LanguageContext'
 import { buildProblem, generateSession } from '../lib/problemGenerator'
 import { starsFor } from '../lib/scoring'
 import { playCorrect, playWrong } from '../lib/sound'
@@ -25,8 +26,6 @@ import type {
   OperationType,
   SessionSummary,
 } from '../types'
-
-const PRAISES = ['Benar! Hebat!', 'Bagus sekali!', 'Kamu berhasil!', 'Luar biasa!']
 
 interface ProblemResult {
   problem: MathProblem
@@ -112,11 +111,12 @@ export interface PracticeScreenProps {
 export default function PracticeScreen({ settings: initialSettings }: PracticeScreenProps) {
   const { navigate } = useNavigation()
   const { recordAnswer } = useProgress()
+  const { t } = useI18n()
 
   const [phase, setPhase] = useState<'setup' | 'solving'>(initialSettings ? 'solving' : 'setup')
   const [session, setSession] = useState<SessionState | null>(() =>
     initialSettings
-      ? startSession(generateSession(initialSettings), initialSettings, 'Latihan Soal')
+      ? startSession(generateSession(initialSettings), initialSettings, t('practice.sessionTitle'))
       : null,
   )
 
@@ -150,7 +150,7 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
       carryMode: formCarry,
       questionCount: formCount,
     }
-    setSession(startSession(generateSession(settings), settings, 'Latihan Soal'))
+    setSession(startSession(generateSession(settings), settings, t('practice.sessionTitle')))
     setPhase('solving')
   }
 
@@ -177,7 +177,7 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
     }
     setCustomError(null)
     const problem = buildProblem(customOperation, first, second)
-    setSession(startSession([problem], null, 'Soal Buatan Sendiri'))
+    setSession(startSession([problem], null, t('practice.customSessionTitle')))
     setPhase('solving')
   }
 
@@ -228,7 +228,7 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
         wrongCols: [],
         attempts: 0,
         wrongInProblem: 0,
-        feedback: { kind: 'info', text: 'Bagus! Lanjut ke soal berikutnya!' },
+        feedback: { kind: 'info', text: t('feedback.nextProblem') },
         hint: null,
         offerHelp: false,
         locked: false,
@@ -246,7 +246,13 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
     const result = checkAnswerDigits(problem, session.given)
     if (result.allCorrect) {
       playCorrect()
-      const praise = PRAISES[Math.floor(Math.random() * PRAISES.length)]
+      const praises = [
+        t('practice.praise1'),
+        t('practice.praise2'),
+        t('practice.praise3'),
+        t('practice.praise4'),
+      ]
+      const praise = praises[Math.floor(Math.random() * praises.length)]
       updateSession({
         locked: true,
         feedback: { kind: 'correct', text: praise },
@@ -264,8 +270,8 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
       attempts,
       wrongCols: result.wrongColumnIndexes,
       wrongInProblem: session.wrongInProblem + 1,
-      feedback: { kind: 'wrong', text: 'Belum tepat. Lihat petunjuk di bawah ya.' },
-      hint: getHint(problem, attempts, result.wrongColumnIndexes),
+      feedback: { kind: 'wrong', text: t('feedback.wrongPractice') },
+      hint: getHint(problem, attempts, result.wrongColumnIndexes, t),
       offerHelp: shouldOfferGuidedMode(attempts),
     })
     timeoutRef.current = window.setTimeout(() => updateSession({ locked: false }), 700)
@@ -326,52 +332,49 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
   if (phase === 'setup' || !session || !problem) {
     return (
       <div className="space-y-5">
-        <MascotBubble
-          text="Mau latihan apa hari ini? Pilih jenis soalnya, atau buat soalmu sendiri!"
-          mood="happy"
-        />
+        <MascotBubble text={t('practice.bubble')} mood="happy" />
 
         <section className="space-y-4 rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm md:p-5">
-          <h2 className="text-base font-black text-slate-800">Pengaturan Latihan</h2>
+          <h2 className="text-base font-black text-slate-800">{t('practice.configTitle')}</h2>
           <OptionGroup
-            label="Jenis soal"
+            label={t('practice.operationLabel')}
             value={formOperation}
             onChange={setFormOperation}
             options={[
-              { value: 'addition', label: 'Penjumlahan saja' },
-              { value: 'subtraction', label: 'Pengurangan saja' },
-              { value: 'mixed', label: 'Campuran' },
+              { value: 'addition', label: t('practice.op.addition') },
+              { value: 'subtraction', label: t('practice.op.subtraction') },
+              { value: 'mixed', label: t('practice.op.mixed') },
             ]}
           />
           <OptionGroup
-            label="Jumlah digit"
+            label={t('practice.digitsLabel')}
             value={formDigits}
             onChange={setFormDigits}
             options={[
-              { value: 2, label: '2 digit' },
-              { value: 3, label: '3 digit' },
-              { value: 4, label: '4 digit' },
+              { value: 2, label: t('practice.digitOption', { n: 2 }) },
+              { value: 3, label: t('practice.digitOption', { n: 3 }) },
+              { value: 4, label: t('practice.digitOption', { n: 4 }) },
             ]}
           />
           <OptionGroup
-            label="Jumlah soal"
+            label={t('practice.countLabel')}
             value={formCount}
             onChange={setFormCount}
             options={[
-              { value: 5, label: '5 soal' },
-              { value: 10, label: '10 soal' },
-              { value: 15, label: '15 soal' },
-              { value: 20, label: '20 soal' },
+              { value: 5, label: t('practice.countOption', { n: 5 }) },
+              { value: 10, label: t('practice.countOption', { n: 10 }) },
+              { value: 15, label: t('practice.countOption', { n: 15 }) },
+              { value: 20, label: t('practice.countOption', { n: 20 }) },
             ]}
           />
           <OptionGroup
-            label="Kesulitan"
+            label={t('practice.carryLabel')}
             value={formCarry}
             onChange={setFormCarry}
             options={[
-              { value: 'none', label: 'Tanpa menyimpan / meminjam' },
-              { value: 'required', label: 'Dengan menyimpan / meminjam' },
-              { value: 'any', label: 'Campuran' },
+              { value: 'none', label: t('practice.carry.none') },
+              { value: 'required', label: t('practice.carry.required') },
+              { value: 'any', label: t('practice.carry.any') },
             ]}
           />
           <button
@@ -379,18 +382,16 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
             onClick={startConfigured}
             className="min-h-12 w-full rounded-2xl border-b-4 border-sky-600 bg-sky-500 text-base font-black text-white hover:bg-sky-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
           >
-            Mulai Latihan
+            {t('practice.start')}
           </button>
         </section>
 
         <section className="space-y-4 rounded-3xl border-2 border-amber-200 bg-amber-50 p-4 shadow-sm md:p-5">
-          <h2 className="text-base font-black text-amber-900">Buat Soal Sendiri ✏️</h2>
-          <p className="text-sm font-semibold text-amber-800">
-            Ketik dua angka (maksimal 4 digit), lalu kerjakan bersusun di sini!
-          </p>
+          <h2 className="text-base font-black text-amber-900">{t('practice.customTitle')}</h2>
+          <p className="text-sm font-semibold text-amber-800">{t('practice.customDesc')}</p>
           <div className="flex flex-wrap items-end gap-3">
             <label className="flex flex-col gap-1 text-xs font-bold text-amber-900">
-              Angka atas
+              {t('practice.topNumber')}
               <input
                 value={customFirst}
                 onChange={(event) =>
@@ -400,12 +401,12 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
                 pattern="[0-9]*"
                 maxLength={4}
                 placeholder="26"
-                aria-label="Angka atas untuk soal buatan sendiri"
+                aria-label={t('practice.topAria')}
                 className="h-12 w-24 rounded-xl border-2 border-amber-300 bg-white px-3 text-xl font-extrabold tabular-nums text-slate-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200"
               />
             </label>
             <label className="flex flex-col gap-1 text-xs font-bold text-amber-900">
-              Angka bawah
+              {t('practice.bottomNumber')}
               <input
                 value={customSecond}
                 onChange={(event) =>
@@ -415,15 +416,15 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
                 pattern="[0-9]*"
                 maxLength={4}
                 placeholder="87"
-                aria-label="Angka bawah untuk soal buatan sendiri"
+                aria-label={t('practice.bottomAria')}
                 className="h-12 w-24 rounded-xl border-2 border-amber-300 bg-white px-3 text-xl font-extrabold tabular-nums text-slate-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200"
               />
             </label>
-            <div className="flex gap-2" role="group" aria-label="Pilih operasi">
+            <div className="flex gap-2" role="group" aria-label={t('practice.groupAria')}>
               {(
                 [
-                  { value: 'addition', label: '+ Tambah' },
-                  { value: 'subtraction', label: '− Kurang' },
+                  { value: 'addition', label: t('practice.addBtn') },
+                  { value: 'subtraction', label: t('practice.subBtn') },
                 ] as const
               ).map((option) => (
                 <button
@@ -452,7 +453,7 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
             onClick={startCustom}
             className="min-h-12 w-full rounded-2xl border-b-4 border-amber-500 bg-amber-400 text-base font-black text-amber-950 hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200"
           >
-            Kerjakan Soal Ini
+            {t('practice.doIt')}
           </button>
         </section>
       </div>
@@ -465,11 +466,14 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
 
   return (
     <div className="solve-split">
-      <section aria-label="Progres latihan" className="solve-progress space-y-1.5">
+      <section aria-label={t('practice.progressAria')} className="solve-progress space-y-1.5">
         <div className="flex items-baseline justify-between">
           <h1 className="text-base font-black text-slate-800 md:text-lg">{session.title}</h1>
           <p className="text-xs font-bold text-slate-500">
-            Soal {session.index + 1} dari {session.problems.length}
+            {t('learn.questionOf', {
+              current: session.index + 1,
+              total: session.problems.length,
+            })}
           </p>
         </div>
         <ProgressBar value={session.index / session.problems.length} label={`Progres latihan`} />
@@ -491,23 +495,21 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
 
         {session.offerHelp && (
           <div className="animate-rise rounded-3xl border-2 border-violet-200 bg-violet-50 p-4">
-            <p className="text-sm font-bold text-violet-800">
-              Mau belajar soal ini langkah demi langkah bersama Asya?
-            </p>
+            <p className="text-sm font-bold text-violet-800">{t('practice.offerGuided')}</p>
             <div className="mt-3 flex gap-2">
               <button
                 type="button"
                 onClick={switchToGuided}
                 className="min-h-11 flex-1 rounded-2xl border-b-4 border-violet-600 bg-violet-500 text-sm font-bold text-white hover:bg-violet-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300"
               >
-                Ya, ayo belajar!
+                {t('practice.guidedYes')}
               </button>
               <button
                 type="button"
                 onClick={() => updateSession({ offerHelp: false })}
                 className="min-h-11 flex-1 rounded-2xl border-2 border-violet-200 bg-white text-sm font-bold text-violet-700 hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300"
               >
-                Lanjut coba sendiri
+                {t('practice.guidedNo')}
               </button>
             </div>
           </div>
@@ -522,11 +524,9 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
           onBackspace={handleBackspace}
           onCheck={handleCheck}
           checkDisabled={checkDisabled}
-          checkLabel="Periksa"
+          checkLabel={t('keypad.checkDefault')}
         />
-        <p className="text-center text-xs font-bold text-slate-400">
-          Ketuk kotak jawaban untuk memilih kolom. Isi dari kanan (satuan) dulu ya!
-        </p>
+        <p className="text-center text-xs font-bold text-slate-400">{t('practice.hintFooter')}</p>
       </div>
     </div>
   )

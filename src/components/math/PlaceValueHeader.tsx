@@ -1,4 +1,4 @@
-import { PLACE_LABELS, PLACE_SHORT_LABELS } from '../../lib/placeValue'
+import { usePlaceLabels } from '../../i18n/places'
 import type { PlaceValue } from '../../types'
 
 interface PlaceValueHeaderProps {
@@ -11,17 +11,18 @@ interface PlaceValueHeaderProps {
  * legenda/penjelasan nilai tempat di luar grid).
  */
 export default function PlaceValueHeader({ places }: PlaceValueHeaderProps) {
+  const { long: longPlace, short: shortPlace } = usePlaceLabels()
   return (
     <div className="flex flex-wrap items-center justify-center gap-2 text-xs font-bold text-slate-500">
       {places.map((item) => (
         <span
           key={item.place}
-          title={PLACE_LABELS[item.place]}
+          title={longPlace(item.place)}
           className={`rounded-full px-2 py-1 ${
             item.used ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-300'
           }`}
         >
-          {PLACE_SHORT_LABELS[item.place]} = {PLACE_LABELS[item.place]}
+          {shortPlace(item.place)} = {longPlace(item.place)}
         </span>
       ))}
     </div>

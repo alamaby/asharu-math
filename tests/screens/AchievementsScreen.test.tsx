@@ -17,7 +17,7 @@ describe('AchievementsScreen', () => {
   it('seluruh definisi pencapaian tampil sebagai kartu', () => {
     renderScreenWithProviders(<AchievementsScreen />)
     for (const achievement of ACHIEVEMENTS) {
-      expect(screen.getAllByText(achievement.name).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(achievement.name.id).length).toBeGreaterThan(0)
     }
   })
 })
