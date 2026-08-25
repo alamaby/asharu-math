@@ -21,7 +21,7 @@ Laporan: level selesai dikerjakan, anak pulang tanpa klik "Level Berikutnya", le
 - Out of scope (dicatat): resume sesi half-done; replay sesi saat header-back dari Result ke Learn (LearnScreen remount fresh).
 
 ## Blockers / Unresolved
-- Belum di-commit (menunggu instruksi user).
+- Tidak ada. Commit `d773534` sudah dipush ke `origin/main`.
 
 ## Verification Performed
 - format ✅ · lint ✅ · typecheck ✅ · **152/152 test (21 file)** ✅ · build ✅

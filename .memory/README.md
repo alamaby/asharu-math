@@ -6,7 +6,7 @@ Format Version: 1
 ## Current State
 - Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage.
 - Kualitas: ESLint 9 + Prettier aktif; 152 test / 21 file lulus; CI GitHub Actions Node 20 & 22.
-- Fix terbaru: sesi belajar auto-selesai dari langkah review + dialog konfirmasi keluar mid-session (belum di-commit).
+- Fix terbaru: sesi belajar auto-selesai dari langkah review + dialog konfirmasi keluar mid-session (commit `d773534`, sudah push).
 
 ## Active Decisions
 - Susunan angka soal: operand disimpan sebagai string asli tanpa `reverse()`; perhitungan carry/borrow kanan-ke-kiri terpisah dari jalur tampilan (aturan kritis, jangan dilanggar).
@@ -17,8 +17,8 @@ Format Version: 1
 - PWA/offline (`vite-plugin-pwa`) dan coverage report ditunda menunggu keputusan eksplisit.
 
 ## Open Items / Blockers
-- Fix level-completion belum di-commit.
 - Coverage report (`@vitest/coverage-v8`) belum dipasang (opsional).
+- Out of scope tercatat: resume sesi half-done; replay sesi saat header-back dari Result ke Learn.
 
 ## Recent Entries
 - [2026-08-25 12:12:57 — Fix level completion review dead-end](2026-08-25/121257-fix-level-completion-review-dead-end.md)
