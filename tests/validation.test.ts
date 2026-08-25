@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { buildProblem } from '../src/lib/problemGenerator'
-import { checkAnswerDigits, getHint, requiredAnswerColumnIndexes, shouldOfferGuidedMode } from '../src/lib/validation'
+import {
+  checkAnswerDigits,
+  getHint,
+  requiredAnswerColumnIndexes,
+  shouldOfferGuidedMode,
+} from '../src/lib/validation'
 
 const problem2687 = buildProblem('addition', 26, 87)
 const problem5228 = buildProblem('subtraction', 52, 28)

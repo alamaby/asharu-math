@@ -30,7 +30,12 @@ function gridColumnOf(width: number, indexFromRight: number): number {
   return width - 1 - indexFromRight
 }
 
-function buildAdditionSteps(first: number, second: number, width: number, resultText: string): LearningStep[] {
+function buildAdditionSteps(
+  first: number,
+  second: number,
+  width: number,
+  resultText: string,
+): LearningStep[] {
   const plan = planAddition(first, second)
   const steps: LearningStep[] = [
     {
@@ -110,11 +115,19 @@ function buildAdditionSteps(first: number, second: number, width: number, result
  * Rantai berhenti di kolom pertama yang bisa memberi pinjaman; kolom
  * bernilai 0 yang dilewati menampilkan 0 → 9.
  */
-function buildBorrowChanges(plan: SubtractionPlan, indexFromRight: number, width: number): BorrowChange[] {
+function buildBorrowChanges(
+  plan: SubtractionPlan,
+  indexFromRight: number,
+  width: number,
+): BorrowChange[] {
   const changes: BorrowChange[] = []
   const current = plan.columns[indexFromRight]
   const currentEffective = current.topOriginal - (current.lentToRight ? 1 : 0)
-  changes.push({ columnIndex: gridColumnOf(width, indexFromRight), before: currentEffective, after: current.topAfter })
+  changes.push({
+    columnIndex: gridColumnOf(width, indexFromRight),
+    before: currentEffective,
+    after: current.topAfter,
+  })
 
   let j = indexFromRight + 1
   while (j < plan.columns.length && plan.columns[j].topOriginal === 0) {
@@ -132,7 +145,12 @@ function buildBorrowChanges(plan: SubtractionPlan, indexFromRight: number, width
   return changes
 }
 
-function buildSubtractionSteps(first: number, second: number, width: number, resultText: string): LearningStep[] {
+function buildSubtractionSteps(
+  first: number,
+  second: number,
+  width: number,
+  resultText: string,
+): LearningStep[] {
   const plan = planSubtraction(first, second)
   const steps: LearningStep[] = [
     {

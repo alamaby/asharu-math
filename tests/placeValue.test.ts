@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { buildColumns, joinDigits, padToWidth, placeForColumnIndex, problemWidth } from '../src/lib/placeValue'
+import {
+  buildColumns,
+  joinDigits,
+  padToWidth,
+  placeForColumnIndex,
+  problemWidth,
+} from '../src/lib/placeValue'
 
 describe('placeForColumnIndex', () => {
   it('memetakan kolom ke nilai tempat dengan benar', () => {

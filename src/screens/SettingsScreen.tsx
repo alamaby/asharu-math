@@ -3,7 +3,12 @@ import ChildNameForm from '../components/common/ChildNameForm'
 import ConfirmDialog from '../components/common/ConfirmDialog'
 import { useProgress } from '../state/ProgressContext'
 
-function Toggle(props: { checked: boolean; onChange: (value: boolean) => void; label: string; description: string }) {
+function Toggle(props: {
+  checked: boolean
+  onChange: (value: boolean) => void
+  label: string
+  description: string
+}) {
   const { checked, onChange, label, description } = props
   return (
     <button
@@ -37,10 +42,14 @@ export default function SettingsScreen() {
     <div className="space-y-4">
       <h1 className="pt-1 text-lg font-black text-slate-800">Pengaturan</h1>
 
-      <section aria-label="Nama anak" className="rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm">
+      <section
+        aria-label="Nama anak"
+        className="rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm"
+      >
         <h2 className="text-sm font-black text-slate-800">Nama Anak ✏️</h2>
         <p className="mt-1 text-xs font-semibold text-slate-500">
-          Nama panggilan dipakai untuk sapaan dan kartu pencapaian saat dibagikan. Tidak wajib diisi.
+          Nama panggilan dipakai untuk sapaan dan kartu pencapaian saat dibagikan. Tidak wajib
+          diisi.
         </p>
         <div className="mt-3">
           <ChildNameForm initialName={progress.childName} onSave={(name) => setChildName(name)} />
@@ -74,7 +83,8 @@ export default function SettingsScreen() {
       <section aria-label="Data" className="rounded-3xl border-2 border-rose-100 bg-rose-50 p-4">
         <h2 className="text-sm font-black text-rose-800">Hapus Progres</h2>
         <p className="mt-1 text-xs font-semibold text-rose-700">
-          Semua level, skor, dan pencapaian akan dihapus dari perangkat ini. Tindakan ini tidak bisa dibatalkan.
+          Semua level, skor, dan pencapaian akan dihapus dari perangkat ini. Tindakan ini tidak bisa
+          dibatalkan.
         </p>
         <button
           type="button"
@@ -86,8 +96,8 @@ export default function SettingsScreen() {
       </section>
 
       <p className="rounded-2xl bg-white p-4 text-xs font-semibold text-slate-500 shadow-sm">
-        🔒 Asharu Math menyimpan progres hanya di perangkat ini (localStorage) dan tidak mengumpulkan nama,
-        foto, maupun data pribadi anak lainnya.
+        🔒 Asharu Math menyimpan progres hanya di perangkat ini (localStorage) dan tidak
+        mengumpulkan nama, foto, maupun data pribadi anak lainnya.
       </p>
 
       <ConfirmDialog

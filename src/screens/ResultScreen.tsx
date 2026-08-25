@@ -22,7 +22,10 @@ export default function ResultScreen({ summary }: ResultScreenProps) {
       <section className="animate-pop-in flex flex-col items-center gap-2 rounded-3xl border-2 border-sky-100 bg-white p-6 text-center shadow-sm">
         <Mascot mood="cheer" size={80} className="animate-celebrate" />
         <h1 className="text-xl font-black text-slate-800">{summary.title} selesai! 🎉</h1>
-        <div className="text-4xl tracking-widest" aria-label={`Kamu mendapat ${summary.stars} dari 3 bintang`}>
+        <div
+          className="text-4xl tracking-widest"
+          aria-label={`Kamu mendapat ${summary.stars} dari 3 bintang`}
+        >
           {[1, 2, 3].map((position) => (
             <span
               key={position}

@@ -1,5 +1,7 @@
 # ⭐ Asharu Math
 
+[![CI](https://github.com/alamaby/asharu-math/actions/workflows/ci.yml/badge.svg)](https://github.com/alamaby/asharu-math/actions/workflows/ci.yml)
+
 Aplikasi web interaktif untuk membantu anak kelas 2 SD (usia 6–8 tahun) belajar
 **penjumlahan dan pengurangan bersusun pendek** dengan teknik menyimpan (carry) dan
 meminjam (borrow). Seluruh antarmuka menggunakan Bahasa Indonesia yang sederhana dan ramah anak.
@@ -18,13 +20,14 @@ meminjam (borrow). Seluruh antarmuka menggunakan Bahasa Indonesia yang sederhana
 
 ## 🧰 Tech Stack
 
-| Bagian | Teknologi |
-| --- | --- |
-| UI | React 18 + TypeScript (strict) |
-| Build | Vite 6 |
-| Styling | Tailwind CSS v4 |
-| Unit test | Vitest + @testing-library/react + jsdom |
-| Penyimpanan | localStorage (terversi + validasi + fallback) |
+| Bagian      | Teknologi                                                            |
+| ----------- | -------------------------------------------------------------------- |
+| UI          | React 18 + TypeScript (strict)                                       |
+| Build       | Vite 6                                                               |
+| Styling     | Tailwind CSS v4                                                      |
+| Unit test   | Vitest + @testing-library/react + jsdom                              |
+| Kualitas    | ESLint 9 (flat config) + Prettier + CI GitHub Actions (Node 20 & 22) |
+| Penyimpanan | localStorage (terversi + validasi + fallback)                        |
 
 Tidak ada backend, tidak ada API berbayar, tidak ada environment variable.
 
@@ -50,6 +53,19 @@ Buka URL yang tertera (biasanya http://localhost:5173).
 npm test        # sekali jalan
 npm run test:watch   # mode pantau
 ```
+
+## 🔍 Kualitas Kode
+
+```bash
+npm run lint          # ESLint atas seluruh repo
+npm run lint:fix      # ESLint dengan perbaikan otomatis
+npm run format        # Prettier tulis ulang format
+npm run format:check  # Prettier cek tanpa menulis
+npm run typecheck     # tsc --noEmit
+```
+
+CI GitHub Actions (`.github/workflows/ci.yml`) menjalankan `format:check → lint → typecheck → test → build`
+pada setiap push ke `main` dan setiap pull request, dengan matrix Node.js 20 dan 22.
 
 ## 🏗️ Production Build
 

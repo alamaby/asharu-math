@@ -49,7 +49,10 @@ export default function AnswerCell({
   return (
     <div className="relative flex justify-center">
       {active && (
-        <span aria-hidden="true" className="motion-safe:animate-bounce absolute -top-5 text-lg text-sky-500">
+        <span
+          aria-hidden="true"
+          className="motion-safe:animate-bounce absolute -top-5 text-lg text-sky-500"
+        >
           ▾
         </span>
       )}

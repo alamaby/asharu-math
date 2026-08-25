@@ -30,7 +30,10 @@ export function buildProblem(operation: OperationType, first: number, second: nu
     throw new Error(`Hasil penjumlahan melebihi 9999: ${first} + ${second}`)
   }
 
-  const result = operation === 'addition' ? planAddition(first, second).result : planSubtraction(first, second).result
+  const result =
+    operation === 'addition'
+      ? planAddition(first, second).result
+      : planSubtraction(first, second).result
   const firstText = String(first)
   const secondText = String(second)
   const resultText = String(result)
@@ -188,7 +191,10 @@ function sameAsPrevious(
   )
 }
 
-export function generateProblem(settings: GeneratorSettings, previous: MathProblem | null = null): MathProblem {
+export function generateProblem(
+  settings: GeneratorSettings,
+  previous: MathProblem | null = null,
+): MathProblem {
   for (let attempt = 0; attempt < 50; attempt++) {
     const operation = pickOperation(settings)
     const [first, second] =

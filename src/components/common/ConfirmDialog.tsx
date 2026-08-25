@@ -54,7 +54,9 @@ export default function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             className={`min-h-11 flex-1 rounded-2xl border-b-4 px-4 font-bold text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 ${
-              danger ? 'border-rose-700 bg-rose-500 hover:bg-rose-400' : 'border-sky-600 bg-sky-500 hover:bg-sky-400'
+              danger
+                ? 'border-rose-700 bg-rose-500 hover:bg-rose-400'
+                : 'border-sky-600 bg-sky-500 hover:bg-sky-400'
             }`}
           >
             {confirmLabel}

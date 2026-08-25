@@ -65,7 +65,9 @@ export default function ChildNameForm({ initialName, onSave, onSkip }: ChildName
           </button>
         )}
       </div>
-      <p className="text-xs font-semibold text-slate-400">Nama hanya tersimpan di perangkat ini ya.</p>
+      <p className="text-xs font-semibold text-slate-400">
+        Nama hanya tersimpan di perangkat ini ya.
+      </p>
     </form>
   )
 }

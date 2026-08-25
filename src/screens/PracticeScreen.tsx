@@ -8,7 +8,12 @@ import VerticalMathProblem from '../components/math/VerticalMathProblem'
 import { buildProblem, generateSession } from '../lib/problemGenerator'
 import { starsFor } from '../lib/scoring'
 import { playCorrect, playWrong } from '../lib/sound'
-import { checkAnswerDigits, getHint, requiredAnswerColumnIndexes, shouldOfferGuidedMode } from '../lib/validation'
+import {
+  checkAnswerDigits,
+  getHint,
+  requiredAnswerColumnIndexes,
+  shouldOfferGuidedMode,
+} from '../lib/validation'
 import { useNavigation } from '../state/NavigationContext'
 import { useProgress } from '../state/ProgressContext'
 import type {
@@ -45,7 +50,11 @@ interface SessionState {
   results: ProblemResult[]
 }
 
-function startSession(problems: MathProblem[], settings: GeneratorSettings | null, title: string): SessionState {
+function startSession(
+  problems: MathProblem[],
+  settings: GeneratorSettings | null,
+  title: string,
+): SessionState {
   const required = requiredAnswerColumnIndexes(problems[0])
   return {
     problems,
@@ -106,7 +115,9 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
 
   const [phase, setPhase] = useState<'setup' | 'solving'>(initialSettings ? 'solving' : 'setup')
   const [session, setSession] = useState<SessionState | null>(() =>
-    initialSettings ? startSession(generateSession(initialSettings), initialSettings, 'Latihan Soal') : null,
+    initialSettings
+      ? startSession(generateSession(initialSettings), initialSettings, 'Latihan Soal')
+      : null,
   )
 
   const [formOperation, setFormOperation] = useState<OperationChoice>('addition')
@@ -155,7 +166,9 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
       return
     }
     if (customOperation === 'subtraction' && first < second) {
-      setCustomError('Untuk pengurangan, angka atas harus lebih besar atau sama dengan angka bawah.')
+      setCustomError(
+        'Untuk pengurangan, angka atas harus lebih besar atau sama dengan angka bawah.',
+      )
       return
     }
     if (customOperation === 'addition' && first + second > 9999) {
@@ -177,7 +190,9 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
     const newAchievementIds: string[] = []
     for (const result of finished.results) {
       newAchievementIds.push(
-        ...recordAnswer({ problem: result.problem, wrongAttempts: result.wrongAttempts }).map((a) => a.id),
+        ...recordAnswer({ problem: result.problem, wrongAttempts: result.wrongAttempts }).map(
+          (a) => a.id,
+        ),
       )
     }
     const summary: SessionSummary = {
@@ -196,7 +211,10 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
   }
 
   const finishProblem = (current: SessionState) => {
-    const results = [...current.results, { problem: current.problems[current.index], wrongAttempts: current.wrongInProblem }]
+    const results = [
+      ...current.results,
+      { problem: current.problems[current.index], wrongAttempts: current.wrongInProblem },
+    ]
     if (current.index + 1 < current.problems.length) {
       const nextProblem = current.problems[current.index + 1]
       const width = nextProblem.columns.length
@@ -229,7 +247,12 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
     if (result.allCorrect) {
       playCorrect()
       const praise = PRAISES[Math.floor(Math.random() * PRAISES.length)]
-      updateSession({ locked: true, feedback: { kind: 'correct', text: praise }, hint: null, wrongCols: [] })
+      updateSession({
+        locked: true,
+        feedback: { kind: 'correct', text: praise },
+        hint: null,
+        wrongCols: [],
+      })
       const snapshot = session
       timeoutRef.current = window.setTimeout(() => finishProblem(snapshot), 1000)
       return
@@ -291,13 +314,22 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
       recovered: session.results.filter((r) => r.wrongAttempts > 0).length,
       totalDone: session.results.length,
     }
-    navigate({ name: 'learn', levelId: null, problems: remaining, initialStats, title: session.title })
+    navigate({
+      name: 'learn',
+      levelId: null,
+      problems: remaining,
+      initialStats,
+      title: session.title,
+    })
   }
 
   if (phase === 'setup' || !session || !problem) {
     return (
       <div className="space-y-5">
-        <MascotBubble text="Mau latihan apa hari ini? Pilih jenis soalnya, atau buat soalmu sendiri!" mood="happy" />
+        <MascotBubble
+          text="Mau latihan apa hari ini? Pilih jenis soalnya, atau buat soalmu sendiri!"
+          mood="happy"
+        />
 
         <section className="space-y-4 rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm md:p-5">
           <h2 className="text-base font-black text-slate-800">Pengaturan Latihan</h2>
@@ -361,7 +393,9 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
               Angka atas
               <input
                 value={customFirst}
-                onChange={(event) => setCustomFirst(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
+                onChange={(event) =>
+                  setCustomFirst(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))
+                }
                 inputMode="numeric"
                 pattern="[0-9]*"
                 maxLength={4}
@@ -374,7 +408,9 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
               Angka bawah
               <input
                 value={customSecond}
-                onChange={(event) => setCustomSecond(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
+                onChange={(event) =>
+                  setCustomSecond(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))
+                }
                 inputMode="numeric"
                 pattern="[0-9]*"
                 maxLength={4}

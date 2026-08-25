@@ -12,7 +12,11 @@ function StarRow({ count }: { count: number }) {
   return (
     <span aria-label={`${count} dari 3 bintang`} className="text-sm tracking-tight">
       {[1, 2, 3].map((position) => (
-        <span key={position} aria-hidden="true" className={position <= count ? 'text-amber-400' : 'text-slate-300'}>
+        <span
+          key={position}
+          aria-hidden="true"
+          className={position <= count ? 'text-amber-400' : 'text-slate-300'}
+        >
           ★
         </span>
       ))}
@@ -40,14 +44,20 @@ export default function LevelCard({ level, unlocked, completed, stars, onStart }
           <h3 className={`text-base font-black ${unlocked ? 'text-slate-800' : 'text-slate-500'}`}>
             {level.number ? `Level ${level.number}` : 'Tantangan'}: {level.name}
           </h3>
-          <p className={`mt-0.5 text-sm font-semibold ${unlocked ? 'text-slate-600' : 'text-slate-400'}`}>
+          <p
+            className={`mt-0.5 text-sm font-semibold ${unlocked ? 'text-slate-600' : 'text-slate-400'}`}
+          >
             {level.goal}
           </p>
           <p className="mt-1 text-xs font-bold text-slate-400">
             Contoh: {level.example} · {level.questionCount} soal
           </p>
           <div className="mt-2 flex items-center justify-between gap-2">
-            {completed ? <StarRow count={stars} /> : <span className="text-xs font-bold text-slate-400">Belum selesai</span>}
+            {completed ? (
+              <StarRow count={stars} />
+            ) : (
+              <span className="text-xs font-bold text-slate-400">Belum selesai</span>
+            )}
             {unlocked ? (
               <button
                 type="button"
@@ -57,7 +67,9 @@ export default function LevelCard({ level, unlocked, completed, stars, onStart }
                 {completed ? 'Mengulang' : 'Mulai'}
               </button>
             ) : (
-              <span className="text-xs font-bold text-slate-400">Selesaikan level sebelumnya dulu ya</span>
+              <span className="text-xs font-bold text-slate-400">
+                Selesaikan level sebelumnya dulu ya
+              </span>
             )}
           </div>
         </div>

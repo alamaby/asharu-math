@@ -28,7 +28,9 @@ function ScreenRouter() {
         />
       )
     case 'practice':
-      return <PracticeScreen key={JSON.stringify(screen.settings ?? null)} settings={screen.settings} />
+      return (
+        <PracticeScreen key={JSON.stringify(screen.settings ?? null)} settings={screen.settings} />
+      )
     case 'result':
       return <ResultScreen summary={screen.summary} />
     case 'achievements':
@@ -41,7 +43,9 @@ function ScreenRouter() {
 function AppShell() {
   const { progress } = useProgress()
   return (
-    <div className={`flex min-h-dvh flex-col bg-sky-50 ${progress.animationsEnabled ? '' : 'no-anim'}`}>
+    <div
+      className={`flex min-h-dvh flex-col bg-sky-50 ${progress.animationsEnabled ? '' : 'no-anim'}`}
+    >
       <AppHeader />
       <main className="mx-auto w-full max-w-3xl flex-1 px-3 py-4 pb-28 md:px-4 md:pb-10">
         <ScreenRouter />

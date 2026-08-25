@@ -78,7 +78,11 @@ export default function NumericKeypad({
   }
 
   return (
-    <div role="group" aria-label="Keyboard angka" className="mx-auto grid w-full max-w-xs grid-cols-3 gap-2">
+    <div
+      role="group"
+      aria-label="Keyboard angka"
+      className="mx-auto grid w-full max-w-xs grid-cols-3 gap-2"
+    >
       {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
         <button
           key={digit}
@@ -104,7 +108,13 @@ export default function NumericKeypad({
         <BackspaceIcon />
         Hapus
       </button>
-      <button type="button" className={DIGIT_BUTTON_CLASS} onClick={() => handleDigit(0)} disabled={digitsDisabled} aria-label="Angka 0">
+      <button
+        type="button"
+        className={DIGIT_BUTTON_CLASS}
+        onClick={() => handleDigit(0)}
+        disabled={digitsDisabled}
+        aria-label="Angka 0"
+      >
         0
       </button>
       <button

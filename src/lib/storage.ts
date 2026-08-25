@@ -82,7 +82,11 @@ export function validateProgress(value: unknown): UserProgress | null {
   if (value.lastLevelId !== null && typeof value.lastLevelId !== 'string') return null
   if (value.lastActiveDate !== null && typeof value.lastActiveDate !== 'string') return null
   // childName bersifat opsional agar data lama tanpa field ini tetap valid
-  if (value.childName !== undefined && value.childName !== null && typeof value.childName !== 'string') {
+  if (
+    value.childName !== undefined &&
+    value.childName !== null &&
+    typeof value.childName !== 'string'
+  ) {
     return null
   }
 
@@ -124,7 +128,10 @@ export function loadProgress(storage: StorageLike | null = getStorage()): UserPr
   }
 }
 
-export function saveProgress(progress: UserProgress, storage: StorageLike | null = getStorage()): boolean {
+export function saveProgress(
+  progress: UserProgress,
+  storage: StorageLike | null = getStorage(),
+): boolean {
   if (!storage) return false
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify(progress))

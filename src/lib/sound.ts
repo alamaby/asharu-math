@@ -23,7 +23,13 @@ function ensureContext(): AudioContext | null {
   return audioContext
 }
 
-function tone(freq: number, startDelay: number, duration: number, type: ToneType = 'sine', volume = 0.12): void {
+function tone(
+  freq: number,
+  startDelay: number,
+  duration: number,
+  type: ToneType = 'sine',
+  volume = 0.12,
+): void {
   if (!soundEnabled) return
   const ctx = ensureContext()
   if (!ctx) return

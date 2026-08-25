@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { achievementShareText } from '../../lib/achievements'
 import { shareText } from '../../lib/share'
 import { generateAchievementImage } from '../../lib/shareImage'
-import { facebookShareUrl, telegramShareUrl, whatsappShareUrl, xShareUrl } from '../../lib/socialShare'
+import {
+  facebookShareUrl,
+  telegramShareUrl,
+  whatsappShareUrl,
+  xShareUrl,
+} from '../../lib/socialShare'
 import { copyText } from '../../lib/share'
 import type { AchievementDefinition } from '../../types'
 
@@ -30,13 +35,18 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
 
   const shareMessage = achievementShareText(achievement, childName)
 
+  /** Reset gambar lama sebelum membuka panel agar pratinjau selalu segar */
+  const openSharePanel = () => {
+    setImageBlob(null)
+    setImageUrl(null)
+    setOpen(true)
+  }
+
   useEffect(() => {
     if (!open) return
     closeRef.current?.focus()
     let revokeUrl: string | null = null
     let cancelled = false
-    setImageBlob(null)
-    setImageUrl(null)
     void generateAchievementImage({ achievement, childName, date: new Date() }).then((blob) => {
       if (cancelled) return
       if (blob) {
@@ -65,7 +75,10 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
       const navigatorWithShare = navigator as Navigator & {
         canShare?: (data: { files: File[] }) => boolean
       }
-      if (typeof navigatorWithShare.canShare === 'function' && navigatorWithShare.canShare({ files: [file] })) {
+      if (
+        typeof navigatorWithShare.canShare === 'function' &&
+        navigatorWithShare.canShare({ files: [file] })
+      ) {
         await navigatorWithShare.share({ files: [file], text: shareMessage })
         setMessage('Pencapaian berhasil dibagikan!')
       } else {
@@ -93,7 +106,9 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
 
   const handleCopy = async () => {
     const outcome = await copyText(shareMessage)
-    setMessage(outcome === 'copied' ? 'Teks pencapaian sudah disalin!' : 'Belum bisa menyalin sekarang.')
+    setMessage(
+      outcome === 'copied' ? 'Teks pencapaian sudah disalin!' : 'Belum bisa menyalin sekarang.',
+    )
   }
 
   const legacyShare = async () => {
@@ -113,7 +128,7 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
     <div className="mt-3">
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openSharePanel}
         className="min-h-11 rounded-2xl border-b-4 border-sky-600 bg-sky-500 px-4 text-sm font-bold text-white hover:bg-sky-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
       >
         🔗 Bagikan
@@ -179,16 +194,36 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
                 ⬇️ Unduh Gambar
               </button>
               <div className="grid grid-cols-2 gap-2">
-                <a href={whatsappShareUrl(shareMessage)} target="_blank" rel="noopener noreferrer" className={SOCIAL_BUTTON_CLASS}>
+                <a
+                  href={whatsappShareUrl(shareMessage)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={SOCIAL_BUTTON_CLASS}
+                >
                   💬 WhatsApp
                 </a>
-                <a href={facebookShareUrl()} target="_blank" rel="noopener noreferrer" className={SOCIAL_BUTTON_CLASS}>
+                <a
+                  href={facebookShareUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={SOCIAL_BUTTON_CLASS}
+                >
                   📘 Facebook
                 </a>
-                <a href={xShareUrl(shareMessage)} target="_blank" rel="noopener noreferrer" className={SOCIAL_BUTTON_CLASS}>
+                <a
+                  href={xShareUrl(shareMessage)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={SOCIAL_BUTTON_CLASS}
+                >
                   ✖️ X
                 </a>
-                <a href={telegramShareUrl(shareMessage)} target="_blank" rel="noopener noreferrer" className={SOCIAL_BUTTON_CLASS}>
+                <a
+                  href={telegramShareUrl(shareMessage)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={SOCIAL_BUTTON_CLASS}
+                >
                   ✈️ Telegram
                 </a>
               </div>
@@ -210,7 +245,11 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
             </div>
 
             {message && (
-              <p role="status" aria-live="polite" className="mt-3 text-center text-xs font-bold text-emerald-700">
+              <p
+                role="status"
+                aria-live="polite"
+                className="mt-3 text-center text-xs font-bold text-emerald-700"
+              >
                 {message}
               </p>
             )}

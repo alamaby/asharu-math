@@ -1,7 +1,7 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
-  --font-sans: "Nunito", ui-rounded, "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-sans: 'Nunito', ui-rounded, 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 :root {
@@ -36,11 +36,11 @@ body {
   display: grid;
   gap: 1rem;
   grid-template-areas:
-    "progress"
-    "problem"
-    "feedback"
-    "guide"
-    "side";
+    'progress'
+    'problem'
+    'feedback'
+    'guide'
+    'side';
 }
 .solve-split > .solve-progress {
   grid-area: progress;
@@ -60,10 +60,10 @@ body {
 @media (min-width: 760px) and (max-height: 900px) {
   .solve-split {
     grid-template-areas:
-      "progress progress"
-      "problem side"
-      "feedback feedback"
-      "guide guide";
+      'progress progress'
+      'problem side'
+      'feedback feedback'
+      'guide guide';
     grid-template-columns: minmax(0, 1fr) 17rem;
     align-items: center;
   }

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { buildProblem } from '../src/lib/problemGenerator'
-import { initState, learnReducer, type LearnAction, type LearnState } from '../src/screens/LearnScreen'
+import {
+  initState,
+  learnReducer,
+  type LearnAction,
+  type LearnState,
+} from '../src/screens/LearnScreen'
 import type { MathProblem } from '../src/types'
 
 const digit = (d: number): LearnAction => ({ type: 'digit', digit: d })

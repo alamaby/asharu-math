@@ -7,7 +7,12 @@ const RUNS = 300
 
 describe('generator penjumlahan', () => {
   it('mode tanpa menyimpan tidak pernah menghasilkan carry', () => {
-    const settings: GeneratorSettings = { operation: 'addition', digitCount: 2, carryMode: 'none', questionCount: 10 }
+    const settings: GeneratorSettings = {
+      operation: 'addition',
+      digitCount: 2,
+      carryMode: 'none',
+      questionCount: 10,
+    }
     for (let i = 0; i < RUNS; i++) {
       const problem = generateProblem(settings)
       expect(hasCarry(problem.firstOperand, problem.secondOperand)).toBe(false)
@@ -16,7 +21,12 @@ describe('generator penjumlahan', () => {
   })
 
   it('mode dengan menyimpan selalu menghasilkan minimal satu carry', () => {
-    const settings: GeneratorSettings = { operation: 'addition', digitCount: 2, carryMode: 'required', questionCount: 10 }
+    const settings: GeneratorSettings = {
+      operation: 'addition',
+      digitCount: 2,
+      carryMode: 'required',
+      questionCount: 10,
+    }
     for (let i = 0; i < RUNS; i++) {
       const problem = generateProblem(settings)
       expect(hasCarry(problem.firstOperand, problem.secondOperand)).toBe(true)
@@ -25,7 +35,12 @@ describe('generator penjumlahan', () => {
 
   it('digit sesuai pilihan dan tanpa leading zero', () => {
     for (const digitCount of [2, 3, 4] as const) {
-      const settings: GeneratorSettings = { operation: 'addition', digitCount, carryMode: 'any', questionCount: 10 }
+      const settings: GeneratorSettings = {
+        operation: 'addition',
+        digitCount,
+        carryMode: 'any',
+        questionCount: 10,
+      }
       for (let i = 0; i < 60; i++) {
         const problem = generateProblem(settings)
         expect(problem.firstOperandText).toHaveLength(digitCount)
@@ -39,7 +54,12 @@ describe('generator penjumlahan', () => {
 
 describe('generator pengurangan', () => {
   it('tidak pernah menghasilkan hasil negatif', () => {
-    const settings: GeneratorSettings = { operation: 'subtraction', digitCount: 3, carryMode: 'any', questionCount: 10 }
+    const settings: GeneratorSettings = {
+      operation: 'subtraction',
+      digitCount: 3,
+      carryMode: 'any',
+      questionCount: 10,
+    }
     for (let i = 0; i < RUNS; i++) {
       const problem = generateProblem(settings)
       expect(problem.firstOperand).toBeGreaterThanOrEqual(problem.secondOperand)
@@ -48,7 +68,12 @@ describe('generator pengurangan', () => {
   })
 
   it('mode tanpa meminjam tidak pernah menghasilkan borrow', () => {
-    const settings: GeneratorSettings = { operation: 'subtraction', digitCount: 2, carryMode: 'none', questionCount: 10 }
+    const settings: GeneratorSettings = {
+      operation: 'subtraction',
+      digitCount: 2,
+      carryMode: 'none',
+      questionCount: 10,
+    }
     for (let i = 0; i < RUNS; i++) {
       const problem = generateProblem(settings)
       expect(hasBorrow(problem.firstOperand, problem.secondOperand)).toBe(false)
@@ -57,7 +82,12 @@ describe('generator pengurangan', () => {
   })
 
   it('mode dengan meminjam selalu menghasilkan minimal satu borrow', () => {
-    const settings: GeneratorSettings = { operation: 'subtraction', digitCount: 2, carryMode: 'required', questionCount: 10 }
+    const settings: GeneratorSettings = {
+      operation: 'subtraction',
+      digitCount: 2,
+      carryMode: 'required',
+      questionCount: 10,
+    }
     for (let i = 0; i < RUNS; i++) {
       const problem = generateProblem(settings)
       expect(hasBorrow(problem.firstOperand, problem.secondOperand)).toBe(true)
@@ -67,7 +97,12 @@ describe('generator pengurangan', () => {
 
 describe('aturan umum generator', () => {
   it('tidak menghasilkan soal identik berturut-turut', () => {
-    const settings: GeneratorSettings = { operation: 'mixed', digitCount: 2, carryMode: 'any', questionCount: 30 }
+    const settings: GeneratorSettings = {
+      operation: 'mixed',
+      digitCount: 2,
+      carryMode: 'any',
+      questionCount: 30,
+    }
     const session = generateSession(settings)
     for (let i = 1; i < session.length; i++) {
       const prev = session[i - 1]
@@ -81,7 +116,12 @@ describe('aturan umum generator', () => {
   })
 
   it('jumlah soal sesuai konfigurasi', () => {
-    const settings: GeneratorSettings = { operation: 'mixed', digitCount: 3, carryMode: 'any', questionCount: 7 }
+    const settings: GeneratorSettings = {
+      operation: 'mixed',
+      digitCount: 3,
+      carryMode: 'any',
+      questionCount: 7,
+    }
     expect(generateSession(settings)).toHaveLength(7)
   })
 

@@ -1,6 +1,11 @@
 import type { DigitColumn, PlaceValue } from '../types'
 
-export const PLACES_LEFT_TO_RIGHT: readonly PlaceValue[] = ['thousands', 'hundreds', 'tens', 'units']
+export const PLACES_LEFT_TO_RIGHT: readonly PlaceValue[] = [
+  'thousands',
+  'hundreds',
+  'tens',
+  'units',
+]
 
 export const PLACE_LABELS: Record<PlaceValue, string> = {
   thousands: 'ribuan',
@@ -52,7 +57,11 @@ export function problemWidth(firstText: string, secondText: string, resultText: 
  * Memetakan digit ke kolom nilai tempat TANPA mengubah urutan angka asli.
  * Baris pertama selalu operand pertama, baris kedua operand kedua.
  */
-export function buildColumns(firstText: string, secondText: string, resultText: string): DigitColumn[] {
+export function buildColumns(
+  firstText: string,
+  secondText: string,
+  resultText: string,
+): DigitColumn[] {
   const width = problemWidth(firstText, secondText, resultText)
   const first = padToWidth(firstText, width)
   const second = padToWidth(secondText, width)

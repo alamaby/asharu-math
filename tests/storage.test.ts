@@ -62,7 +62,9 @@ describe('loadProgress — fallback data rusak', () => {
   })
 
   it('mengembalikan default saat struktur tidak sesuai', () => {
-    const progress = loadProgress(storageStub(JSON.stringify({ version: 1, totalCorrect: 'banyak' })))
+    const progress = loadProgress(
+      storageStub(JSON.stringify({ version: 1, totalCorrect: 'banyak' })),
+    )
     expect(progress).toEqual(defaultProgress())
   })
 })
@@ -94,15 +96,23 @@ describe('saveProgress dan loadProgress — roundtrip', () => {
   })
 
   it('childName dicoret spasi dan dibatasi 20 karakter', () => {
-    expect(validateProgress({ ...defaultProgress(), childName: '  Budi  ' })?.childName).toBe('Budi')
-    expect(validateProgress({ ...defaultProgress(), childName: 'a'.repeat(40) })?.childName).toHaveLength(20)
+    expect(validateProgress({ ...defaultProgress(), childName: '  Budi  ' })?.childName).toBe(
+      'Budi',
+    )
+    expect(
+      validateProgress({ ...defaultProgress(), childName: 'a'.repeat(40) })?.childName,
+    ).toHaveLength(20)
     expect(validateProgress({ ...defaultProgress(), childName: 123 })).toBeNull()
   })
 
   it('menyimpan lewat penyimpanan bawaan window', () => {
     const stub = storageStub(null)
     const descriptor = Object.getOwnPropertyDescriptor(window, 'localStorage')
-    Object.defineProperty(window, 'localStorage', { value: stub, configurable: true, writable: true })
+    Object.defineProperty(window, 'localStorage', {
+      value: stub,
+      configurable: true,
+      writable: true,
+    })
     try {
       const progress = { ...defaultProgress(), totalCorrect: 3 }
       expect(saveProgress(progress)).toBe(true)
@@ -126,7 +136,11 @@ describe('touchDayStreak', () => {
   }
 
   it('hari yang sama tidak menambah streak', () => {
-    const progress = { ...defaultProgress(), lastActiveDate: tanggalLokal(new Date()), dayStreak: 3 }
+    const progress = {
+      ...defaultProgress(),
+      lastActiveDate: tanggalLokal(new Date()),
+      dayStreak: 3,
+    }
     expect(touchDayStreak(progress).dayStreak).toBe(3)
   })
 

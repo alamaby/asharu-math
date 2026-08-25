@@ -33,8 +33,20 @@ export type LearningStep =
       expected: number
       instruction: string
     }
-  | { kind: 'answer-digit'; columnIndex: number; place: PlaceValue; expectedDigit: number; instruction: string }
-  | { kind: 'carry-digit'; columnIndex: number; place: PlaceValue; expectedDigit: number; instruction: string }
+  | {
+      kind: 'answer-digit'
+      columnIndex: number
+      place: PlaceValue
+      expectedDigit: number
+      instruction: string
+    }
+  | {
+      kind: 'carry-digit'
+      columnIndex: number
+      place: PlaceValue
+      expectedDigit: number
+      instruction: string
+    }
   | {
       kind: 'borrow-question'
       columnIndex: number
@@ -44,7 +56,13 @@ export type LearningStep =
       canSubtract: boolean
       instruction: string
     }
-  | { kind: 'borrow-explain'; columnIndex: number; place: PlaceValue; changes: BorrowChange[]; instruction: string }
+  | {
+      kind: 'borrow-explain'
+      columnIndex: number
+      place: PlaceValue
+      changes: BorrowChange[]
+      instruction: string
+    }
   | { kind: 'review'; instruction: string }
 
 export interface MathProblem {

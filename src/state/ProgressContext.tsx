@@ -111,7 +111,9 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
 
   const markLevelStarted = useCallback(
     (levelId: string) => {
-      update((current) => (current.lastLevelId === levelId ? current : { ...current, lastLevelId: levelId }))
+      update((current) =>
+        current.lastLevelId === levelId ? current : { ...current, lastLevelId: levelId },
+      )
     },
     [update],
   )
@@ -159,7 +161,15 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       setChildName,
       resetProgress,
     }),
-    [progress, recordAnswer, completeLevel, markLevelStarted, setPreferences, setChildName, resetProgress],
+    [
+      progress,
+      recordAnswer,
+      completeLevel,
+      markLevelStarted,
+      setPreferences,
+      setChildName,
+      resetProgress,
+    ],
   )
 
   return <ProgressContext.Provider value={value}>{children}</ProgressContext.Provider>

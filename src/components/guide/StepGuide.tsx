@@ -36,7 +36,10 @@ export default function StepGuide({
       {interim && (
         <div className="flex flex-col items-center gap-1">
           {interim.active && (
-            <span aria-hidden="true" className="motion-safe:animate-bounce text-lg leading-none text-sky-500">
+            <span
+              aria-hidden="true"
+              className="motion-safe:animate-bounce text-lg leading-none text-sky-500"
+            >
               ▾
             </span>
           )}

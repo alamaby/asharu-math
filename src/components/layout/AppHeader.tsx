@@ -58,7 +58,9 @@ export default function AppHeader() {
               onClick={() => goToTab(item.tab)}
               aria-current={currentTab === item.tab ? 'page' : undefined}
               className={`flex h-11 items-center gap-1 rounded-full px-3 text-sm font-bold ${
-                currentTab === item.tab ? 'bg-sky-100 text-sky-700' : 'text-slate-600 hover:bg-sky-50'
+                currentTab === item.tab
+                  ? 'bg-sky-100 text-sky-700'
+                  : 'text-slate-600 hover:bg-sky-50'
               } focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300`}
             >
               <span aria-hidden="true">{item.icon}</span>

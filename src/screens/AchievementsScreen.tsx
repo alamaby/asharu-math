@@ -9,7 +9,10 @@ export default function AchievementsScreen() {
 
   return (
     <div className="space-y-4">
-      <MascotBubble text={`Kamu sudah membuka ${unlockedCount} dari ${ACHIEVEMENTS.length} pencapaian. Ayo kumpulkan semuanya!`} mood="cheer" />
+      <MascotBubble
+        text={`Kamu sudah membuka ${unlockedCount} dari ${ACHIEVEMENTS.length} pencapaian. Ayo kumpulkan semuanya!`}
+        mood="cheer"
+      />
       <div className="space-y-3">
         {ACHIEVEMENTS.map((achievement) => (
           <AchievementCard

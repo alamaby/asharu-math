@@ -77,8 +77,18 @@ describe('planSubtraction', () => {
     expect(plan.result).toBe(999)
     expect(plan.borrowCount).toBe(3)
     expect(plan.columns[0]).toMatchObject({ topAfter: 10, resultDigit: 9 })
-    expect(plan.columns[1]).toMatchObject({ topAfter: 9, resultDigit: 9, lentToRight: true, borrowedFromLeft: true })
-    expect(plan.columns[2]).toMatchObject({ topAfter: 9, resultDigit: 9, lentToRight: true, borrowedFromLeft: true })
+    expect(plan.columns[1]).toMatchObject({
+      topAfter: 9,
+      resultDigit: 9,
+      lentToRight: true,
+      borrowedFromLeft: true,
+    })
+    expect(plan.columns[2]).toMatchObject({
+      topAfter: 9,
+      resultDigit: 9,
+      lentToRight: true,
+      borrowedFromLeft: true,
+    })
     expect(plan.columns[3]).toMatchObject({ topAfter: 0, resultDigit: 0, lentToRight: true })
   })
 

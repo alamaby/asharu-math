@@ -10,7 +10,10 @@ export interface AnswerCheckResult {
  * Memeriksa jawaban per kolom berdasarkan nilai tempat.
  * `given` diindeks dari kiri (0) sesuai grid tampilan.
  */
-export function checkAnswerDigits(problem: MathProblem, given: readonly (number | null)[]): AnswerCheckResult {
+export function checkAnswerDigits(
+  problem: MathProblem,
+  given: readonly (number | null)[],
+): AnswerCheckResult {
   const wrongColumnIndexes: number[] = []
   problem.columns.forEach((column) => {
     if (column.resultDigit === null) return
@@ -32,7 +35,11 @@ const GENERIC_HINTS = [
  * Petunjuk bertahap: umum → tunjuk kolom → penjelasan detail → tawarkan
  * mode belajar langkah demi langkah.
  */
-export function getHint(problem: MathProblem, attempt: number, wrongColumnIndexes: readonly number[]): string {
+export function getHint(
+  problem: MathProblem,
+  attempt: number,
+  wrongColumnIndexes: readonly number[],
+): string {
   if (attempt <= 1) {
     return GENERIC_HINTS[(attempt - 1 + GENERIC_HINTS.length) % GENERIC_HINTS.length]
   }
@@ -62,5 +69,7 @@ export function shouldOfferGuidedMode(attempt: number): boolean {
 
 /** Kolom grid yang harus diisi anak (kolom dengan digit hasil). */
 export function requiredAnswerColumnIndexes(problem: MathProblem): number[] {
-  return problem.columns.filter((column) => column.resultDigit !== null).map((column) => column.index)
+  return problem.columns
+    .filter((column) => column.resultDigit !== null)
+    .map((column) => column.index)
 }

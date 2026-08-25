@@ -15,7 +15,11 @@ function formatDate(iso: string): string {
   return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-export default function AchievementCard({ achievement, unlockedDate, childName }: AchievementCardProps) {
+export default function AchievementCard({
+  achievement,
+  unlockedDate,
+  childName,
+}: AchievementCardProps) {
   const unlocked = unlockedDate !== null
 
   return (
@@ -25,21 +29,22 @@ export default function AchievementCard({ achievement, unlockedDate, childName }
       }`}
     >
       <div className="flex items-start gap-3">
-        <span
-          aria-hidden="true"
-          className={`text-4xl ${unlocked ? '' : 'opacity-40 grayscale'}`}
-        >
+        <span aria-hidden="true" className={`text-4xl ${unlocked ? '' : 'opacity-40 grayscale'}`}>
           {achievement.icon}
         </span>
         <div className="flex-1">
           <h3 className={`text-base font-black ${unlocked ? 'text-amber-900' : 'text-slate-600'}`}>
             {achievement.name}
           </h3>
-          <p className={`mt-0.5 text-sm font-semibold ${unlocked ? 'text-amber-800' : 'text-slate-500'}`}>
+          <p
+            className={`mt-0.5 text-sm font-semibold ${unlocked ? 'text-amber-800' : 'text-slate-500'}`}
+          >
             {achievement.description}
           </p>
           {unlocked && (
-            <p className="mt-1 text-xs font-bold text-amber-700">Dibuka pada {formatDate(unlockedDate)}</p>
+            <p className="mt-1 text-xs font-bold text-amber-700">
+              Dibuka pada {formatDate(unlockedDate)}
+            </p>
           )}
         </div>
       </div>

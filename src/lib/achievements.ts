@@ -36,7 +36,9 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     description: 'Menyelesaikan semua level 2 digit',
     icon: '⭐',
     check: (stats) =>
-      ['level-1', 'level-2', 'level-3', 'level-4'].every((id) => stats.completedLevelIds.includes(id)),
+      ['level-1', 'level-2', 'level-3', 'level-4'].every((id) =>
+        stats.completedLevelIds.includes(id),
+      ),
   },
   {
     id: 'bintang-3-digit',
@@ -44,7 +46,9 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     description: 'Menyelesaikan semua level 3 digit',
     icon: '🌟',
     check: (stats) =>
-      ['level-5', 'level-6', 'level-7', 'level-8'].every((id) => stats.completedLevelIds.includes(id)),
+      ['level-5', 'level-6', 'level-7', 'level-8'].every((id) =>
+        stats.completedLevelIds.includes(id),
+      ),
   },
   {
     id: 'bintang-4-digit',
@@ -93,7 +97,10 @@ export function evaluateNewAchievements(progress: UserProgress): AchievementDefi
   )
 }
 
-export function achievementShareText(achievement: AchievementDefinition, childName?: string | null): string {
+export function achievementShareText(
+  achievement: AchievementDefinition,
+  childName?: string | null,
+): string {
   const intro = childName ? `Namaku ${childName}. ` : ''
   return `${intro}Aku mendapatkan pencapaian '${achievement.name}' di Asharu Math! Yuk, belajar matematika bersama di ${SITE_URL}`
 }

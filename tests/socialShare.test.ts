@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { achievementShareText, getAchievement } from '../src/lib/achievements'
-import { facebookShareUrl, telegramShareUrl, whatsappShareUrl, xShareUrl } from '../src/lib/socialShare'
+import {
+  facebookShareUrl,
+  telegramShareUrl,
+  whatsappShareUrl,
+  xShareUrl,
+} from '../src/lib/socialShare'
 import { SITE_URL } from '../src/lib/site'
 
 const achievement = getAchievement('ahli-menyimpan')
@@ -28,12 +33,16 @@ describe('tautan berbagi media sosial', () => {
   })
 
   it('facebook memakai tautan situs', () => {
-    expect(facebookShareUrl()).toBe(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(SITE_URL)}`)
+    expect(facebookShareUrl()).toBe(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(SITE_URL)}`,
+    )
     expect(facebookShareUrl('https://lain.example')).toContain('lain.example')
   })
 
   it('x (twitter) memuat teks terkode', () => {
-    expect(xShareUrl(message)).toBe(`https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`)
+    expect(xShareUrl(message)).toBe(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`,
+    )
   })
 
   it('telegram memuat url dan teks terkode', () => {

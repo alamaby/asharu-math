@@ -34,7 +34,9 @@ describe('VerticalMathProblem — 26 + 87', () => {
     render(<VerticalMathProblem problem={problem} answers={answers} />)
     const operator = screen.getByTestId('operator-cell')
     expect(operator.textContent?.trim()).toBe('+')
-    expect(operator.parentElement?.getAttribute('style')).toContain(`grid-column: ${problem.columns.length + 1}`)
+    expect(operator.parentElement?.getAttribute('style')).toContain(
+      `grid-column: ${problem.columns.length + 1}`,
+    )
     expect(operator.parentElement?.getAttribute('style')).toContain('grid-row: 4')
   })
 
@@ -61,11 +63,15 @@ describe('VerticalMathProblem — 52 - 28', () => {
     render(<VerticalMathProblem problem={problem} answers={answers} />)
     const operator = screen.getByTestId('operator-cell')
     expect(operator.textContent?.trim()).toBe('−')
-    expect(operator.parentElement?.getAttribute('style')).toContain(`grid-column: ${problem.columns.length + 1}`)
+    expect(operator.parentElement?.getAttribute('style')).toContain(
+      `grid-column: ${problem.columns.length + 1}`,
+    )
   })
 
   it('anotasi pinjam muncul hanya setelah dijelaskan', () => {
-    const { rerender } = render(<VerticalMathProblem problem={problem} answers={answers} borrowValues={[null, null]} />)
+    const { rerender } = render(
+      <VerticalMathProblem problem={problem} answers={answers} borrowValues={[null, null]} />,
+    )
     expect(screen.queryByTestId('borrow-cell-0')).toBeNull()
     rerender(<VerticalMathProblem problem={problem} answers={answers} borrowValues={[4, 12]} />)
     expect(screen.getByTestId('borrow-cell-1').textContent).toBe('12')

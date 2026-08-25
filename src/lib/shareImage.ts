@@ -9,7 +9,14 @@ export interface AchievementImageData {
 
 const CANVAS_SIZE = 1080
 
-function roundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+function roundedRectPath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+): void {
   ctx.beginPath()
   ctx.moveTo(x + r, y)
   ctx.lineTo(x + w - r, y)
@@ -99,7 +106,11 @@ export async function generateAchievementImage(data: AchievementImageData): Prom
   ctx.fillText(achievement.description, CANVAS_SIZE / 2, 770)
 
   // Tanggal
-  const dateString = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+  const dateString = date.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
   ctx.font = '700 34px "Nunito", "Segoe UI", sans-serif'
   ctx.fillStyle = '#475569'
   ctx.fillText(dateString, CANVAS_SIZE / 2, 840)

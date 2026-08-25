@@ -308,7 +308,9 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
       if (step.kind !== 'interim-sum' || state.stepComplete) return state
       const given = Number(state.interim)
       const sumText =
-        step.carryIn > 0 ? `${step.carryIn} + ${step.addendA} + ${step.addendB}` : `${step.addendA} + ${step.addendB}`
+        step.carryIn > 0
+          ? `${step.carryIn} + ${step.addendA} + ${step.addendB}`
+          : `${step.addendA} + ${step.addendB}`
       if (state.interim !== '' && given === step.expected) {
         const text =
           step.expected >= 10
@@ -331,14 +333,23 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
           stepComplete: true,
           attempts: 0,
           wrongInProblem,
-          feedback: { kind: 'info', text: `Tidak apa-apa, kita coba bersama. ${sumText} = ${step.expected}.` },
+          feedback: {
+            kind: 'info',
+            text: `Tidak apa-apa, kita coba bersama. ${sumText} = ${step.expected}.`,
+          },
         }
       }
       const hint =
         state.interim === ''
           ? 'Isi dulu hasil hitungannya ya.'
           : `Belum tepat. ${sumText} bukan ${state.interim}. Coba hitung lagi ya!`
-      return { ...state, interim: '', attempts, wrongInProblem, feedback: { kind: 'wrong', text: hint } }
+      return {
+        ...state,
+        interim: '',
+        attempts,
+        wrongInProblem,
+        feedback: { kind: 'wrong', text: hint },
+      }
     }
 
     case 'next': {
@@ -405,7 +416,9 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
         const answers = [...state.answers]
         answers[step.columnIndex] = null
         reset.answers = answers
-        reset.doneAnswerColumns = state.doneAnswerColumns.filter((index) => index !== step.columnIndex)
+        reset.doneAnswerColumns = state.doneAnswerColumns.filter(
+          (index) => index !== step.columnIndex,
+        )
         reset.stepComplete = false
       }
       if (step.kind === 'carry-digit') {
@@ -429,7 +442,12 @@ export interface LearnScreenProps {
   title?: string
 }
 
-export default function LearnScreen({ levelId, problems: providedProblems, initialStats, title }: LearnScreenProps) {
+export default function LearnScreen({
+  levelId,
+  problems: providedProblems,
+  initialStats,
+  title,
+}: LearnScreenProps) {
   const { navigate } = useNavigation()
   const { progress, recordAnswer, completeLevel, markLevelStarted } = useProgress()
 
@@ -437,7 +455,12 @@ export default function LearnScreen({ levelId, problems: providedProblems, initi
     if (providedProblems && providedProblems.length > 0) return providedProblems
     const level = levelId ? getLevel(levelId) : undefined
     if (!level) {
-      return generateSession({ operation: 'mixed', digitCount: 2, carryMode: 'any', questionCount: 5 })
+      return generateSession({
+        operation: 'mixed',
+        digitCount: 2,
+        carryMode: 'any',
+        questionCount: 5,
+      })
     }
     const settings =
       level.id === 'tantangan' ? buildChallengeSettings(progress.practiceHistory) : level.settings
@@ -494,9 +517,16 @@ export default function LearnScreen({ levelId, problems: providedProblems, initi
     if (!state.finished || reportedRef.current) return
     reportedRef.current = true
 
-    const base: SessionStats = initialStats ?? { correctFirstTry: 0, wrongAttempts: 0, recovered: 0, totalDone: 0 }
-    const correctFirstTry = base.correctFirstTry + state.results.filter((r) => r.wrongAttempts === 0).length
-    const wrongAttempts = base.wrongAttempts + state.results.reduce((sum, r) => sum + r.wrongAttempts, 0)
+    const base: SessionStats = initialStats ?? {
+      correctFirstTry: 0,
+      wrongAttempts: 0,
+      recovered: 0,
+      totalDone: 0,
+    }
+    const correctFirstTry =
+      base.correctFirstTry + state.results.filter((r) => r.wrongAttempts === 0).length
+    const wrongAttempts =
+      base.wrongAttempts + state.results.reduce((sum, r) => sum + r.wrongAttempts, 0)
     const recovered = base.recovered + state.results.filter((r) => r.wrongAttempts > 0).length
     const totalQuestions = base.totalDone + state.problems.length
     const stars = starsFor(correctFirstTry, totalQuestions)
@@ -504,7 +534,9 @@ export default function LearnScreen({ levelId, problems: providedProblems, initi
     const newAchievementIds: string[] = []
     for (const result of state.results) {
       newAchievementIds.push(
-        ...recordAnswer({ problem: result.problem, wrongAttempts: result.wrongAttempts }).map((a) => a.id),
+        ...recordAnswer({ problem: result.problem, wrongAttempts: result.wrongAttempts }).map(
+          (a) => a.id,
+        ),
       )
     }
     if (levelId) {
@@ -524,7 +556,18 @@ export default function LearnScreen({ levelId, problems: providedProblems, initi
       newAchievementIds: [...new Set(newAchievementIds)],
     }
     navigate({ name: 'result', summary })
-  }, [state.finished, state.results, state.problems, initialStats, levelId, screenTitle, level, recordAnswer, completeLevel, navigate])
+  }, [
+    state.finished,
+    state.results,
+    state.problems,
+    initialStats,
+    levelId,
+    screenTitle,
+    level,
+    recordAnswer,
+    completeLevel,
+    navigate,
+  ])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -560,18 +603,25 @@ export default function LearnScreen({ levelId, problems: providedProblems, initi
 
   const activeCell =
     step?.kind === 'answer-digit'
-      ? ({ kind: 'answer' as const, columnIndex: step.columnIndex })
+      ? { kind: 'answer' as const, columnIndex: step.columnIndex }
       : step?.kind === 'carry-digit'
-        ? ({ kind: 'carry' as const, columnIndex: step.columnIndex })
+        ? { kind: 'carry' as const, columnIndex: step.columnIndex }
         : null
   const highlightColumn = step && 'columnIndex' in step ? step.columnIndex : null
   const mood =
-    isReview || state.feedback?.kind === 'correct' ? 'cheer' : step?.kind === 'borrow-explain' ? 'think' : 'happy'
+    isReview || state.feedback?.kind === 'correct'
+      ? 'cheer'
+      : step?.kind === 'borrow-explain'
+        ? 'think'
+        : 'happy'
   const interim =
     step?.kind === 'interim-sum' ? { value: state.interim, active: !state.stepComplete } : null
   const choice =
     step?.kind === 'borrow-question' && !state.stepComplete
-      ? { onChoose: (answer: 'bisa' | 'tidak-bisa') => dispatch({ type: 'choose', answer }), disabled: false }
+      ? {
+          onChoose: (answer: 'bisa' | 'tidak-bisa') => dispatch({ type: 'choose', answer }),
+          disabled: false,
+        }
       : null
   // Tombol Periksa hanya aktif saat memeriksa isi Kotak Hitung;
   // untuk lanjut langkah selalu lewat tombol Berikutnya agar label
@@ -598,7 +648,10 @@ export default function LearnScreen({ levelId, problems: providedProblems, initi
           </p>
         </div>
         <ProgressBar
-          value={(state.problemIndex + (state.stepIndex + 1) / problem.learningSteps.length) / state.problems.length}
+          value={
+            (state.problemIndex + (state.stepIndex + 1) / problem.learningSteps.length) /
+            state.problems.length
+          }
           label={`Progres belajar, soal ${state.problemIndex + 1} dari ${state.problems.length}`}
         />
       </section>

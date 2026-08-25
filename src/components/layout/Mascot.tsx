@@ -21,7 +21,13 @@ export default function Mascot({ mood = 'happy', size = 64, className }: MascotP
       return (
         <g fill="#78350f">
           <circle cx="26" cy="30" r="3" />
-          <path d="M34 28q4-2 7 1" stroke="#78350f" strokeWidth="3" strokeLinecap="round" fill="none" />
+          <path
+            d="M34 28q4-2 7 1"
+            stroke="#78350f"
+            strokeWidth="3"
+            strokeLinecap="round"
+            fill="none"
+          />
         </g>
       )
     }

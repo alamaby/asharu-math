@@ -57,7 +57,7 @@ export default function VerticalMathProblem({
   const doneSet = useMemo(() => new Set(doneAnswerColumns), [doneAnswerColumns])
   const wrongSet = useMemo(() => new Set(wrongAnswerColumns), [wrongAnswerColumns])
   const borrowValueAt = (columnIndex: number): number | null =>
-    borrowValues !== undefined ? borrowValues[columnIndex] ?? null : null
+    borrowValues !== undefined ? (borrowValues[columnIndex] ?? null) : null
 
   // gridColumn/gridRow wajib string agar React tidak menambahkan satuan px
   const place = (columnIndex: number, row: number): CSSProperties => ({
@@ -87,15 +87,24 @@ export default function VerticalMathProblem({
       // Satuan tidak pernah menerima carry → kosongkan agar tidak membingungkan
       if (column.index === width - 1) {
         return (
-          <div key={`ann-${column.index}`} style={place(column.index, 2)} aria-hidden="true" className="h-6" />
+          <div
+            key={`ann-${column.index}`}
+            style={place(column.index, 2)}
+            aria-hidden="true"
+            className="h-6"
+          />
         )
       }
       return (
-        <div key={`ann-${column.index}`} style={place(column.index, 2)} className="flex justify-center">
+        <div
+          key={`ann-${column.index}`}
+          style={place(column.index, 2)}
+          className="flex justify-center"
+        >
           <CarryCell
             testId={`carry-cell-${column.index}`}
             place={column.place}
-            value={carries ? carries[column.index] ?? null : null}
+            value={carries ? (carries[column.index] ?? null) : null}
             active={activeCell?.kind === 'carry' && activeCell.columnIndex === column.index}
           />
         </div>
@@ -104,12 +113,27 @@ export default function VerticalMathProblem({
     const revealedValue = borrowValueAt(column.index)
     if (revealedValue !== null) {
       return (
-        <div key={`ann-${column.index}`} style={place(column.index, 2)} className="flex justify-center">
-          <BorrowCell testId={`borrow-cell-${column.index}`} place={column.place} after={revealedValue} />
+        <div
+          key={`ann-${column.index}`}
+          style={place(column.index, 2)}
+          className="flex justify-center"
+        >
+          <BorrowCell
+            testId={`borrow-cell-${column.index}`}
+            place={column.place}
+            after={revealedValue}
+          />
         </div>
       )
     }
-    return <div key={`ann-${column.index}`} style={place(column.index, 2)} aria-hidden="true" className="h-6" />
+    return (
+      <div
+        key={`ann-${column.index}`}
+        style={place(column.index, 2)}
+        aria-hidden="true"
+        className="h-6"
+      />
+    )
   })
 
   const borrowLentStruck = (columnIndex: number): boolean => borrowValueAt(columnIndex) !== null

@@ -5,7 +5,11 @@ export type ShareOutcome = 'shared' | 'copied' | 'failed'
  */
 export async function copyText(text: string): Promise<ShareOutcome> {
   try {
-    if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    if (
+      typeof navigator !== 'undefined' &&
+      navigator.clipboard &&
+      typeof navigator.clipboard.writeText === 'function'
+    ) {
       await navigator.clipboard.writeText(text)
       return 'copied'
     }
