@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AdSlot from '../src/components/common/AdSlot'
-import { isValidClient } from '../src/lib/env'
+import { getClientId, getSlotId, isAdsenseEnabled, isValidClient } from '../src/lib/env'
 import { AllProviders } from './helpers/renderWithProviders'
 
 function stubAdsenseEnv(client?: string, slotHome?: string) {
@@ -29,6 +29,28 @@ describe('isValidClient', () => {
     expect(isValidClient('ca-pub-123')).toBe(false)
     expect(isValidClient(12345)).toBe(false)
     expect(isValidClient(undefined)).toBe(false)
+  })
+})
+
+describe('env getters', () => {
+  it('konfigurasi lengkap: enabled, client & slot terbaca', () => {
+    stubAdsenseEnv('ca-pub-1234567890123456', '1234567890')
+    expect(isAdsenseEnabled()).toBe(true)
+    expect(getClientId()).toBe('ca-pub-1234567890123456')
+    expect(getSlotId('home')).toBe('1234567890')
+  })
+
+  it('client valid tanpa slot penempatan: enabled tapi slot null', () => {
+    stubAdsenseEnv('ca-pub-1234567890123456', undefined)
+    expect(isAdsenseEnabled()).toBe(true)
+    expect(getSlotId('home')).toBeNull()
+    expect(getSlotId('result')).toBeNull()
+  })
+
+  it('tanpa konfigurasi: semuanya kosong/nonaktif', () => {
+    expect(isAdsenseEnabled()).toBe(false)
+    expect(getClientId()).toBeNull()
+    expect(getSlotId('home')).toBeNull()
   })
 })
 

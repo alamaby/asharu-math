@@ -7,7 +7,6 @@
 import { getClientId } from './env'
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface Window {
     /** Antrean perintah AdSense: setiap elemen berisi konfigurasi unit yang di-push. */
     adsbygoogle?: object[]

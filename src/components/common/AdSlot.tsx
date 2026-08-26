@@ -28,32 +28,42 @@ export default function AdSlot({ placement }: AdSlotProps) {
     if (!enabled || visible) return
 
     // IntersectionObserver tersedia di semua browser target; jsdom memakai stub setup.ts
-    const sentinel = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setVisible(true)
-          sentinel.disconnect()
-        }
-      },
-      { rootMargin: '200px' },
-    )
+    let sentinel: IntersectionObserver | null = null
+    const onIntersect = (entries: IntersectionObserverEntry[]): void => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        setVisible(true)
+        sentinel?.disconnect()
+      }
+    }
+    sentinel = new IntersectionObserver(onIntersect, { rootMargin: '200px' })
     const element = insRef.current?.parentElement ?? null
     if (element) sentinel.observe(element)
-    return () => sentinel.disconnect()
+    return () => sentinel?.disconnect()
   }, [enabled, visible])
 
   useEffect(() => {
-    if (!enabled || !visible || requestedRef.current) return
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) return
+    if (!enabled || !visible) return
 
-    requestedRef.current = true
-    void ensureAdsenseLoaded()
-      .then(() => {
-        if (insRef.current) requestAd(insRef.current)
-      })
-      .catch(() => {
-        requestedRef.current = false // izinkan percobaan ulang
-      })
+    /** Satu percobaan permintaan iklan; aman dipanggil ulang saat koneksi pulih. */
+    const tryRequest = (): void => {
+      if (requestedRef.current) return
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return
+
+      requestedRef.current = true
+      void ensureAdsenseLoaded()
+        .then(() => {
+          if (insRef.current) requestAd(insRef.current)
+        })
+        .catch(() => {
+          requestedRef.current = false // izinkan percobaan ulang
+        })
+    }
+
+    tryRequest()
+
+    // Saat mount terjadi offline, coba lagi begitu koneksi pulih.
+    window.addEventListener('online', tryRequest)
+    return () => window.removeEventListener('online', tryRequest)
   }, [enabled, visible])
 
   if (!enabled || !slotId) return null
