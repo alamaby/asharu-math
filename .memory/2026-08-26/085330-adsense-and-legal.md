@@ -21,7 +21,7 @@ Menyiapkan monetisasi AdSense aman-anak (TFUA, kontekstual) + dokumen hukum bili
 - Persetujuan Google butuh waktu; RPM child-directed lebih rendah — disepakati user.
 
 ## Blockers / Unresolved
-- USER ACTION: ganti [NAMA PEMILIK]/[EMAIL KONTAK] di src/content/legal.ts; ikuti README 💰 Monetisasi (buat 4 unit, isi .env.local + Vercel env, perbaiki ads.txt); proses review Google bisa berhari-hari.
+- SISA USER ACTION: (1) ganti [NAMA PEMILIK]/[EMAIL KONTAK] di src/content/legal.ts; (2) buat 4 ad unit lalu isi VITE_ADSENSE_SLOT_* di .env.local + env Vercel; (3) deploy lalu tunggu 'Authorized' pada math.asharu.id/ads.txt. ads.txt sudah terisi pub-4082765898994990; .env.local berisi ca-pub-4082765898994990.
 
 ## Verification Performed
 - format ✅ · lint ✅ · typecheck ✅ · **183/183 test (25 file)** ✅ · build ✅ · dist/ads.txt ✓

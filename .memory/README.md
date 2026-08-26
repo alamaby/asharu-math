@@ -20,7 +20,7 @@ Format Version: 1
 - i18n: custom t() tanpa dependensi (`src/i18n/`, dict id/en typed); UI chrome via dict, data domain (level/achievement) via LocalizedText pairs; LearningStep data murni diterjemahkan render-time (`stepInstruction`) agar switch instan; bahasa disimpan di UserProgress.language.
 
 ## Open Items / Blockers
-- Push pending: commit lokal 2b01f03 (fitur) & fix review ini.
+- Push pending: commit lokal 2b01f03 (fitur), a47c7e4 (fix review), fa0154f (ads.txt produksi).
 
 - Coverage report (`@vitest/coverage-v8`) belum dipasang (opsional).
 - Uji manual PWA di perangkat nyata setelah deploy Vercel berikutnya (checklist di plan).
