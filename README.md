@@ -169,10 +169,12 @@ VITE_ADSENSE_SLOT_RESULT=<slot asharu-result-bottom>
 > File `.env*.local` sengaja tidak di-commit. Untuk deploy Vercel, isi variabel yang sama pada
 > **Project → Settings → Environment Variables**.
 
-### Langkah 4 — Perbaiki `public/ads.txt`
+### Langkah 4 — `public/ads.txt` ✅ (sudah terisi)
 
-Ganti `pub-0000000000000000` pada `public/ads.txt` dengan angka pub-ID Anda (tanpa awalan
-`ca-`), contoh: `google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0`, lalu commit.
+File sudah berisi publisher ID produksi:
+`google.com, pub-4082765898994990, DIRECT, f08c47fec0942fa0`.
+Setelah deploy, verifikasi di `math.asharu.id/ads.txt` dan tunggu status "Authorized" pada
+dashboard AdSense (biasanya beberapa hari).
 
 ### Langkah 5 — Deploy & verifikasi
 
