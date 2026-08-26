@@ -1,6 +1,6 @@
 /**
  * Konten dokumen hukum bilingual (Privacy Policy & Terms of Service).
- * Placeholder [NAMA PEMILIK] dan [EMAIL KONTAK] wajib diganti sebelum produksi.
+ * Identitas pemilik situs untuk dokumen hukum.
  */
 
 export interface LegalSection {
@@ -15,8 +15,8 @@ export interface LegalDocument {
   sections: LegalSection[]
 }
 
-const OWNER = '[NAMA PEMILIK]'
-const EMAIL = '[EMAIL KONTAK]'
+const OWNER = 'Alam Aby Bashit'
+const EMAIL = 'alam.aby.b@gmail.com'
 const SITE = 'Asharu Math (math.asharu.id)'
 const UPDATED_ID = '26 Agustus 2026'
 const UPDATED_EN = 'August 26, 2026'
