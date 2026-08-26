@@ -3,6 +3,7 @@ import ChildNameForm from '../components/common/ChildNameForm'
 import ConfirmDialog from '../components/common/ConfirmDialog'
 import { LANGUAGES, type Language } from '../i18n/types'
 import { useI18n } from '../i18n/LanguageContext'
+import { useNavigation } from '../state/NavigationContext'
 import { useProgress } from '../state/ProgressContext'
 
 function Toggle(props: {
@@ -39,6 +40,7 @@ function Toggle(props: {
 export default function SettingsScreen() {
   const { progress, setPreferences, setChildName, resetProgress } = useProgress()
   const { lang, setLanguage, t } = useI18n()
+  const { navigate } = useNavigation()
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   return (
@@ -122,6 +124,29 @@ export default function SettingsScreen() {
         >
           {t('settings.deleteProgress')}
         </button>
+      </section>
+
+      <section
+        aria-label={t('settings.legalSection')}
+        className="rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm"
+      >
+        <h2 className="text-sm font-black text-slate-800">{t('settings.legalSection')}</h2>
+        <div className="mt-3 space-y-2">
+          <button
+            type="button"
+            onClick={() => navigate({ name: 'privacy' })}
+            className="min-h-11 w-full rounded-2xl border-2 border-slate-200 bg-white px-4 text-left text-sm font-bold text-slate-700 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
+          >
+            📄 {t('legal.privacyTitle')}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate({ name: 'terms' })}
+            className="min-h-11 w-full rounded-2xl border-2 border-slate-200 bg-white px-4 text-left text-sm font-bold text-slate-700 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
+          >
+            📜 {t('legal.termsTitle')}
+          </button>
+        </div>
       </section>
 
       <p className="rounded-2xl bg-white p-4 text-xs font-semibold text-slate-500 shadow-sm">

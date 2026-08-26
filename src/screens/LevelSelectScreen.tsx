@@ -4,6 +4,7 @@ import { LEVELS, isLevelUnlocked } from '../data/levels'
 import { useI18n } from '../i18n/LanguageContext'
 import { useNavigation } from '../state/NavigationContext'
 import { useProgress } from '../state/ProgressContext'
+import AdSlot from '../components/common/AdSlot'
 
 export default function LevelSelectScreen() {
   const { navigate } = useNavigation()
@@ -25,6 +26,8 @@ export default function LevelSelectScreen() {
           />
         ))}
       </div>
+
+      <AdSlot placement="levels" />
     </div>
   )
 }

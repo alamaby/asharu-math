@@ -4,6 +4,7 @@ import { LanguageProvider } from './i18n/LanguageContext'
 import AchievementsScreen from './screens/AchievementsScreen'
 import HomeScreen from './screens/HomeScreen'
 import LearnScreen from './screens/LearnScreen'
+import LegalScreen from './screens/LegalScreen'
 import LevelSelectScreen from './screens/LevelSelectScreen'
 import PracticeScreen from './screens/PracticeScreen'
 import ResultScreen from './screens/ResultScreen'
@@ -38,6 +39,10 @@ function ScreenRouter() {
       return <AchievementsScreen />
     case 'settings':
       return <SettingsScreen />
+    case 'privacy':
+      return <LegalScreen kind="privacy" />
+    case 'terms':
+      return <LegalScreen kind="terms" />
   }
 }
 

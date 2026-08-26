@@ -3,6 +3,7 @@ import MascotBubble from '../components/layout/MascotBubble'
 import { useI18n } from '../i18n/LanguageContext'
 import { ACHIEVEMENTS } from '../lib/achievements'
 import { useProgress } from '../state/ProgressContext'
+import AdSlot from '../components/common/AdSlot'
 
 export default function AchievementsScreen() {
   const { progress } = useProgress()
@@ -25,6 +26,8 @@ export default function AchievementsScreen() {
           />
         ))}
       </div>
+
+      <AdSlot placement="achievements" />
     </div>
   )
 }

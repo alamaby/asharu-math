@@ -23,6 +23,8 @@ export type Screen =
   | { name: 'result'; summary: SessionSummary }
   | { name: 'achievements' }
   | { name: 'settings' }
+  | { name: 'privacy' }
+  | { name: 'terms' }
 
 export type TabName = 'home' | 'levels' | 'practice' | 'achievements'
 

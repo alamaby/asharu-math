@@ -60,3 +60,20 @@ if (typeof window.matchMedia !== 'function') {
     },
   })) as unknown as typeof window.matchMedia
 }
+
+/** jsdom tidak menyediakan IntersectionObserver; stub minimal untuk AdSlot lazy-load. */
+if (typeof window.IntersectionObserver !== 'function') {
+  class IntersectionObserverStub {
+    readonly root = null
+    readonly rootMargin = ''
+    readonly thresholds: ReadonlyArray<number> = [0]
+    constructor(_callback: IntersectionObserverCallback) {}
+    disconnect(): void {}
+    observe(): void {}
+    takeRecords(): IntersectionObserverEntry[] {
+      return []
+    }
+    unobserve(): void {}
+  }
+  window.IntersectionObserver = IntersectionObserverStub as unknown as typeof IntersectionObserver
+}

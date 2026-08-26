@@ -6,6 +6,7 @@ import { isLevelUnlocked } from '../data/levels'
 import { useNavigation } from '../state/NavigationContext'
 import { useProgress } from '../state/ProgressContext'
 import type { SessionSummary } from '../types'
+import AdSlot from '../components/common/AdSlot'
 
 export interface ResultScreenProps {
   summary: SessionSummary
@@ -112,6 +113,8 @@ export default function ResultScreen({ summary }: ResultScreenProps) {
           {t('result.goHome')}
         </button>
       </section>
+
+      <AdSlot placement="result" />
     </div>
   )
 }

@@ -266,6 +266,16 @@ const en: Dict = {
       ? 'Temporary counting box, empty'
       : `Temporary counting box, contains ${p.value}`,
 
+  // Legal documents & footer
+  'legal.privacyTitle': 'Privacy Policy',
+  'legal.termsTitle': 'Terms of Service',
+  'legal.openFromSettings': 'Open full document',
+  'settings.legalSection': '⚖️ Legal',
+  'home.footerRights': (p: { year: number }) => `© ${p.year} Asharu Math`,
+
+  // Ads
+  'ads.label': 'Advertisement',
+
   // Install button
   'install.button': '📲 Install App',
   'install.iosPre': '📲 Install on iPhone: tap the',

@@ -7,6 +7,7 @@ import { useI18n } from '../i18n/LanguageContext'
 import { getAchievement } from '../lib/achievements'
 import { useNavigation } from '../state/NavigationContext'
 import { useProgress } from '../state/ProgressContext'
+import AdSlot from '../components/common/AdSlot'
 
 export default function HomeScreen() {
   const { navigate, goToTab } = useNavigation()
@@ -150,6 +151,31 @@ export default function HomeScreen() {
           ⚙️ {t('settings.title')}
         </button>
       </div>
+
+      <footer className="space-y-1 pb-2 pt-3 text-center">
+        <p className="text-[0.65rem] font-bold text-slate-400">
+          <button
+            type="button"
+            onClick={() => navigate({ name: 'privacy' })}
+            className="underline-offset-2 hover:text-slate-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+          >
+            {t('legal.privacyTitle')}
+          </button>
+          {' · '}
+          <button
+            type="button"
+            onClick={() => navigate({ name: 'terms' })}
+            className="underline-offset-2 hover:text-slate-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+          >
+            {t('legal.termsTitle')}
+          </button>
+        </p>
+        <p className="text-[0.65rem] font-bold text-slate-300">
+          {t('home.footerRights', { year: new Date().getFullYear() })}
+        </p>
+      </footer>
+
+      <AdSlot placement="home" />
     </div>
   )
 }

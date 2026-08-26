@@ -119,6 +119,71 @@ vercel          # deploy pra-produksi
 vercel --prod   # deploy produksi
 ```
 
+## 💰 Monetisasi (Google AdSense)
+
+Aplikasi ini **child-directed** (anak SD): iklan hanya kontekstual non-personalized, tanpa profil
+minat, tanpa remarketing. Zona bebas iklan total selama anak mengerjakan soal (Learn & Practice) —
+slot hanya muncul di bagian bawah Home, Belajar, Pencapaian, dan Hasil.
+
+### Langkah 1 — Aktifkan di dashboard AdSense (wajib sebelum membuat unit)
+
+1. Buka [adsense.google.com](https://adsense.google.com) → **Sites → Add site** → masukkan
+   `math.asharu.id` → ikuti proses verifikasi (tempel snippet `ads.txt` / meta bila diminta).
+2. Setelah situs terverifikasi, buka **Sites → math.asharu.id → ⋮ → Settings**:
+   - Aktifkan **"Tag for child-directed treatment"** (TFUA). ← WAJIB, aplikasi anak.
+   - Pastikan **Personalized ads = Off** untuk situs ini.
+3. **Ads → By site**: pastikan **Auto ads = Off** untuk situs ini (Auto Ads bisa menyuntikkan
+   anchor/vignette yang mengganggu anak).
+4. Di **Privacy & messaging**, tidak perlu CMP GDPR karena iklan sudah non-personalized.
+
+### Langkah 2 — Buat 4 ad unit display responsif
+
+Buka **Ads → By ad unit → Display ads**, buat unit berikut satu per satu. Untuk setiap unit:
+
+1. Klik **Create new ad unit → pilih jenis "Display ads"**.
+2. Beri **nama** sesuai tabel (nama bebas, tapi samakan agar mudah dicocokkan):
+   | #   | Nama unit di dashboard       | Penempatan di aplikasi  |
+   | --- | ---------------------------- | ----------------------- |
+   | 1   | `asharu-home-bottom`         | Bawah halaman Home      |
+   | 3   | `asharu-levels-bottom`       | Bawah daftar level      |
+   | 3   | `asharu-achievements-bottom` | Bawah daftar pencapaian |
+   | 4   | `asharu-result-bottom`       | Bawah layar hasil sesi  |
+3. **Ad size**: biarkan default **"Responsive"** (disarankan; slot aplikasi sudah full-width).
+4. Biarkan opsi lain default → klik **Create**.
+5. Setiap unit yang dibuat menampilkan potongan kode berisi dua nilai — catat:
+   - `data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"` → publisher ID (sama untuk semua unit)
+   - `data-ad-slot="YYYYYYYYYY"` → angka 10 digit unik per unit
+
+### Langkah 3 — Isi `.env.local`
+
+```bash
+cp .env.example .env.local
+# lalu isi dengan nilai dari Langkah 2:
+VITE_ADSENSE_CLIENT=ca-pub-XXXXXXXXXXXXXXXX
+VITE_ADSENSE_SLOT_HOME=<slot asharu-home-bottom>
+VITE_ADSENSE_SLOT_LEVELS=<slot asharu-levels-bottom>
+VITE_ADSENSE_SLOT_ACHIEVEMENTS=<slot asharu-achievements-bottom>
+VITE_ADSENSE_SLOT_RESULT=<slot asharu-result-bottom>
+```
+
+> File `.env*.local` sengaja tidak di-commit. Untuk deploy Vercel, isi variabel yang sama pada
+> **Project → Settings → Environment Variables**.
+
+### Langkah 4 — Perbaiki `public/ads.txt`
+
+Ganti `pub-0000000000000000` pada `public/ads.txt` dengan angka pub-ID Anda (tanpa awalan
+`ca-`), contoh: `google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0`, lalu commit.
+
+### Langkah 5 — Deploy & verifikasi
+
+1. Deploy ke Vercel (`vercel --prod`) — env var produksi harus sudah terisi.
+2. Buka `math.asharu.id/ads.txt` → pastikan isinya benar.
+3. Slot iklan akan tampil (biasanya butuh beberapa menit–jam) di bagian bawah 4 halaman.
+4. Cek **Ads → Sites** di dashboard: status situs dan unit menjadi "Active".
+
+> Catatan: karena child-directed, pendapatan per tayang lebih rendah dibanding situs biasa —
+> ini konsekuensi memilih mode paling aman untuk anak.
+
 ## 🏛️ Arsitektur Singkat
 
 ```

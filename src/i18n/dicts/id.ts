@@ -267,6 +267,16 @@ const id = {
       ? 'Kotak hitung sementara, kosong'
       : `Kotak hitung sementara, berisi ${p.value}`,
 
+  // Dokumen hukum & footer
+  'legal.privacyTitle': 'Kebijakan Privasi',
+  'legal.termsTitle': 'Syarat dan Ketentuan Layanan',
+  'legal.openFromSettings': 'Buka dokumen lengkap',
+  'settings.legalSection': '⚖️ Legal',
+  'home.footerRights': (p: { year: number }) => `© ${p.year} Asharu Math`,
+
+  // Iklan
+  'ads.label': 'Iklan',
+
   // Tombol pasang aplikasi
   'install.button': '📲 Pasang Aplikasi',
   'install.iosPre': '📲 Pasang di iPhone: tekan tombol',
