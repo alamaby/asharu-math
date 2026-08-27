@@ -1,14 +1,14 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-08-26 09:40:00
+Last Updated: 2026-08-27 00:00:00
 Format Version: 1
 
 ## Current State
 - Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage.
-- Kualitas: ESLint 9 + Prettier aktif; 167 test / 23 file lulus; CI GitHub Actions Node 20 & 22.
+- Kualitas: ESLint 9 + Prettier aktif; 188 test / 26 file lulus; CI GitHub Actions Node 20 & 22.
 - PWA aktif: installable (tombol di HomeScreen), offline via service worker auto-update, petunjuk iOS A2HS.
-- i18n: dua bahasa ID(default)/EN switch instan (commit `e27cfd4`).
-- AdSense aktif-kode: AdSlot lazy + pemulihan koneksi online; zona bebas iklan Learn/Practice; legal bilingual; TFUA + panduan ad unit di README. Commit 2b01f03 + fix review masih lokal.
+- i18n: dua bahasa ID(default)/EN switch instan (commit `e27cfd4`, sudah push).
+- AdSense + legal: AdSlot lazy + pemulihan koneksi online; zona bebas iklan Learn/Practice; Privacy/Terms bilingual (pemilik Alam Aby Bashit, alam.aby.b@gmail.com); ads.txt `pub-4082765898994990` live; TFUA + panduan ad unit di README (push `8d24fa7`).
 
 ## Active Decisions
 - Susunan angka soal: operand disimpan sebagai string asli tanpa `reverse()`; perhitungan carry/borrow kanan-ke-kiri terpisah dari jalur tampilan (aturan kritis, jangan dilanggar).
@@ -20,8 +20,7 @@ Format Version: 1
 - i18n: custom t() tanpa dependensi (`src/i18n/`, dict id/en typed); UI chrome via dict, data domain (level/achievement) via LocalizedText pairs; LearningStep data murni diterjemahkan render-time (`stepInstruction`) agar switch instan; bahasa disimpan di UserProgress.language.
 
 ## Open Items / Blockers
-- Push pending: commit lokal 2b01f03 (fitur), a47c7e4 (fix review), fa0154f (ads.txt produksi).
-
+- Sisa AdSense: buat 4 display unit → isi `VITE_ADSENSE_SLOT_*` di `.env.local` + env Vercel.
 - Coverage report (`@vitest/coverage-v8`) belum dipasang (opsional).
 - Uji manual PWA di perangkat nyata setelah deploy Vercel berikutnya (checklist di plan).
 - Out of scope tercatat: resume sesi half-done; replay sesi saat header-back dari Result ke Learn; judul sesi pada Result tidak ikut berubah bila bahasa diganti setelah sesi dimulai.
