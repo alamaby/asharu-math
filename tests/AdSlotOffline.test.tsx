@@ -30,10 +30,18 @@ class ImmediateIntersectionObserver {
 function stubConfigured() {
   vi.stubEnv('VITE_ADSENSE_CLIENT', 'ca-pub-1234567890123456')
   vi.stubEnv('VITE_ADSENSE_SLOT_HOME', '1234567890')
+  vi.stubEnv('VITE_ADSENSE_SLOT_LEVELS', '')
+  vi.stubEnv('VITE_ADSENSE_SLOT_ACHIEVEMENTS', '')
+  vi.stubEnv('VITE_ADSENSE_SLOT_RESULT', '')
 }
 
 beforeEach(() => {
   window.adsbygoogle = undefined
+  vi.stubEnv('VITE_ADSENSE_CLIENT', '')
+  vi.stubEnv('VITE_ADSENSE_SLOT_HOME', '')
+  vi.stubEnv('VITE_ADSENSE_SLOT_LEVELS', '')
+  vi.stubEnv('VITE_ADSENSE_SLOT_ACHIEVEMENTS', '')
+  vi.stubEnv('VITE_ADSENSE_SLOT_RESULT', '')
   vi.stubGlobal('IntersectionObserver', ImmediateIntersectionObserver)
 })
 

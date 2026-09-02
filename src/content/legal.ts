@@ -18,8 +18,8 @@ export interface LegalDocument {
 const OWNER = 'Alam Aby Bashit'
 const EMAIL = 'alam.aby.b@gmail.com'
 const SITE = 'Asharu Math (math.asharu.id)'
-const UPDATED_ID = '26 Agustus 2026'
-const UPDATED_EN = 'August 26, 2026'
+const UPDATED_ID = '28 September 2026'
+const UPDATED_EN = 'September 28, 2026'
 
 export const PRIVACY_POLICY: { id: LegalDocument; en: LegalDocument } = {
   id: {
@@ -31,7 +31,7 @@ export const PRIVACY_POLICY: { id: LegalDocument; en: LegalDocument } = {
         title: 'Ringkasan Singkat',
         paragraphs: [
           `${SITE} adalah aplikasi belajar matematika gratis untuk anak. Kami tidak membuat akun, tidak meminta foto, tidak melacak aktivitas anak di situs lain, dan seluruh progres belajar tersimpan hanya di perangkat anak sendiri.`,
-          'Iklan di aplikasi ini disajikan oleh Google AdSense dalam mode ramah anak: kami menandai situs ini untuk perawatan khusus anak, sehingga Google hanya menayangkan iklan kontekstual non-terpersonalisasi tanpa membuat profil minat anak.',
+          'Iklan di aplikasi ini disajikan oleh Google AdSense dalam mode ramah anak: kami menandai setiap permintaan iklan dengan TFAT child (Tag for age treatment = 1, pengganti TFUA/TFCD yang sudah deprecated), sehingga Google hanya menayangkan iklan kontekstual non-terpersonalisasi tanpa membuat profil minat anak.',
         ],
       },
       {
@@ -44,7 +44,7 @@ export const PRIVACY_POLICY: { id: LegalDocument; en: LegalDocument } = {
       {
         title: 'Iklan Pihak Ketiga (Google AdSense)',
         paragraphs: [
-          'Situs ini menayangkan iklan dari Google AdSense. Karena situs ditandai untuk perawatan khusus anak, Google tidak menayangkan iklan berdasarkan profil minat dan tidak mengizinkan remarketing kepada pengunjung situs ini.',
+          'Situs ini menayangkan iklan dari Google AdSense. Setiap permintaan iklan ditandai TFAT=1 (child) sehingga Google tidak menayangkan iklan berdasarkan profil minat dan tidak mengizinkan remarketing kepada pengunjung situs ini (TFUA/TFCD sudah deprecated, diganti TFAT — https://support.google.com/adsense/answer/9007197).',
           'Google serta mitra sertifikasinya dapat menggunakan cookie atau identifier perangkat terbatas untuk keperluan teknis seperti frekuensi tayang, pembatasan iklan, dan deteksi penipuan.',
           'Anda dapat mempelajari cara Google menggunakan data pada https://policies.google.com/technologies/partner-sites dan mengontrol iklan pada https://adssettings.google.com.',
         ],
@@ -86,7 +86,7 @@ export const PRIVACY_POLICY: { id: LegalDocument; en: LegalDocument } = {
         title: 'Quick Summary',
         paragraphs: [
           `${SITE} is a free math learning app for children. We do not create accounts, do not ask for photos, do not track children across other sites, and all learning progress stays on the child's own device.`,
-          'Ads in this app are served by Google AdSense in a child-friendly mode: this site is tagged for child-directed treatment, so Google only shows contextual, non-personalized ads without building an interest profile of the child.',
+          'Ads in this app are served by Google AdSense in a child-friendly mode: every ad request is tagged TFAT=1 child (Tag for age treatment, replacing deprecated TFUA/TFCD), so Google only shows contextual, non-personalized ads without building an interest profile of the child.',
         ],
       },
       {
@@ -99,7 +99,7 @@ export const PRIVACY_POLICY: { id: LegalDocument; en: LegalDocument } = {
       {
         title: 'Third-Party Advertising (Google AdSense)',
         paragraphs: [
-          'This site shows ads from Google AdSense. Because the site is tagged for child-directed treatment, Google does not serve interest-profiled ads and does not allow remarketing to visitors of this site.',
+          'This site shows ads from Google AdSense. Every ad request is tagged TFAT=1 (child) so Google does not serve interest-profiled ads and does not allow remarketing to visitors of this site (TFUA/TFCD are deprecated, replaced by TFAT — https://support.google.com/adsense/answer/9007197).',
           'Google and its certified partners may use limited cookies or device identifiers for technical purposes such as frequency capping, ad restriction, and fraud detection.',
           'You can learn how Google uses data at https://policies.google.com/technologies/partner-sites and control ads at https://adssettings.google.com.',
         ],
@@ -163,7 +163,7 @@ export const TERMS_OF_SERVICE: { id: LegalDocument; en: LegalDocument } = {
       {
         title: 'Materi Pihak Ketiga',
         paragraphs: [
-          'Aplikasi menampilkan iklan dari Google AdSense. ' +
+          'Aplikasi menampilkan iklan dari Google AdSense dengan penanda TFAT=1 child di setiap permintaan (pengganti TFUA/TFCD deprecated). ' +
             OWNER +
             ' tidak bertanggung jawab atas isi iklan maupun situs tujuan iklan; klik iklan berada di luar kendali Aplikasi. Iklan dikonfigurasi ramah anak sesuai Kebijakan Privasi kami.',
         ],
@@ -222,7 +222,7 @@ export const TERMS_OF_SERVICE: { id: LegalDocument; en: LegalDocument } = {
       {
         title: 'Third-Party Material',
         paragraphs: [
-          'The App displays ads from Google AdSense. ' +
+          'The App displays ads from Google AdSense tagged TFAT=1 child on every request (replacing deprecated TFUA/TFCD). ' +
             OWNER +
             ' is not responsible for ad content or advertised destinations; clicking ads happens outside the App\u2019s control. Ads are configured to be child-friendly as described in our Privacy Policy.',
         ],

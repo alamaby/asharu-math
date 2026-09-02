@@ -13,6 +13,7 @@ interface AdSlotProps {
  * - Permintaan iklan lazy: hanya saat slot mendekati viewport (IntersectionObserver).
  * - Tinggi cadangan tetap agar layout tidak melompat saat iklan termuat (anti-CLS).
  * - Tidak pernah dipasang di layar pengerjaan soal.
+ * - TFAT child: data-tag-for-age-treatment="1" hardcode (AdSense Families, TFUA/TFCD deprecated).
  */
 export default function AdSlot({ placement }: AdSlotProps) {
   const { t } = useI18n()
@@ -81,6 +82,7 @@ export default function AdSlot({ placement }: AdSlotProps) {
           data-ad-slot={slotId}
           data-ad-format="auto"
           data-full-width-responsive="true"
+          data-tag-for-age-treatment="1"
         />
       </div>
     </aside>

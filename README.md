@@ -130,24 +130,24 @@ slot hanya muncul di bagian bawah Home, Belajar, Pencapaian, dan Hasil.
 1. Buka [adsense.google.com](https://adsense.google.com) → **Sites → Add site** → masukkan
    `math.asharu.id` → ikuti proses verifikasi (tempel snippet `ads.txt` / meta bila diminta).
 2. Setelah situs terverifikasi, buka **Sites → math.asharu.id → ⋮ → Settings**:
-   - Aktifkan **"Tag for child-directed treatment"** (TFUA). ← WAJIB, aplikasi anak.
-   - Pastikan **Personalized ads = Off** untuk situs ini.
+   - Aktifkan **"Tag for age treatment (TFAT) = Child"** (menggantikan TFUA/TFCD yang sudah deprecated — lihat https://support.google.com/adsense/answer/3248194 dan https://support.google.com/adsense/answer/9007197). Nilai `TFAT=1` setara child-directed, menonaktifkan personalized/remarketing. ← WAJIB, aplikasi anak.
+   - Pastikan **Personalized ads = Off** untuk situs ini (otomatis off saat TFAT=1, tapi verifikasi tetap).
 3. **Ads → By site**: pastikan **Auto ads = Off** untuk situs ini (Auto Ads bisa menyuntikkan
    anchor/vignette yang mengganggu anak).
-4. Di **Privacy & messaging**, tidak perlu CMP GDPR karena iklan sudah non-personalized.
+4. Di **Privacy & messaging**, tidak perlu CMP GDPR karena iklan sudah non-personalized (TFAT child). Di level kode, setiap slot sudah mengirim `data-tag-for-age-treatment="1"` via `src/components/common/AdSlot.tsx:84` — ini precedence atas setting site-level.
 
-### Langkah 2 — Buat 4 ad unit display responsif
+### Langkah 2 — Buat 4 ad unit display responsif ✅ (sudah dibuat)
 
-Buka **Ads → By ad unit → Display ads**, buat unit berikut satu per satu. Untuk setiap unit:
+Buka **Ads → By ad unit → Display ads**, buat unit berikut satu per satu. Untuk setiap unit (unit produksi sudah ada — lihat nilai Langkah 3):
 
 1. Klik **Create new ad unit → pilih jenis "Display ads"**.
 2. Beri **nama** sesuai tabel (nama bebas, tapi samakan agar mudah dicocokkan):
-   | #   | Nama unit di dashboard       | Penempatan di aplikasi  |
-   | --- | ---------------------------- | ----------------------- |
-   | 1   | `asharu-home-bottom`         | Bawah halaman Home      |
-   | 3   | `asharu-levels-bottom`       | Bawah daftar level      |
-   | 3   | `asharu-achievements-bottom` | Bawah daftar pencapaian |
-   | 4   | `asharu-result-bottom`       | Bawah layar hasil sesi  |
+   | #   | Nama unit di dashboard       | Penempatan di aplikasi  | Slot produksi |
+   | --- | ---------------------------- | ----------------------- | ------------- |
+   | 1   | `asharu-home-bottom`         | Bawah halaman Home      | `9803844531`  |
+   | 2   | `asharu-levels-bottom`       | Bawah daftar level      | `9602815350`  |
+   | 3   | `asharu-achievements-bottom` | Bawah daftar pencapaian | `8289733684`  |
+   | 4   | `asharu-result-bottom`       | Bawah layar hasil sesi  | `3182595864`  |
 3. **Ad size**: biarkan default **"Responsive"** (disarankan; slot aplikasi sudah full-width).
 4. Biarkan opsi lain default → klik **Create**.
 5. Setiap unit yang dibuat menampilkan potongan kode berisi dua nilai — catat:
@@ -158,12 +158,12 @@ Buka **Ads → By ad unit → Display ads**, buat unit berikut satu per satu. Un
 
 ```bash
 cp .env.example .env.local
-# lalu isi dengan nilai dari Langkah 2:
-VITE_ADSENSE_CLIENT=ca-pub-XXXXXXXXXXXXXXXX
-VITE_ADSENSE_SLOT_HOME=<slot asharu-home-bottom>
-VITE_ADSENSE_SLOT_LEVELS=<slot asharu-levels-bottom>
-VITE_ADSENSE_SLOT_ACHIEVEMENTS=<slot asharu-achievements-bottom>
-VITE_ADSENSE_SLOT_RESULT=<slot asharu-result-bottom>
+# lalu isi dengan nilai dari Langkah 2 (nilai produksi aktif):
+VITE_ADSENSE_CLIENT=ca-pub-4082765898994990
+VITE_ADSENSE_SLOT_HOME=9803844531          # asharu-home-bottom
+VITE_ADSENSE_SLOT_LEVELS=9602815350        # asharu-levels-bottom
+VITE_ADSENSE_SLOT_ACHIEVEMENTS=8289733684  # asharu-achievements-bottom
+VITE_ADSENSE_SLOT_RESULT=3182595864        # asharu-result-bottom
 ```
 
 > File `.env*.local` sengaja tidak di-commit. Untuk deploy Vercel, isi variabel yang sama pada

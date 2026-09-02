@@ -7,11 +7,18 @@ import { AllProviders } from './helpers/renderWithProviders'
 function stubAdsenseEnv(client?: string, slotHome?: string) {
   vi.stubEnv('VITE_ADSENSE_CLIENT', client ?? '')
   vi.stubEnv('VITE_ADSENSE_SLOT_HOME', slotHome ?? '')
+  // Kosongkan slot lain agar tidak bocor dari .env.local produksi saat test
+  vi.stubEnv('VITE_ADSENSE_SLOT_LEVELS', '')
+  vi.stubEnv('VITE_ADSENSE_SLOT_ACHIEVEMENTS', '')
+  vi.stubEnv('VITE_ADSENSE_SLOT_RESULT', '')
 }
 
 beforeEach(() => {
   vi.stubEnv('VITE_ADSENSE_CLIENT', '')
   vi.stubEnv('VITE_ADSENSE_SLOT_HOME', '')
+  vi.stubEnv('VITE_ADSENSE_SLOT_LEVELS', '')
+  vi.stubEnv('VITE_ADSENSE_SLOT_ACHIEVEMENTS', '')
+  vi.stubEnv('VITE_ADSENSE_SLOT_RESULT', '')
 })
 
 afterEach(() => {
@@ -89,6 +96,7 @@ describe('AdSlot — terkonfigurasi', () => {
     expect(ins?.getAttribute('data-ad-client')).toBe('ca-pub-1234567890123456')
     expect(ins?.getAttribute('data-ad-slot')).toBe('1234567890')
     expect(ins?.getAttribute('data-full-width-responsive')).toBe('true')
+    expect(ins?.getAttribute('data-tag-for-age-treatment')).toBe('1')
     // Permintaan iklan belum dikirim sebelum slot terlihat (lazy IO stub tidak memicu)
     expect(window.adsbygoogle ?? []).toHaveLength(0)
   })
