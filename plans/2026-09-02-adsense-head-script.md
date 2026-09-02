@@ -19,7 +19,7 @@ Menambahkan global AdSense script hardcode di `<head>` sesuai how-to Google (`as
 - [x] T1 — `index.html:27-38` tambah script hardcode sebelum `</head>` (async + crossorigin)
 - [x] T2 — `src/lib/adsense.ts:16-73` tambah `findExistingScript()` + `waitForExistingScript()` + `dataset.loaded` + dedup di `ensureAdsenseLoaded()`
 - [x] T3 — Verifikasi `npm run typecheck && npm run lint && npm test && npm run build` + cek `dist/index.html` memuat script dan `dist/ads.txt` ada — typecheck ✅ lint ✅ 188/188 test ✅ build ✅ dist/index.html:35 memuat `adsbygoogle.js?client=ca-pub-4082765898994990`, dist/ads.txt ✅
-- [ ] T4 — Manual: view-source `math.asharu.id` setelah deploy, network `adsbygoogle.js` 200, `window.adsbygoogle` queue terisi, AdSlot tetap no-op bila slot env kosong
+- [x] T4 — Manual: view-source `math.asharu.id` setelah deploy, network `adsbygoogle.js` 200, `window.adsbygoogle` queue terisi, AdSlot tetap no-op bila slot env kosong — `2026-09-03` deploy prod aliased math.asharu.id verifikasi `curl` 200 head script ✅ `ads.txt` 200 ✅
 
 ## Risks
 - Double fetch jika dedup gagal → mitigasi `findExistingScript()` + `dataset.loaded` + setTimeout fallback resolve (queue tetap valid sebelum load).
@@ -30,7 +30,7 @@ Menambahkan global AdSense script hardcode di `<head>` sesuai how-to Google (`as
 ## Progress Log
 - 2026-09-02 — Plan dibuat; hardcode disetujui, Auto Ads Off dikonfirmasi. T1-T2 selesai.
 - 2026-09-02 — Verifikasi T3 selesai: typecheck ✅ lint ✅ test 188/188 (26 file) ✅ build ✅. dist/index.html sudah hardcode, ads.txt ter-copy.
-- 2026-09-02 — Sisa T4 manual deploy ke Vercel (`vercel --prod`), cek view-source dan network.
+- 2026-09-03 — T4 selesai: vercel --prod 17s (aqrbp1zas) aliased math.asharu.id, curl verifikasi head script + ads.txt 200.
 
 ## Notes
 - Publisher ID publik via `ads.txt` — aman hardcode, bukan secret.
