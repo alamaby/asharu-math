@@ -204,7 +204,7 @@ const en: Dict = {
   'concept.iconStar': 'stars',
   'concept.iconDot': 'dots',
   'concept.countingAria': 'Counting picture',
-  'concept.hintAfterWrong': 'Try counting again slowly.',
+  'concept.countingAriaWithCount': (p: { count: number }) => `Counting picture: ${p.count} items`,
   'concept.correctFeedback': 'Correct! Great!',
   'concept.wrongFeedback': 'Not quite. Try again!',
   'concept.revealedFeedback': (p: { answer: string }) => `The correct answer is ${p.answer}.`,

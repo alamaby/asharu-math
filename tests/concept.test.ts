@@ -13,16 +13,12 @@ describe('conceptGenerator', () => {
   })
 
   it('compare: expectedAnswer konsisten dengan left/right', () => {
-    const gt = _helpers.buildCompareProblem(12, 7)
-    // forced 20% equal menambah noise — cek hanya allowed set untuk general case
-    expect(['greater', 'less', 'equal']).toContain(gt.expectedAnswer)
-    const lt = _helpers.buildCompareProblem(5, 9)
-    expect(['greater', 'less', 'equal']).toContain(lt.expectedAnswer)
-    // determinisme check via _helpers langsung dengan argumen sama harus stabil per panggil
-    const eq = _helpers.buildCompareProblem(10, 10)
-    // buildCompare kadang memaksa equal 20% — paksa dengan nilai sama pasti equal
-    // tapi helper buildCompare menerima equal random; cek allowed set saja
-    expect(['greater', 'less', 'equal']).toContain(eq.expectedAnswer)
+    // helper deterministik — angka eksplisit tidak boleh dipaksa equal 20%
+    expect(_helpers.buildCompareProblem(12, 7).expectedAnswer).toBe('greater')
+    expect(_helpers.buildCompareProblem(5, 9).expectedAnswer).toBe('less')
+    expect(_helpers.buildCompareProblem(10, 10).expectedAnswer).toBe('equal')
+    // jalur acak tetap allowed set saja
+    expect(['greater', 'less', 'equal']).toContain(buildConceptProblem('compare').expectedAnswer)
   })
 
   it('place-value: askedPlace sesuai expectedDigit', () => {
@@ -31,6 +27,14 @@ describe('conceptGenerator', () => {
     expect(p.choices).toContain('4')
     const u = _helpers.buildPlaceValueProblem(53, 'units')
     expect(u.expectedAnswer).toBe('3')
+  })
+
+  it('counting tepi 1 & 20 tetap 4 choices dan tidak deadlock', () => {
+    for (const v of [1, 20] as const) {
+      const p = _helpers.buildCountingProblem(v)
+      expect(p.choices).toHaveLength(4)
+      expect(p.choices).toContain(String(v))
+    }
   })
 
   it('buildConceptProblem & generateConceptSession tidak duplikat berurutan', () => {

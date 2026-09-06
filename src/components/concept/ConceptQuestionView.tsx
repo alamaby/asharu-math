@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n/LanguageContext'
 import type { ConceptProblem } from '../../types'
 
 interface Props {
@@ -13,10 +14,11 @@ function Dots({
 }) {
   const symbol = icon.icon === 'apple' ? '🍎' : icon.icon === 'star' ? '⭐' : '●'
   const items = Array.from({ length: count }, (_, i) => i)
+  const { t } = useI18n()
   return (
     <div
       role="img"
-      aria-label={`Gambar hitung: ${count} ${icon.icon}`}
+      aria-label={t('concept.countingAriaWithCount', { count })}
       className="flex flex-wrap justify-center gap-2 py-2"
     >
       {items.map((i) => (
@@ -29,8 +31,12 @@ function Dots({
 }
 
 function CompareVisual({ left, right }: { left: number; right: number }) {
+  const { t } = useI18n()
   return (
-    <div className="flex items-center justify-center gap-3 py-3">
+    <div
+      className="flex items-center justify-center gap-3 py-3"
+      aria-label={t('concept.comparePrompt', { left, right })}
+    >
       <span className="rounded-2xl bg-sky-100 px-4 py-3 text-2xl font-black text-sky-800">
         {left}
       </span>
@@ -45,6 +51,7 @@ function CompareVisual({ left, right }: { left: number; right: number }) {
 }
 
 function PlaceVisual({ number, askedPlace }: { number: number; askedPlace: 'tens' | 'units' }) {
+  const { t } = useI18n()
   const s = String(number)
   const tens = s[0] ?? '–'
   const units = s[1] ?? '–'
@@ -58,7 +65,7 @@ function PlaceVisual({ number, askedPlace }: { number: number; askedPlace: 'tens
         }`}
       >
         {tens}
-        <span className="ml-1 text-xs font-bold text-slate-500">puluhan</span>
+        <span className="ml-1 text-xs font-bold text-slate-500">{t('place.tens')}</span>
       </span>
       <span
         className={`rounded-xl px-4 py-3 text-2xl font-black ${
@@ -68,7 +75,7 @@ function PlaceVisual({ number, askedPlace }: { number: number; askedPlace: 'tens
         }`}
       >
         {units}
-        <span className="ml-1 text-xs font-bold text-slate-500">satuan</span>
+        <span className="ml-1 text-xs font-bold text-slate-500">{t('place.units')}</span>
       </span>
     </div>
   )

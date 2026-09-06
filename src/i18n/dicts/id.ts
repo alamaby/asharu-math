@@ -206,7 +206,7 @@ const id = {
   'concept.iconStar': 'bintang',
   'concept.iconDot': 'titik',
   'concept.countingAria': 'Gambar hitung',
-  'concept.hintAfterWrong': 'Coba hitung lagi pelan-pelan ya.',
+  'concept.countingAriaWithCount': (p: { count: number }) => `Gambar hitung: ${p.count} benda`,
   'concept.correctFeedback': 'Benar! Hebat!',
   'concept.wrongFeedback': 'Belum tepat. Coba lagi ya!',
   'concept.revealedFeedback': (p: { answer: string }) => `Jawaban yang benar adalah ${p.answer}.`,

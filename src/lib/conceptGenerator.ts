@@ -32,22 +32,18 @@ function shuffle<T>(items: readonly T[]): T[] {
 }
 
 function buildCountingProblem(target?: number): ConceptProblem {
-  const count = target ?? randomInt(3, 12)
+  const count = target ?? randomInt(1, 20)
   const iconRoll = Math.random()
   const icon: ConceptQuestion & { kind: 'counting' } = {
     kind: 'counting',
     target: count,
     icon: iconRoll < 0.5 ? 'apple' : iconRoll < 0.8 ? 'star' : 'dot',
   } as ConceptQuestion & { kind: 'counting' }
-  // Distraktor ±1..2, tetap 1..20
-  const candidates = new Set<number>([count])
-  while (candidates.size < 4) {
-    const delta = randomInt(-2, 2)
-    if (delta === 0) continue
-    const v = count + delta
-    if (v >= 1 && v <= 20) candidates.add(v)
-  }
-  const choices = shuffle([...candidates]).map(String)
+  // Distraktor dari pool 1..20 tanpa target — ambil 3 lalu shuffle; aman di tepi (1 atau 20)
+  const pool = Array.from({ length: 20 }, (_, i) => i + 1).filter((v) => v !== count)
+  const distractors = shuffle(pool).slice(0, 3)
+  const candidates = [count, ...distractors]
+  const choices = shuffle(candidates).map(String)
   return {
     id: nextConceptId('counting'),
     kind: 'counting',
@@ -58,12 +54,14 @@ function buildCountingProblem(target?: number): ConceptProblem {
 }
 
 function buildCompareProblem(left?: number, right?: number): ConceptProblem {
+  const explicit = left !== undefined && right !== undefined
   const a = left ?? randomInt(1, 20)
   const b = right ?? randomInt(1, 20)
-  // Hindari terlalu banyak 'equal' agar menarik: 20% equal
+  // Hindari terlalu banyak 'equal' agar menarik: 20% equal — hanya untuk jalur acak,
+  // bukan saat caller memberikan kedua angka eksplisit (helper deterministik di test).
   let l = a
   let r = b
-  if (Math.random() < 0.2) {
+  if (!explicit && Math.random() < 0.2) {
     const v = randomInt(1, 20)
     l = v
     r = v

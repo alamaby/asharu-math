@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ConceptQuestionView from '../components/concept/ConceptQuestionView'
+import ConfirmDialog from '../components/common/ConfirmDialog'
 import FeedbackMessage, { type Feedback } from '../components/guide/FeedbackMessage'
 import ProgressBar from '../components/guide/ProgressBar'
 import MascotBubble from '../components/layout/MascotBubble'
@@ -103,19 +104,28 @@ export default function ConceptLearnScreen({
     [completeLevel, levelId, navigate, recordConceptAnswer, setLeaveGuard, title],
   )
 
+  const timerRef = useRef<number | null>(null)
+  useEffect(
+    () => () => {
+      if (timerRef.current !== null) window.clearTimeout(timerRef.current)
+    },
+    [],
+  )
+
   const handleChoice = (choice: string) => {
     if (state.locked || !problem) return
+    const snapshot = state
     const correct = choice === problem.expectedAnswer
     if (correct) {
-      playCorrect()
       const feedback: Feedback = { kind: 'correct', text: t('concept.correctFeedback') }
-      const nextResults = [...state.results, { problem, wrongAttempts: state.wrongInProblem }]
+      const nextResults = [...snapshot.results, { problem, wrongAttempts: snapshot.wrongInProblem }]
       setState((s) => ({ ...s, feedback, locked: true }))
-      window.setTimeout(() => {
-        if (state.index + 1 < state.problems.length) {
+      if (timerRef.current !== null) window.clearTimeout(timerRef.current)
+      timerRef.current = window.setTimeout(() => {
+        if (snapshot.index + 1 < snapshot.problems.length) {
           setState({
-            problems: state.problems,
-            index: state.index + 1,
+            problems: snapshot.problems,
+            index: snapshot.index + 1,
             attempts: 0,
             wrongInProblem: 0,
             feedback: null,
@@ -124,14 +134,13 @@ export default function ConceptLearnScreen({
             finished: false,
           })
         } else {
-          finishSession({ ...state, results: nextResults, finished: true })
+          finishSession({ ...snapshot, results: nextResults, finished: true })
         }
       }, 700)
       return
     }
-    playWrong()
-    const attempts = state.attempts + 1
-    const wrongInProblem = state.wrongInProblem + 1
+    const attempts = snapshot.attempts + 1
+    const wrongInProblem = snapshot.wrongInProblem + 1
     if (attempts >= 3) {
       const expectedLabel =
         problem.kind === 'compare'
@@ -145,12 +154,13 @@ export default function ConceptLearnScreen({
         feedback: { kind: 'info', text: t('concept.revealedFeedback', { answer: expectedLabel }) },
         locked: true,
       }))
-      window.setTimeout(() => {
-        const nextResults = [...state.results, { problem, wrongAttempts: wrongInProblem }]
-        if (state.index + 1 < state.problems.length) {
+      if (timerRef.current !== null) window.clearTimeout(timerRef.current)
+      timerRef.current = window.setTimeout(() => {
+        const nextResults = [...snapshot.results, { problem, wrongAttempts: wrongInProblem }]
+        if (snapshot.index + 1 < snapshot.problems.length) {
           setState({
-            problems: state.problems,
-            index: state.index + 1,
+            problems: snapshot.problems,
+            index: snapshot.index + 1,
             attempts: 0,
             wrongInProblem: 0,
             feedback: null,
@@ -159,7 +169,7 @@ export default function ConceptLearnScreen({
             finished: false,
           })
         } else {
-          finishSession({ ...state, results: nextResults, finished: true })
+          finishSession({ ...snapshot, results: nextResults, finished: true })
         }
       }, 1200)
       return
@@ -171,14 +181,15 @@ export default function ConceptLearnScreen({
       feedback: { kind: 'wrong', text: t('concept.wrongFeedback') },
       locked: true,
     }))
-    window.setTimeout(() => setState((s) => ({ ...s, locked: false })), 600)
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current)
+    timerRef.current = window.setTimeout(() => setState((s) => ({ ...s, locked: false })), 600)
   }
 
   const prompt = useMemo(() => (problem ? conceptPrompt(problem.question, t) : ''), [problem, t])
   const choiceLabels = useMemo(() => (problem ? conceptChoices(problem, t) : []), [problem, t])
 
   const [exitOpen, setExitOpen] = useState(false)
-  const openExit = useCallback(() => setExitOpen(true), [])
+  const openExit = useCallback(() => setExitOpen(true), [setExitOpen])
   useEffect(() => {
     if (state.finished) {
       setLeaveGuard(null)
@@ -187,6 +198,12 @@ export default function ConceptLearnScreen({
     setLeaveGuard(openExit)
     return () => setLeaveGuard(null)
   }, [state.finished, setLeaveGuard, openExit])
+
+  useEffect(() => {
+    if (!state.feedback) return
+    if (state.feedback.kind === 'correct') playCorrect()
+    else if (state.feedback.kind === 'wrong') playWrong()
+  }, [state.feedback])
 
   useEffect(() => {
     if (!state.feedback) return
@@ -243,36 +260,22 @@ export default function ConceptLearnScreen({
         </div>
       </div>
 
-      {exitOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-            <h2 className="text-base font-black text-slate-800">{t('learn.exitTitle')}</h2>
-            <p className="mt-2 text-sm text-slate-600">{t('learn.exitDesc')}</p>
-            <div className="mt-4 flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setExitOpen(false)
-                  confirmPendingNavigation()
-                }}
-                className="flex-1 rounded-xl bg-rose-500 py-2 text-sm font-bold text-white"
-              >
-                {t('learn.exitConfirm')}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setExitOpen(false)
-                  cancelPendingNavigation()
-                }}
-                className="flex-1 rounded-xl border-2 border-slate-200 py-2 text-sm font-bold text-slate-700"
-              >
-                {t('learn.exitCancel')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={exitOpen}
+        title={t('learn.exitTitle')}
+        description={t('learn.exitDesc')}
+        confirmLabel={t('learn.exitConfirm')}
+        cancelLabel={t('learn.exitCancel')}
+        danger
+        onConfirm={() => {
+          setExitOpen(false)
+          confirmPendingNavigation()
+        }}
+        onCancel={() => {
+          setExitOpen(false)
+          cancelPendingNavigation()
+        }}
+      />
     </div>
   )
 }
