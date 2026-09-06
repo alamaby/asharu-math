@@ -294,6 +294,8 @@ const id = {
   'legal.openFromSettings': 'Buka dokumen lengkap',
   'settings.legalSection': '⚖️ Legal',
   'home.footerRights': (p: { year: number }) => `© ${p.year} Asharu Math`,
+  'home.version': (p: { version: string }) => `v${p.version}`,
+  'settings.version': (p: { version: string }) => `Versi v${p.version}`,
 
   // Iklan
   'ads.label': 'Iklan',

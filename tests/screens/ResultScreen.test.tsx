@@ -85,7 +85,9 @@ describe('ResultScreen', () => {
     seed.completedLevelIds = ['k1-membilang']
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seed))
     const { unmount } = renderScreenWithProviders(
-      <ResultScreen summary={makeSummary({ levelId: 'k1-membilang', nextLevelId: 'k1-banding' })} />,
+      <ResultScreen
+        summary={makeSummary({ levelId: 'k1-membilang', nextLevelId: 'k1-banding' })}
+      />,
     )
     expect(screen.getByRole('button', { name: /Level Berikutnya/ })).not.toBeNull()
     unmount()

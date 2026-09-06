@@ -4,6 +4,7 @@ import InstallButton from '../components/common/InstallButton'
 import MascotBubble from '../components/layout/MascotBubble'
 import { LEVELS, getLevel } from '../data/levels'
 import { useI18n } from '../i18n/LanguageContext'
+import { APP_VERSION } from '../lib/version'
 import { getAchievement } from '../lib/achievements'
 import { useNavigation } from '../state/NavigationContext'
 import { useProgress } from '../state/ProgressContext'
@@ -191,7 +192,10 @@ export default function HomeScreen() {
           </button>
         </p>
         <p className="text-[0.65rem] font-bold text-slate-300">
-          {t('home.footerRights', { year: new Date().getFullYear() })}
+          {t('home.footerRights', { year: new Date().getFullYear() })} ·{' '}
+          <span className="font-mono text-[0.6rem]">
+            {t('home.version', { version: APP_VERSION })}
+          </span>
         </p>
       </footer>
 

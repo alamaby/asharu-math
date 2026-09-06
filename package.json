@@ -1,9 +1,9 @@
 {
   "name": "asharu-math",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
-  "description": "Asharu Math — belajar penjumlahan dan pengurangan bersusun pendek untuk anak kelas 2 SD",
+  "description": "Asharu Math — belajar penjumlahan dan pengurangan serta fondasi berhitung dan nilai tempat untuk anak kelas 1–2 SD",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

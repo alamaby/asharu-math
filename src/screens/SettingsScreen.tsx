@@ -2,6 +2,7 @@ import { useState } from 'react'
 import ChildNameForm from '../components/common/ChildNameForm'
 import ConfirmDialog from '../components/common/ConfirmDialog'
 import { LANGUAGES, type Language } from '../i18n/types'
+import { APP_VERSION } from '../lib/version'
 import { useI18n } from '../i18n/LanguageContext'
 import { useNavigation } from '../state/NavigationContext'
 import { useProgress } from '../state/ProgressContext'
@@ -151,6 +152,9 @@ export default function SettingsScreen() {
 
       <p className="rounded-2xl bg-white p-4 text-xs font-semibold text-slate-500 shadow-sm">
         {t('settings.privacyNote')}
+      </p>
+      <p className="text-center text-[0.6rem] font-mono font-bold text-slate-400">
+        {t('settings.version', { version: APP_VERSION })}
       </p>
 
       <ConfirmDialog

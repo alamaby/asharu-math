@@ -292,6 +292,8 @@ const en: Dict = {
   'legal.openFromSettings': 'Open full document',
   'settings.legalSection': '⚖️ Legal',
   'home.footerRights': (p: { year: number }) => `© ${p.year} Asharu Math`,
+  'home.version': (p: { version: string }) => `v${p.version}`,
+  'settings.version': (p: { version: string }) => `Version v${p.version}`,
 
   // Ads
   'ads.label': 'Advertisement',
