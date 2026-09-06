@@ -17,7 +17,17 @@ export default function HomeScreen() {
   const [skippedName, setSkippedName] = useState(false)
 
   const completedCount = progress.completedLevelIds.length
+  const k1Completed = progress.completedLevelIds.filter((id) => id.startsWith('k1-')).length
+  const k2Completed = completedCount - k1Completed
   const lastLevel = progress.lastLevelId ? getLevel(progress.lastLevelId) : undefined
+  const handleContinue = () => {
+    if (!lastLevel) return
+    if (lastLevel.levelKind === 'concept') {
+      navigate({ name: 'concept-learn', levelId: lastLevel.id })
+    } else {
+      navigate({ name: 'learn', levelId: lastLevel.id })
+    }
+  }
   const recentAchievements = Object.entries(progress.unlockedAchievements)
     .sort((a, b) => b[1].localeCompare(a[1]))
     .slice(0, 3)
@@ -82,6 +92,9 @@ export default function HomeScreen() {
             <span className="text-sm text-slate-400">/{LEVELS.length}</span>
           </p>
           <p className="mt-0.5 text-xs font-bold text-slate-500">{t('home.levelsDone')}</p>
+          <p className="mt-1 text-[0.65rem] font-bold text-slate-400">
+            K1 {k1Completed}/7 · K2 {k2Completed}/{LEVELS.length - 7}
+          </p>
         </div>
         <div className="rounded-2xl border-2 border-sky-100 bg-white p-3 text-center shadow-sm">
           <p className="text-2xl font-black text-amber-500">🔥 {progress.dayStreak}</p>
@@ -97,7 +110,7 @@ export default function HomeScreen() {
         <button
           type="button"
           disabled={!lastLevel}
-          onClick={() => lastLevel && navigate({ name: 'learn', levelId: lastLevel.id })}
+          onClick={handleContinue}
           className="min-h-14 w-full rounded-2xl border-b-4 border-emerald-600 bg-emerald-500 px-4 text-left text-base font-black text-white hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300 disabled:opacity-40"
         >
           {lastLevel

@@ -44,6 +44,8 @@ Menambah jalur Kelas 1 (fondasi: membilang, banding bilangan, nilai tempat, tamb
 - 2026-09-06 11:30:00 — Review M1: temuan F1 (regresi unlock veteran) & rapian field diperbaiki di `src/data/levels.ts` + test 1-digit/levels/achievement ditambah; plan perbaikan terpisah `2026-09-06-review-k1-m1-fixes.md`.
 - 2026-09-06 14:00:00 — Review fix `08cc82c`: migrasi veteran + test ditutup.
 - 2026-09-06 15:00:00 — M2 selesai: 3 level konsep Kelas 1 (`k1-membilang`, `k1-banding`, `k1-nilai-tempat`) disisipkan di depan rantai; `ConceptProblem`/`ConceptSettings`/`levelKind` di `types`; `conceptGenerator.ts` + render-time `i18n/concept.ts` + `ConceptQuestionView` + `ConceptLearnScreen` (terpisah dari `learnReducer`, route `concept-learn`); `LevelSelectScreen` routing per `levelKind`; `Achievement bintang-kelas-1` diperluas ke 7 level; i18n `concept.*` ID/EN parity. Verifikasi: `typecheck` OK, `lint` OK, `test` 204/204, `build` OK. Commit M2 berikut.
+- 2026-09-06 16:50:00 — Review M2 fix: F1–F8 ditutup (determinisme compare, counting 1–20, distraktor tepi, i18n place, stale closure/timerRef, ConfirmDialog, test counting tepi).
+- 2026-09-06 17:15:00 — M3 polish: `HomeScreen` ringkasan per-kelas `K1 7/K2 12` + continue branching `concept-learn`/`learn`; `ResultScreen` retry/next branching per `levelKind`; verifikasi `typecheck` OK, `lint` OK, `test` 205/205, `build` OK. Commit M3 berikut.
 
 ## Notes
 - Aturan kritis repo dipertahankan: operand string asli tanpa `reverse()`; carry/borrow kanan-ke-kiri terpisah dari jalur tampilan; i18n data murni + render-time.
