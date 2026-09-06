@@ -98,6 +98,23 @@ describe('evaluateNewAchievements', () => {
     expect(bintang2.check(full)).toBe(true)
   })
 
+  it('syarat bintang kelas 1: keempat level K1 harus selesai', () => {
+    const partial = stats({
+      completedLevelIds: ['k1-tambah-1-digit', 'k1-kurang-1-digit'],
+    })
+    const full = stats({
+      completedLevelIds: [
+        'k1-tambah-1-digit',
+        'k1-kurang-1-digit',
+        'k1-campur-1-digit',
+        'k1-jembatan-2-digit',
+      ],
+    })
+    const bintangK1 = getAchievement('bintang-kelas-1')!
+    expect(bintangK1.check(partial)).toBe(false)
+    expect(bintangK1.check(full)).toBe(true)
+  })
+
   it('syarat streak terbaik minimal 10 untuk tepat-10', () => {
     const tepat10 = getAchievement('tepat-10')!
     expect(tepat10.check(stats({ bestStreak: 9 }))).toBe(false)

@@ -23,14 +23,14 @@ Menambah jalur Kelas 1 (fondasi: membilang, banding bilangan, nilai tempat, tamb
 3. M3 — Polish: achievement, Home/Result per-grade, QA + test penuh.
 
 ## Tasks
-- [x] Tipe: `DigitCount` tambah `1`; `LevelDefinition` tambah `grade: 1 | 2` dan `requires: string | null`; union `ColumnarSettings | ConceptSettings` bila M2 butuh settings non-kolom
-- [x] Generator 1-digit: pastikan `lo/hi` generik + fallback builder untuk 1-digit; tambah test carry/borrow `none/required` 1-digit (`tests/problemGenerator.test.ts`)
+- [x] Tipe: `DigitCount` tambah `1`; `LevelDefinition` tambah `grade: 1 | 2` dan `requires: string | null`
+- [x] Generator 1-digit: `lo/hi` generik + guard `effectiveCarryMode`/`fallbackNoBorrow` untuk 1-digit; test 1-digit (`tests/problemGenerator.test.ts` loop `1|2|3|4` + `none/any`)
 - [x] Level `k1-*` kolom (ID+EN): tambah 1-digit, kurang 1-digit, campuran 1-digit, jembatan 2-digit; opsi `1 digit` di `PracticeScreen.tsx`
-- [x] Unlock eksplisit + migrasi veteran: level dengan prasyarat terpenuhi di data lama otomatis unlock (bukan auto-complete); test `isLevelUnlocked` + skenario progres lama
+- [x] Unlock eksplisit + migrasi veteran: level sudah selesai selalu unlock; veteran (legacy `level-1..tantangan`) bypass `K1_IDS` sehingga `level-1` & Kelas 1 tidak terkunci; `getNextLevelId` linear terdokumentasi; test `tests/levels.test.ts`
 - [x] `LevelSelectScreen` grup per kelas + `LevelCard` label kelas; nomor per-grade; dict `id.ts`+`en.ts` berpasangan (parity `core.ts`)
-- [ ] M2 konsep: tipe `ConceptProblem`, generator membilang/banding/nilai-tempat, layar + langkah terpisah dari `learnReducer`, i18n render-time ala `steps.ts`, `recordAnswer` diabstraksi dari `MathProblem`
-- [x] Achievement `bintang-kelas-1` baru (syarat lama tidak diubah)
-- [x] Verifikasi: `npm test`, `typecheck`, `lint`, `format:check`, `build` + QA manual unlock/progres lama
+- [ ] M2 konsep: tipe `ConceptProblem`, generator membilang/banding/nilai-tempat, layar + langkah terpisah dari `learnReducer`, i18n render-time ala `steps.ts`, `recordAnswer` diabstraksi dari `MathProblem` — lihat plan perbaikan `2026-09-06-review-k1-m1-fixes.md` untuk celah F5 terkait
+- [x] Achievement `bintang-kelas-1` baru (syarat lama tidak diubah) — test di `tests/achievements.test.ts`
+- [x] Verifikasi M1: `npm test`, `typecheck`, `lint`, `format:check`, `build` + QA manual unlock/progres lama (diulang setelah fix migrasi)
 
 ## Risks
 - Regresi unlock pengguna lama (mitigasi: test migrasi + QA dengan seed progres lama berisi `level-1..4` selesai).
@@ -41,6 +41,7 @@ Menambah jalur Kelas 1 (fondasi: membilang, banding bilangan, nilai tempat, tamb
 ## Progress Log
 - 2026-09-06 07:00:00 — Plan dibuat dari analisis kode; keputusan pengguna: konsep cukup 3 topik, level baru di depan, nomor per-grade + label kelas. Belum ada eksekusi.
 - 2026-09-06 11:00:00 — M1 selesai: `DigitCount 1`, 4 level Kelas 1 (k1-tambah/kurang/campur 1-digit + jembatan 2-digit), `grade+requires` + unlock eksplisit dengan migrasi veteran (progres lama tetap unlock), LevelSelect grup Kelas 1/2 + chip grade, opsi 1 digit di Practice, achievement `bintang-kelas-1`, label i18n Kelas 1/2. Verifikasi: `typecheck` lulus, `lint` OK, `test` 188/188 (LevelSelectScreen diperbarui untuk penomoran per-grade), `build` OK.
+- 2026-09-06 11:30:00 — Review M1: temuan F1 (regresi unlock veteran) & rapian field diperbaiki di `src/data/levels.ts` + test 1-digit/levels/achievement ditambah; plan perbaikan terpisah `2026-09-06-review-k1-m1-fixes.md`.
 
 ## Notes
 - Aturan kritis repo dipertahankan: operand string asli tanpa `reverse()`; carry/borrow kanan-ke-kiri terpisah dari jalur tampilan; i18n data murni + render-time.

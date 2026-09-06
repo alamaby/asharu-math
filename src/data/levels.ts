@@ -75,9 +75,9 @@ export const LEVELS: readonly LevelDefinition[] = [
   },
   {
     id: 'level-2',
+    number: 2,
     grade: 2,
     requires: 'level-1',
-    number: 2,
     name: { id: 'Penjumlahan 2 Digit dengan Menyimpan', en: '2-Digit Addition With Carrying' },
     goal: {
       id: 'Menjumlahkan dua bilangan 2 digit dengan menyimpan satu kali',
@@ -89,9 +89,9 @@ export const LEVELS: readonly LevelDefinition[] = [
   },
   {
     id: 'level-3',
+    number: 3,
     grade: 2,
     requires: 'level-2',
-    number: 3,
     name: { id: 'Pengurangan 2 Digit Tanpa Meminjam', en: '2-Digit Subtraction Without Borrowing' },
     goal: {
       id: 'Mengurangkan dua bilangan 2 digit tanpa perlu meminjam',
@@ -103,9 +103,9 @@ export const LEVELS: readonly LevelDefinition[] = [
   },
   {
     id: 'level-4',
+    number: 4,
     grade: 2,
     requires: 'level-3',
-    number: 4,
     name: { id: 'Pengurangan 2 Digit dengan Meminjam', en: '2-Digit Subtraction With Borrowing' },
     goal: {
       id: 'Mengurangkan dua bilangan 2 digit dengan meminjam satu kali',
@@ -117,9 +117,9 @@ export const LEVELS: readonly LevelDefinition[] = [
   },
   {
     id: 'level-5',
+    number: 5,
     grade: 2,
     requires: 'level-4',
-    number: 5,
     name: {
       id: 'Campuran 3 Digit Tanpa Menyimpan/Meminjam',
       en: 'Mixed 3 Digits Without Carrying/Borrowing',
@@ -134,9 +134,9 @@ export const LEVELS: readonly LevelDefinition[] = [
   },
   {
     id: 'level-6',
+    number: 6,
     grade: 2,
     requires: 'level-5',
-    number: 6,
     name: { id: 'Penjumlahan 3 Digit dengan Menyimpan', en: '3-Digit Addition With Carrying' },
     goal: {
       id: 'Menjumlahkan 3 digit dengan menyimpan di satu atau beberapa kolom',
@@ -148,9 +148,9 @@ export const LEVELS: readonly LevelDefinition[] = [
   },
   {
     id: 'level-7',
+    number: 7,
     grade: 2,
     requires: 'level-6',
-    number: 7,
     name: { id: 'Pengurangan 3 Digit dengan Meminjam', en: '3-Digit Subtraction With Borrowing' },
     goal: {
       id: 'Mengurangkan 3 digit dengan meminjam di satu atau beberapa kolom',
@@ -162,9 +162,9 @@ export const LEVELS: readonly LevelDefinition[] = [
   },
   {
     id: 'level-8',
+    number: 8,
     grade: 2,
     requires: 'level-7',
-    number: 8,
     name: { id: 'Campuran 3 Digit', en: 'Mixed 3 Digits' },
     goal: {
       id: 'Berlatih penjumlahan dan pengurangan 3 digit bervariasi',
@@ -176,9 +176,9 @@ export const LEVELS: readonly LevelDefinition[] = [
   },
   {
     id: 'level-9',
+    number: 9,
     grade: 2,
     requires: 'level-8',
-    number: 9,
     name: { id: 'Penjumlahan 4 Digit', en: '4-Digit Addition' },
     goal: {
       id: 'Menjumlahkan 4 digit dengan atau tanpa menyimpan',
@@ -190,9 +190,9 @@ export const LEVELS: readonly LevelDefinition[] = [
   },
   {
     id: 'level-10',
+    number: 10,
     grade: 2,
     requires: 'level-9',
-    number: 10,
     name: { id: 'Pengurangan 4 Digit', en: '4-Digit Subtraction' },
     goal: {
       id: 'Mengurangkan 4 digit dengan atau tanpa meminjam',
@@ -204,9 +204,9 @@ export const LEVELS: readonly LevelDefinition[] = [
   },
   {
     id: 'level-11',
+    number: 11,
     grade: 2,
     requires: 'level-10',
-    number: 11,
     name: { id: 'Campuran 4 Digit', en: 'Mixed 4 Digits' },
     goal: {
       id: 'Berlatih penjumlahan dan pengurangan 4 digit bervariasi',
@@ -218,9 +218,9 @@ export const LEVELS: readonly LevelDefinition[] = [
   },
   {
     id: 'tantangan',
+    number: null,
     grade: 2,
     requires: 'level-11',
-    number: null,
     name: { id: 'Level Tantangan', en: 'Challenge Level' },
     goal: {
       id: 'Soal campuran 2 sampai 4 digit; kesulitan menyesuaikan performa',
@@ -252,21 +252,35 @@ const LEGACY_LEVEL_IDS: readonly string[] = [
   'tantangan',
 ]
 
+/** Rantai Kelas 1 — dipakai untuk bypass migrasi veteran. */
+const K1_IDS: readonly string[] = [
+  'k1-tambah-1-digit',
+  'k1-kurang-1-digit',
+  'k1-campur-1-digit',
+  'k1-jembatan-2-digit',
+]
+
 export function isLevelUnlocked(levelId: string, completedLevelIds: readonly string[]): boolean {
   const level = LEVELS.find((entry) => entry.id === levelId)
   if (!level) return false
+  // Level yang sudah selesai selalu bisa diulang — jangan dikunci oleh requires baru.
+  if (completedLevelIds.includes(levelId)) return true
   if (level.requires === null) return true
   if (completedLevelIds.includes(level.requires)) return true
-  // Migrasi veteran: pengguna yang sudah punya progres era lama (sebelum level
-  // Kelas 1 ada) otomatis melewati prasyarat Kelas 1 — unlock, bukan auto-complete.
-  if (level.grade === 1 && completedLevelIds.some((id) => LEGACY_LEVEL_IDS.includes(id))) {
-    return true
+  // Migrasi veteran: progres era lama dianggap telah melewati rantai Kelas 1.
+  // Ini unlock (bukan auto-complete) agar pengguna lama tidak terkunci di level-1
+  // maupun di seluruh Kelas 1; batasi bypass hanya pada prasyarat K1, bukan semua.
+  const isVeteran = completedLevelIds.some((id) => LEGACY_LEVEL_IDS.includes(id))
+  if (isVeteran) {
+    if (level.grade === 1) return true
+    if (level.requires !== null && K1_IDS.includes(level.requires)) return true
   }
   return false
 }
 
 export function getNextLevelId(levelId: string | null): string | null {
   if (!levelId) return null
+  // Rantai linear — posisi array identik dengan rantai requires.
   const index = LEVELS.findIndex((level) => level.id === levelId)
   if (index < 0 || index + 1 >= LEVELS.length) return null
   return LEVELS[index + 1].id

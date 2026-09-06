@@ -181,7 +181,9 @@ function pickOperation(settings: GeneratorSettings): OperationType {
  * Pengurangan 1-digit tidak pernah bisa meminjam: angka atas yang lebih kecil
  * dari angka bawah berarti hasil negatif, dan itu dilarang `buildProblem`.
  * Karena itu mode 'required' dinormalisasi menjadi 'none' untuk kasus ini
- * (tanpa ini, fallback generator akan selalu melempar error).
+ * (tanpa ini, fallback generator akan selalu melempar error). Untuk
+ * `digitCount: 1` secara umum (termasuk `any`), fallback akhir memaksa
+ * `buildSubtractionNoBorrow` agar tidak menghasilkan soal mustahil.
  */
 function effectiveCarryMode(operation: OperationType, settings: GeneratorSettings): CarryMode {
   if (

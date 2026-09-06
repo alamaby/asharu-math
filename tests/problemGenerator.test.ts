@@ -34,7 +34,7 @@ describe('generator penjumlahan', () => {
   })
 
   it('digit sesuai pilihan dan tanpa leading zero', () => {
-    for (const digitCount of [2, 3, 4] as const) {
+    for (const digitCount of [1, 2, 3, 4] as const) {
       const settings: GeneratorSettings = {
         operation: 'addition',
         digitCount,
@@ -47,6 +47,36 @@ describe('generator penjumlahan', () => {
         expect(problem.secondOperandText).toHaveLength(digitCount)
         expect(problem.firstOperandText[0]).not.toBe('0')
         expect(problem.secondOperandText[0]).not.toBe('0')
+      }
+    }
+  })
+
+  it('tambah 1-digit tanpa menyimpan tidak pernah menghasilkan carry', () => {
+    const settings: GeneratorSettings = {
+      operation: 'addition',
+      digitCount: 1,
+      carryMode: 'none',
+      questionCount: 10,
+    }
+    for (let i = 0; i < 200; i++) {
+      const problem = generateProblem(settings)
+      expect(hasCarry(problem.firstOperand, problem.secondOperand)).toBe(false)
+      expect(problem.firstOperandText).toHaveLength(1)
+      expect(problem.secondOperandText).toHaveLength(1)
+    }
+  })
+
+  it('campur 1-digit tidak pernah menghasilkan pinjam', () => {
+    const settings: GeneratorSettings = {
+      operation: 'mixed',
+      digitCount: 1,
+      carryMode: 'any',
+      questionCount: 10,
+    }
+    for (let i = 0; i < 200; i++) {
+      const problem = generateProblem(settings)
+      if (problem.operation === 'subtraction') {
+        expect(hasBorrow(problem.firstOperand, problem.secondOperand)).toBe(false)
       }
     }
   })
