@@ -1,6 +1,7 @@
-import { cleanup, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import ResultScreen from '../../src/screens/ResultScreen'
+import { defaultProgress, STORAGE_KEY } from '../../src/lib/storage'
 import { renderScreenWithProviders } from '../helpers/renderWithProviders'
 import type { SessionSummary } from '../../src/types'
 
@@ -49,5 +50,45 @@ describe('ResultScreen', () => {
       />,
     )
     expect(screen.getByRole('button', { name: /Latihan Lagi/ })).not.toBeNull()
+  })
+
+  it('retry concept mengarah ke concept-learn, next concept vs column bercabang', () => {
+    const { unmount: u1 } = renderScreenWithProviders(
+      <ResultScreen
+        summary={makeSummary({ levelId: 'k1-membilang', nextLevelId: 'k1-banding' })}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Ulangi Level Ini/ }))
+    expect(screen.getByTestId('probe-screen').textContent).toBe('concept-learn')
+    // next terkunci untuk progres fresh (k1-banding belum dibuka) — tombol tidak render, itu benar
+    expect(screen.queryByRole('button', { name: /Level Berikutnya/ })).toBeNull()
+    cleanup()
+    u1()
+    const { unmount: u2 } = renderScreenWithProviders(
+      <ResultScreen
+        summary={makeSummary({
+          levelId: 'k1-jembatan-2-digit',
+          nextLevelId: 'level-1',
+        })}
+      />,
+    )
+    // k1-jembatan → level-1 terkunci untuk fresh progress (butuh 7 K1), jadi next tidak muncul by design
+    expect(screen.queryByRole('button', { name: /Level Berikutnya/ })).toBeNull()
+    // concept selesai: settings null → tidak ada Latihan Lagi by design (di-overrides settings null)
+    expect(screen.queryByRole('button', { name: /Latihan Lagi/ })).toBeNull()
+    u2()
+  })
+
+  it('tombol next tampil saat prasyarat terpenuhi', () => {
+    // seed progres agar next terbuka
+    const seed = defaultProgress()
+    seed.completedLevelIds = ['k1-membilang']
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seed))
+    const { unmount } = renderScreenWithProviders(
+      <ResultScreen summary={makeSummary({ levelId: 'k1-membilang', nextLevelId: 'k1-banding' })} />,
+    )
+    expect(screen.getByRole('button', { name: /Level Berikutnya/ })).not.toBeNull()
+    unmount()
+    window.localStorage.clear()
   })
 })

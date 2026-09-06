@@ -17,7 +17,9 @@ export default function HomeScreen() {
   const [skippedName, setSkippedName] = useState(false)
 
   const completedCount = progress.completedLevelIds.length
-  const k1Completed = progress.completedLevelIds.filter((id) => id.startsWith('k1-')).length
+  const k1Total = LEVELS.filter((l) => l.grade === 1).length
+  const k2Total = LEVELS.length - k1Total
+  const k1Completed = progress.completedLevelIds.filter((id) => getLevel(id)?.grade === 1).length
   const k2Completed = completedCount - k1Completed
   const lastLevel = progress.lastLevelId ? getLevel(progress.lastLevelId) : undefined
   const handleContinue = () => {
@@ -93,7 +95,12 @@ export default function HomeScreen() {
           </p>
           <p className="mt-0.5 text-xs font-bold text-slate-500">{t('home.levelsDone')}</p>
           <p className="mt-1 text-[0.65rem] font-bold text-slate-400">
-            K1 {k1Completed}/7 · K2 {k2Completed}/{LEVELS.length - 7}
+            {t('home.levelsPerGrade', {
+              k1: k1Completed,
+              k1Total,
+              k2: k2Completed,
+              k2Total,
+            })}
           </p>
         </div>
         <div className="rounded-2xl border-2 border-sky-100 bg-white p-3 text-center shadow-sm">

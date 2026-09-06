@@ -205,12 +205,6 @@ export default function ConceptLearnScreen({
     else if (state.feedback.kind === 'wrong') playWrong()
   }, [state.feedback])
 
-  useEffect(() => {
-    if (!state.feedback) return
-    if (state.feedback.kind === 'correct') playCorrect()
-    else if (state.feedback.kind === 'wrong') playWrong()
-  }, [state.feedback])
-
   if (!problem) {
     return (
       <div className="flex flex-col items-center gap-4 py-10 text-center">

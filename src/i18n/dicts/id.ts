@@ -26,6 +26,8 @@ const id = {
   'home.editName': '✏️ Ubah nama',
   'home.summaryAria': 'Ringkasan progres',
   'home.levelsDone': 'Level selesai',
+  'home.levelsPerGrade': (p: { k1: number; k1Total: number; k2: number; k2Total: number }) =>
+    `K1 ${p.k1}/${p.k1Total} · K2 ${p.k2}/${p.k2Total}`,
   'home.dayStreak': 'Hari berturut-turut',
   'home.correctCount': 'Jawaban benar',
   'home.actionsAria': 'Tindakan utama',

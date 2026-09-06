@@ -27,6 +27,8 @@ const en: Dict = {
   'home.editName': '✏️ Change name',
   'home.summaryAria': 'Progress summary',
   'home.levelsDone': 'Levels done',
+  'home.levelsPerGrade': (p: { k1: number; k1Total: number; k2: number; k2Total: number }) =>
+    `G1 ${p.k1}/${p.k1Total} · G2 ${p.k2}/${p.k2Total}`,
   'home.dayStreak': 'Day streak',
   'home.correctCount': 'Correct answers',
   'home.actionsAria': 'Main actions',

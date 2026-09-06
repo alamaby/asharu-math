@@ -59,4 +59,40 @@ describe('HomeScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: /Pengaturan/ }))
     expect(screen.getByTestId('probe-screen').textContent).toBe('settings')
   })
+
+  it('ringkasan per-kelas K1/K2 tampil dengan angka dinamis', () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ...defaultProgress(),
+        completedLevelIds: ['k1-membilang', 'k1-banding', 'level-1'],
+        lastLevelId: 'k1-banding',
+      }),
+    )
+    renderScreenWithProviders(<HomeScreen />)
+    const summary = screen.getByLabelText('Ringkasan progres')
+    expect(within(summary).getByText(/K1 2\//)).not.toBeNull()
+    expect(within(summary).getByText(/K2 1\//)).not.toBeNull()
+  })
+
+  it('tombol lanjutkan ke concept vs column sesuai lastLevel', () => {
+    // concept lastLevel
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...defaultProgress(), lastLevelId: 'k1-membilang' }),
+    )
+    const { unmount } = renderScreenWithProviders(<HomeScreen />)
+    fireEvent.click(screen.getByRole('button', { name: /Lanjutkan:/ }))
+    expect(screen.getByTestId('probe-screen').textContent).toBe('concept-learn')
+    unmount()
+    window.localStorage.clear()
+    // column lastLevel
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...defaultProgress(), lastLevelId: 'level-1' }),
+    )
+    renderScreenWithProviders(<HomeScreen />)
+    fireEvent.click(screen.getByRole('button', { name: /Lanjutkan:/ }))
+    expect(screen.getByTestId('probe-screen').textContent).toBe('learn')
+  })
 })

@@ -82,6 +82,7 @@ export default function ResultScreen({ summary }: ResultScreenProps) {
       )}
 
       <section aria-label={t('result.nextActionsAria')} className="space-y-2">
+        {/* Practice untuk concept = null by design (latihan tetap kolom 1–4 digit) */}
         {summary.settings && (
           <button
             type="button"
