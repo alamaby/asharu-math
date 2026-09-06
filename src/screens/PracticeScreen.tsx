@@ -351,6 +351,7 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
             value={formDigits}
             onChange={setFormDigits}
             options={[
+              { value: 1, label: t('practice.digitOption', { n: 1 }) },
               { value: 2, label: t('practice.digitOption', { n: 2 }) },
               { value: 3, label: t('practice.digitOption', { n: 3 }) },
               { value: 4, label: t('practice.digitOption', { n: 4 }) },

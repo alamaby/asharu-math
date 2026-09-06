@@ -73,6 +73,8 @@ const id = {
   // Pilih level
   'levels.bubble':
     'Pilih level ya! Selesaikan level berurutan untuk membuka level berikutnya. Kamu juga bisa mengulang level lama kapan saja.',
+  'levels.grade1': 'Kelas 1 — Fondasi',
+  'levels.grade2': 'Kelas 2 — Bersusun',
   'levelCard.numbered': (p: { number: number; name: string }) => `Level ${p.number}: ${p.name}`,
   'levelCard.challenge': (p: { name: string }) => `Tantangan: ${p.name}`,
   'levelCard.start': 'Mulai',

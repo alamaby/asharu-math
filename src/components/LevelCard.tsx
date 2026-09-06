@@ -49,9 +49,20 @@ export default function LevelCard({ level, unlocked, completed, stars, onStart }
           {unlocked ? (level.number ?? '⚡') : '🔒'}
         </span>
         <div className="flex-1">
-          <h3 className={`text-base font-black ${unlocked ? 'text-slate-800' : 'text-slate-500'}`}>
-            {heading}
-          </h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3
+              className={`text-base font-black ${unlocked ? 'text-slate-800' : 'text-slate-500'}`}
+            >
+              {heading}
+            </h3>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[0.65rem] font-black ${
+                level.grade === 1 ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'
+              }`}
+            >
+              {t(level.grade === 1 ? 'levels.grade1' : 'levels.grade2')}
+            </span>
+          </div>
           <p
             className={`mt-0.5 text-sm font-semibold ${unlocked ? 'text-slate-600' : 'text-slate-400'}`}
           >

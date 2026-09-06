@@ -76,6 +76,19 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
       ['level-9', 'level-10', 'level-11'].every((id) => stats.completedLevelIds.includes(id)),
   },
   {
+    id: 'bintang-kelas-1',
+    name: { id: 'Bintang Kelas 1', en: 'Grade 1 Star' },
+    description: {
+      id: 'Menyelesaikan semua level Kelas 1',
+      en: 'Completed every Grade 1 level',
+    },
+    icon: '🎈',
+    check: (stats) =>
+      ['k1-tambah-1-digit', 'k1-kurang-1-digit', 'k1-campur-1-digit', 'k1-jembatan-2-digit'].every(
+        (id) => stats.completedLevelIds.includes(id),
+      ),
+  },
+  {
     id: 'tanpa-menyerah',
     name: { id: 'Tanpa Menyerah', en: 'Never Give Up' },
     description: {

@@ -177,6 +177,23 @@ function pickOperation(settings: GeneratorSettings): OperationType {
   return settings.operation
 }
 
+/**
+ * Pengurangan 1-digit tidak pernah bisa meminjam: angka atas yang lebih kecil
+ * dari angka bawah berarti hasil negatif, dan itu dilarang `buildProblem`.
+ * Karena itu mode 'required' dinormalisasi menjadi 'none' untuk kasus ini
+ * (tanpa ini, fallback generator akan selalu melempar error).
+ */
+function effectiveCarryMode(operation: OperationType, settings: GeneratorSettings): CarryMode {
+  if (
+    operation === 'subtraction' &&
+    settings.digitCount === 1 &&
+    settings.carryMode === 'required'
+  ) {
+    return 'none'
+  }
+  return settings.carryMode
+}
+
 function sameAsPrevious(
   previous: MathProblem | null,
   operation: OperationType,
@@ -197,10 +214,11 @@ export function generateProblem(
 ): MathProblem {
   for (let attempt = 0; attempt < 50; attempt++) {
     const operation = pickOperation(settings)
+    const carryMode = effectiveCarryMode(operation, settings)
     const [first, second] =
       operation === 'addition'
-        ? generateAdditionPair(settings.digitCount, settings.carryMode)
-        : generateSubtractionPair(settings.digitCount, settings.carryMode)
+        ? generateAdditionPair(settings.digitCount, carryMode)
+        : generateSubtractionPair(settings.digitCount, carryMode)
     if (sameAsPrevious(previous, operation, first, second)) continue
     try {
       return buildProblem(operation, first, second)
@@ -210,12 +228,15 @@ export function generateProblem(
   }
   // Fallback terakhir yang pasti valid sesuai konfigurasi
   const operation: OperationType = settings.operation === 'subtraction' ? 'subtraction' : 'addition'
+  const carryMode = effectiveCarryMode(operation, settings)
+  const fallbackNoBorrow =
+    carryMode === 'none' || (operation === 'subtraction' && settings.digitCount === 1)
   const [first, second] =
     operation === 'addition'
-      ? settings.carryMode === 'none'
+      ? carryMode === 'none'
         ? buildAdditionNoCarry(settings.digitCount)
         : buildAdditionWithCarry(settings.digitCount)
-      : settings.carryMode === 'none'
+      : fallbackNoBorrow
         ? buildSubtractionNoBorrow(settings.digitCount)
         : buildSubtractionWithBorrow(settings.digitCount)
   return buildProblem(operation, first, second)

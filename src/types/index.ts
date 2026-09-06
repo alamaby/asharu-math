@@ -4,7 +4,9 @@ export type OperationType = 'addition' | 'subtraction'
 export type OperationChoice = OperationType | 'mixed'
 export type PlaceValue = 'thousands' | 'hundreds' | 'tens' | 'units'
 export type CarryMode = 'none' | 'required' | 'any'
-export type DigitCount = 2 | 3 | 4
+export type DigitCount = 1 | 2 | 3 | 4
+/** Jenjang kelas: 1 = fondasi berhitung, 2 = bersusun pendek */
+export type GradeLevel = 1 | 2
 
 export interface DigitColumn {
   /** 0 = kolom paling kiri pada tampilan */
@@ -99,7 +101,11 @@ export interface GeneratorSettings {
 
 export interface LevelDefinition {
   id: string
+  /** Nomor urut dalam jenjangnya (per-grade); null untuk level lintas-akhir seperti Tantangan */
   number: number | null
+  grade: GradeLevel
+  /** Level yang harus selesai dulu agar level ini terbuka; null = selalu terbuka */
+  requires: string | null
   name: LocalizedText
   goal: LocalizedText
   example: LocalizedText

@@ -2,19 +2,19 @@
 
 [![CI](https://github.com/alamaby/asharu-math/actions/workflows/ci.yml/badge.svg)](https://github.com/alamaby/asharu-math/actions/workflows/ci.yml)
 
-Aplikasi web interaktif untuk membantu anak kelas 2 SD (usia 6–8 tahun) belajar
-**penjumlahan dan pengurangan bersusun pendek** dengan teknik menyimpan (carry) dan
-meminjam (borrow). Seluruh antarmuka menggunakan Bahasa Indonesia yang sederhana dan ramah anak.
+Aplikasi web interaktif untuk membantu anak kelas 1–2 SD (usia 6–8 tahun) belajar
+**penjumlahan dan pengurangan**: fondasi berhitung 1-digit di Kelas 1, lalu bersusun pendek
+2–4 digit dengan teknik menyimpan (carry) dan meminjam (borrow) di Kelas 2. Seluruh antarmuka menggunakan Bahasa Indonesia yang sederhana dan ramah anak.
 
 ## ✨ Fitur Utama
 
 - **Mode Belajar langkah demi langkah** dengan maskot Asya: satu kotak aktif pada satu waktu, petunjuk bertahap, dan penjelasan meminjam/menyimpan.
-- **Mode Latihan** dengan konfigurasi: jenis soal (tambah/kurang/campuran), jumlah digit (2–4), jumlah soal (5–20), dan kesulitan (tanpa/dengan menyimpan-meminjam).
+- **Mode Latihan** dengan konfigurasi: jenis soal (tambah/kurang/campuran), jumlah digit (1–4), jumlah soal (5–20), dan kesulitan (tanpa/dengan menyimpan-meminjam).
 - **Buat Soal Sendiri**: ketik dua angka dan kerjakan bersusun di layar.
 - **Sapaan nama anak** (opsional, hanya tersimpan di perangkat) yang ikut pada kartu pencapaian saat dibagikan.
 - **Berbagi pencapaian**: kartu gambar PNG 1080×1080 bernama anak (Web Share API dengan fallback unduh), tombol langsung WhatsApp/Facebook/X/Telegram, dan salin teks.
-- **11 level bertahap + Level Tantangan** adaptif yang menyesuaikan kesulitan dengan performa anak.
-- **9 pencapaian (achievement)** yang bisa dibagikan lewat Web Share API dengan fallback "Salin Pencapaian".
+- **15 level bertahap (Kelas 1: 4 level fondasi; Kelas 2: 11 level bersusun) + Level Tantangan** adaptif yang menyesuaikan kesulitan dengan performa anak; level dikelompokkan per kelas dengan nomor per-grade dan chip `Kelas 1/2`.
+- **10 pencapaian (achievement)** termasuk `Bintang Kelas 1` yang bisa dibagikan lewat Web Share API dengan fallback "Salin Pencapaian".
 - **Progres tersimpan lokal** (localStorage) — tanpa server, tanpa akun, tanpa data pribadi anak.
 - **Susunan angka dijamin akurat**: operand tidak pernah tertukar, digit tidak pernah terbalik (26 tetap 26, bukan 62), dan operator `+`/`−` selalu di sebelah kanan baris kedua.
 

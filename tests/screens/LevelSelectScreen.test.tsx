@@ -9,8 +9,10 @@ afterEach(cleanup)
 describe('LevelSelectScreen', () => {
   it('menampilkan seluruh kartu level', () => {
     const { baseElement } = renderScreenWithProviders(<LevelSelectScreen />)
-    expect(screen.getByText(/Level 1:/)).not.toBeNull()
-    // 11 level bernomor + 1 kartu Tantangan
+    // Penomoran per-grade: ada dua "Level 1:" (Kelas 1 & 2)
+    expect(screen.getAllByText(/Level 1:/).length).toBeGreaterThanOrEqual(2)
+    expect(baseElement.textContent).toContain('Kelas 1')
+    expect(baseElement.textContent).toContain('Kelas 2')
     const headings = baseElement.querySelectorAll('h3')
     expect(headings.length).toBe(LEVELS.length)
     expect(baseElement.textContent).toContain('Tantangan')

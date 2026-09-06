@@ -74,6 +74,8 @@ const en: Dict = {
   // Level select
   'levels.bubble':
     'Pick a level! Finish levels in order to unlock the next one. You can replay old levels anytime.',
+  'levels.grade1': 'Grade 1 — Basics',
+  'levels.grade2': 'Grade 2 — Columns',
   'levelCard.numbered': (p: { number: number; name: string }) => `Level ${p.number}: ${p.name}`,
   'levelCard.challenge': (p: { name: string }) => `Challenge: ${p.name}`,
   'levelCard.start': 'Start',
