@@ -283,6 +283,67 @@ export const LEVELS: readonly LevelDefinition[] = [
     questionCount: 10,
     settings: { operation: 'mixed', digitCount: 2, carryMode: 'any', questionCount: 10 },
   },
+  // ---- Kebun Apel Ajaib (paralel, tidak memutus rantai bersusun) ----
+  {
+    id: 'kebun-1',
+    number: 12,
+    grade: 2,
+    levelKind: 'column',
+    requires: 'k1-jembatan-2-digit',
+    name: { id: 'Kebun: Tambah Tanpa Simpan 🍎', en: 'Garden: Add Without Carrying 🍎' },
+    goal: {
+      id: 'Menjumlahkan 2 digit tanpa menyimpan lewat kebun apel',
+      en: 'Add 2-digit numbers without carrying via the garden',
+    },
+    example: { id: 'kebun apel', en: 'apple garden' },
+    questionCount: 5,
+    settings: { operation: 'addition', digitCount: 2, carryMode: 'none', questionCount: 5 },
+  },
+  {
+    id: 'kebun-2',
+    number: 13,
+    grade: 2,
+    levelKind: 'column',
+    requires: 'kebun-1',
+    name: { id: 'Kebun: Tambah Dengan Simpan 🍎', en: 'Garden: Add With Carrying 🍎' },
+    goal: {
+      id: 'Menjumlahkan 2 digit dengan menyimpan lewat kebun apel',
+      en: 'Add 2-digit numbers with carrying via the garden',
+    },
+    example: { id: 'kebun apel', en: 'apple garden' },
+    questionCount: 5,
+    settings: { operation: 'addition', digitCount: 2, carryMode: 'required', questionCount: 5 },
+  },
+  {
+    id: 'kebun-3',
+    number: 14,
+    grade: 2,
+    levelKind: 'column',
+    requires: 'kebun-2',
+    name: { id: 'Kebun: Kurang Tanpa Tukar 🍎', en: 'Garden: Subtract Without Trading 🍎' },
+    goal: {
+      id: 'Mengurangkan 2 digit tanpa menukar lewat kebun apel',
+      en: 'Subtract 2-digit numbers without trading via the garden',
+    },
+    example: { id: 'kebun apel', en: 'apple garden' },
+    questionCount: 5,
+    settings: { operation: 'subtraction', digitCount: 2, carryMode: 'none', questionCount: 5 },
+  },
+  {
+    id: 'kebun-4',
+    number: 15,
+    grade: 2,
+    levelKind: 'column',
+    requires: 'kebun-3',
+    name: { id: 'Kebun: Kurang Dengan Tukar 🍎', en: 'Garden: Subtract With Trading 🍎' },
+    goal: {
+      id: 'Mengurangkan 2 digit dengan menukar lewat kebun apel',
+      en: 'Subtract 2-digit numbers with trading via the garden',
+    },
+    example: { id: 'kebun apel', en: 'apple garden' },
+    questionCount: 5,
+    settings: { operation: 'subtraction', digitCount: 2, carryMode: 'required', questionCount: 5 },
+  },
 ]
 
 export function getLevel(id: string): LevelDefinition | undefined {

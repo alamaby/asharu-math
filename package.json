@@ -1,7 +1,7 @@
 {
   "name": "asharu-math",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "description": "Asharu Math — belajar penjumlahan dan pengurangan serta fondasi berhitung dan nilai tempat untuk anak kelas 1–2 SD",
   "scripts": {

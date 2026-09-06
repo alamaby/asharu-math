@@ -3,7 +3,9 @@ import BottomNavigation from './components/layout/BottomNavigation'
 import { LanguageProvider } from './i18n/LanguageContext'
 import AchievementsScreen from './screens/AchievementsScreen'
 import ConceptLearnScreen from './screens/ConceptLearnScreen'
+import GardenScreen from './screens/GardenScreen'
 import HomeScreen from './screens/HomeScreen'
+import type { GardenLevelId } from './lib/gardenQuestionGenerator'
 import LearnScreen from './screens/LearnScreen'
 import LegalScreen from './screens/LegalScreen'
 import LevelSelectScreen from './screens/LevelSelectScreen'
@@ -32,6 +34,8 @@ function ScreenRouter() {
       )
     case 'concept-learn':
       return <ConceptLearnScreen levelId={screen.levelId} problems={screen.problems} />
+    case 'garden':
+      return <GardenScreen levelId={screen.levelId as GardenLevelId} />
     case 'practice':
       return (
         <PracticeScreen key={JSON.stringify(screen.settings ?? null)} settings={screen.settings} />

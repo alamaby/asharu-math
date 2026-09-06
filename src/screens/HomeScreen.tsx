@@ -117,6 +117,13 @@ export default function HomeScreen() {
       <section aria-label={t('home.actionsAria')} className="space-y-2">
         <button
           type="button"
+          onClick={() => navigate({ name: 'garden', levelId: 'kebun-1' })}
+          className="min-h-14 w-full rounded-2xl border-b-4 border-emerald-600 bg-emerald-500 px-4 text-left text-base font-black text-white hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300"
+        >
+          {t('garden.tryGarden')}
+        </button>
+        <button
+          type="button"
           disabled={!lastLevel}
           onClick={handleContinue}
           className="min-h-14 w-full rounded-2xl border-b-4 border-emerald-600 bg-emerald-500 px-4 text-left text-base font-black text-white hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300 disabled:opacity-40"
