@@ -7,7 +7,13 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { GeneratorSettings, MathProblem, SessionStats, SessionSummary } from '../types'
+import type {
+  ConceptProblem,
+  GeneratorSettings,
+  MathProblem,
+  SessionStats,
+  SessionSummary,
+} from '../types'
 
 export type Screen =
   | { name: 'home' }
@@ -19,6 +25,7 @@ export type Screen =
       initialStats?: SessionStats
       title?: string
     }
+  | { name: 'concept-learn'; levelId: string; problems?: ConceptProblem[] }
   | { name: 'practice'; settings?: GeneratorSettings }
   | { name: 'result'; summary: SessionSummary }
   | { name: 'achievements' }

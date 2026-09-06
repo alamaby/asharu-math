@@ -2,6 +2,7 @@ import AppHeader from './components/layout/AppHeader'
 import BottomNavigation from './components/layout/BottomNavigation'
 import { LanguageProvider } from './i18n/LanguageContext'
 import AchievementsScreen from './screens/AchievementsScreen'
+import ConceptLearnScreen from './screens/ConceptLearnScreen'
 import HomeScreen from './screens/HomeScreen'
 import LearnScreen from './screens/LearnScreen'
 import LegalScreen from './screens/LegalScreen'
@@ -29,6 +30,8 @@ function ScreenRouter() {
           title={screen.title}
         />
       )
+    case 'concept-learn':
+      return <ConceptLearnScreen levelId={screen.levelId} problems={screen.problems} />
     case 'practice':
       return (
         <PracticeScreen key={JSON.stringify(screen.settings ?? null)} settings={screen.settings} />

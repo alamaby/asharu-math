@@ -13,8 +13,8 @@ Aplikasi web interaktif untuk membantu anak kelas 1–2 SD (usia 6–8 tahun) be
 - **Buat Soal Sendiri**: ketik dua angka dan kerjakan bersusun di layar.
 - **Sapaan nama anak** (opsional, hanya tersimpan di perangkat) yang ikut pada kartu pencapaian saat dibagikan.
 - **Berbagi pencapaian**: kartu gambar PNG 1080×1080 bernama anak (Web Share API dengan fallback unduh), tombol langsung WhatsApp/Facebook/X/Telegram, dan salin teks.
-- **15 level bertahap (Kelas 1: 4 level fondasi; Kelas 2: 11 level bersusun) + Level Tantangan** adaptif yang menyesuaikan kesulitan dengan performa anak; level dikelompokkan per kelas dengan nomor per-grade dan chip `Kelas 1/2`.
-- **10 pencapaian (achievement)** termasuk `Bintang Kelas 1` yang bisa dibagikan lewat Web Share API dengan fallback "Salin Pencapaian".
+- **18 level bertahap (Kelas 1: 7 level — 3 konsep + 4 kolom 1–2 digit; Kelas 2: 11 level bersusun) + Level Tantangan** adaptif; level dikelompokkan per kelas dengan nomor per-grade dan chip `Kelas 1/2`.
+- **10 pencapaian (achievement)** termasuk `Bintang Kelas 1` (kini mencakup 7 level K1) yang bisa dibagikan lewat Web Share API dengan fallback "Salin Pencapaian".
 - **Progres tersimpan lokal** (localStorage) — tanpa server, tanpa akun, tanpa data pribadi anak.
 - **Susunan angka dijamin akurat**: operand tidak pernah tertukar, digit tidak pernah terbalik (26 tetap 26, bukan 62), dan operator `+`/`−` selalu di sebelah kanan baris kedua.
 

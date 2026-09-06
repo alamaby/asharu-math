@@ -193,6 +193,23 @@ const id = {
     `Nilai baru kolom ${p.place}: ${p.after}`,
   'borrow.becomes': (p: { place: string; after: number }) => `${p.place} menjadi ${p.after}`,
   'learn.adhocTitle': 'Belajar Langkah demi Langkah',
+  // Soal konsep (pilihan ganda) — render-time via i18n/concept.ts
+  'concept.countPrompt': (p: { icon: string }) => `Hitung ada berapa ${p.icon} di bawah ini?`,
+  'concept.comparePrompt': (p: { left: number; right: number }) =>
+    `Mana yang lebih besar, ${p.left} atau ${p.right}? Atau sama?`,
+  'concept.placePrompt': (p: { number: number; place: string }) =>
+    `Pada bilangan ${p.number}, angka di nilai tempat ${p.place} adalah berapa?`,
+  'concept.choiceGreater': 'Kiri lebih besar',
+  'concept.choiceLess': 'Kanan lebih besar',
+  'concept.choiceEqual': 'Sama besar',
+  'concept.iconApple': 'apel',
+  'concept.iconStar': 'bintang',
+  'concept.iconDot': 'titik',
+  'concept.countingAria': 'Gambar hitung',
+  'concept.hintAfterWrong': 'Coba hitung lagi pelan-pelan ya.',
+  'concept.correctFeedback': 'Benar! Hebat!',
+  'concept.wrongFeedback': 'Belum tepat. Coba lagi ya!',
+  'concept.revealedFeedback': (p: { answer: string }) => `Jawaban yang benar adalah ${p.answer}.`,
   'practice.sessionTitle': 'Latihan Soal',
   'practice.customSessionTitle': 'Soal Buatan Sendiri',
   'mascot.aria': 'Asya, maskot Asharu Math',

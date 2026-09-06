@@ -33,7 +33,11 @@ export default function LevelSelectScreen() {
                   unlocked={isLevelUnlocked(level.id, progress.completedLevelIds)}
                   completed={progress.completedLevelIds.includes(level.id)}
                   stars={progress.bestScores[level.id] ?? 0}
-                  onStart={() => navigate({ name: 'learn', levelId: level.id })}
+                  onStart={() =>
+                    level.levelKind === 'concept'
+                      ? navigate({ name: 'concept-learn', levelId: level.id })
+                      : navigate({ name: 'learn', levelId: level.id })
+                  }
                 />
               ))}
             </div>

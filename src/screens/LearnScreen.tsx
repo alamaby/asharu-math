@@ -14,7 +14,13 @@ import { starsFor } from '../lib/scoring'
 import { playCelebrate, playCorrect, playWrong } from '../lib/sound'
 import { useNavigation } from '../state/NavigationContext'
 import { useProgress } from '../state/ProgressContext'
-import type { LearningStep, MathProblem, SessionStats, SessionSummary } from '../types'
+import type {
+  GeneratorSettings,
+  LearningStep,
+  MathProblem,
+  SessionStats,
+  SessionSummary,
+} from '../types'
 
 interface ProblemResult {
   problem: MathProblem
@@ -462,7 +468,7 @@ export default function LearnScreen({
   const [problems] = useState<MathProblem[]>(() => {
     if (providedProblems && providedProblems.length > 0) return providedProblems
     const level = levelId ? getLevel(levelId) : undefined
-    if (!level) {
+    if (!level || level.levelKind === 'concept') {
       return generateSession({
         operation: 'mixed',
         digitCount: 2,
@@ -471,7 +477,9 @@ export default function LearnScreen({
       })
     }
     const settings =
-      level.id === 'tantangan' ? buildChallengeSettings(progress.practiceHistory) : level.settings
+      level.id === 'tantangan'
+        ? buildChallengeSettings(progress.practiceHistory)
+        : (level.settings as GeneratorSettings)
     return generateSession(settings)
   })
 
@@ -572,7 +580,8 @@ export default function LearnScreen({
       recovered,
       stars,
       levelId,
-      settings: level ? level.settings : null,
+      settings:
+        level && level.levelKind === 'column' ? (level.settings as GeneratorSettings) : null,
       nextLevelId: getNextLevelId(levelId),
       newAchievementIds: [...new Set(newAchievementIds)],
     }

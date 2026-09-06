@@ -17,17 +17,24 @@ import {
   saveProgress,
   touchDayStreak,
 } from '../lib/storage'
-import type { AchievementDefinition, MathProblem, UserProgress } from '../types'
+import type { AchievementDefinition, ConceptKind, MathProblem, UserProgress } from '../types'
 
 export interface RecordAnswerParams {
   problem: MathProblem
   wrongAttempts: number
 }
 
+export interface RecordConceptAnswerParams {
+  kind: ConceptKind
+  wrongAttempts: number
+}
+
 interface ProgressContextValue {
   progress: UserProgress
-  /** Mencatat satu soal selesai; mengembalikan achievement yang baru terbuka */
+  /** Mencatat satu soal kolom selesai */
   recordAnswer: (params: RecordAnswerParams) => AchievementDefinition[]
+  /** Mencatat satu soal konsep selesai (pilihan ganda) */
+  recordConceptAnswer: (params: RecordConceptAnswerParams) => AchievementDefinition[]
   /** Menandai level selesai; mengembalikan achievement yang baru terbuka */
   completeLevel: (levelId: string, stars: number) => AchievementDefinition[]
   markLevelStarted: (levelId: string) => void
@@ -81,6 +88,27 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
           currentStreak: wrongAttempts === 0 ? current.currentStreak + 1 : 0,
           carryCorrect: current.carryCorrect + (problem.requiresCarry ? 1 : 0),
           borrowCorrect: current.borrowCorrect + (problem.requiresBorrow ? 1 : 0),
+          recoveredCount: current.recoveredCount + (wrongAttempts > 0 ? 1 : 0),
+          practiceHistory: [
+            ...current.practiceHistory,
+            { date: new Date().toISOString(), correct: 1, total: 1 + wrongAttempts },
+          ].slice(-20),
+        }),
+      )
+      next = touchStreakBest(next)
+      return withNewAchievements(next)
+    },
+    [update, withNewAchievements],
+  )
+
+  const recordConceptAnswer = useCallback(
+    ({ wrongAttempts }: RecordConceptAnswerParams): AchievementDefinition[] => {
+      let next = update((current) =>
+        touchDayStreak({
+          ...current,
+          totalCorrect: current.totalCorrect + 1,
+          totalWrong: current.totalWrong + wrongAttempts,
+          currentStreak: wrongAttempts === 0 ? current.currentStreak + 1 : 0,
           recoveredCount: current.recoveredCount + (wrongAttempts > 0 ? 1 : 0),
           practiceHistory: [
             ...current.practiceHistory,
@@ -159,6 +187,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     () => ({
       progress,
       recordAnswer,
+      recordConceptAnswer,
       completeLevel,
       markLevelStarted,
       setPreferences,
@@ -168,6 +197,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     [
       progress,
       recordAnswer,
+      recordConceptAnswer,
       completeLevel,
       markLevelStarted,
       setPreferences,

@@ -84,9 +84,15 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     },
     icon: '🎈',
     check: (stats) =>
-      ['k1-tambah-1-digit', 'k1-kurang-1-digit', 'k1-campur-1-digit', 'k1-jembatan-2-digit'].every(
-        (id) => stats.completedLevelIds.includes(id),
-      ),
+      [
+        'k1-membilang',
+        'k1-banding',
+        'k1-nilai-tempat',
+        'k1-tambah-1-digit',
+        'k1-kurang-1-digit',
+        'k1-campur-1-digit',
+        'k1-jembatan-2-digit',
+      ].every((id) => stats.completedLevelIds.includes(id)),
   },
   {
     id: 'tanpa-menyerah',

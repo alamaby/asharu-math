@@ -98,12 +98,15 @@ describe('evaluateNewAchievements', () => {
     expect(bintang2.check(full)).toBe(true)
   })
 
-  it('syarat bintang kelas 1: keempat level K1 harus selesai', () => {
+  it('syarat bintang kelas 1: ketujuh level K1 harus selesai', () => {
     const partial = stats({
-      completedLevelIds: ['k1-tambah-1-digit', 'k1-kurang-1-digit'],
+      completedLevelIds: ['k1-membilang', 'k1-banding'],
     })
     const full = stats({
       completedLevelIds: [
+        'k1-membilang',
+        'k1-banding',
+        'k1-nilai-tempat',
         'k1-tambah-1-digit',
         'k1-kurang-1-digit',
         'k1-campur-1-digit',

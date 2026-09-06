@@ -99,6 +99,53 @@ export interface GeneratorSettings {
   questionCount: number
 }
 
+export type ConceptKind = 'counting' | 'compare' | 'place-value'
+export type CompareAnswer = 'greater' | 'less' | 'equal'
+
+export interface CountingQuestion {
+  kind: 'counting'
+  /** Angka yang harus dihitung anak (1..20 untuk M2) */
+  target: number
+  /** Tampilkan sebagai deret ikon, mis. apel; renderer yang memutuskan layout */
+  icon: 'apple' | 'star' | 'dot'
+}
+
+export interface CompareQuestion {
+  kind: 'compare'
+  left: number
+  right: number
+  expected: CompareAnswer
+}
+
+export interface PlaceValueQuestion {
+  kind: 'place-value'
+  /** 10..99 untuk M2 */
+  number: number
+  /** Posisi yang ditanyakan: puluhan atau satuan */
+  askedPlace: 'tens' | 'units'
+  expectedDigit: number
+}
+
+export type ConceptQuestion = CountingQuestion | CompareQuestion | PlaceValueQuestion
+
+export interface ConceptProblem {
+  id: string
+  kind: ConceptKind
+  question: ConceptQuestion
+  /** Kunci evaluasi ter-normalisasi: '7' untuk counting, 'greater/less/equal' untuk compare, '4' untuk place-value */
+  expectedAnswer: string
+  /** Pilihan jawaban untuk render; counting -> ['5','6','7','8'] dsb. */
+  choices: string[]
+}
+
+export type LevelKind = 'column' | 'concept'
+
+export interface ConceptSettings {
+  kind: 'concept'
+  conceptKind: ConceptKind
+  questionCount: number
+}
+
 export interface LevelDefinition {
   id: string
   /** Nomor urut dalam jenjangnya (per-grade); null untuk level lintas-akhir seperti Tantangan */
@@ -106,11 +153,13 @@ export interface LevelDefinition {
   grade: GradeLevel
   /** Level yang harus selesai dulu agar level ini terbuka; null = selalu terbuka */
   requires: string | null
+  /** Bentuk soal level ini: kolom bersusun vs konsep pilihan ganda */
+  levelKind: LevelKind
   name: LocalizedText
   goal: LocalizedText
   example: LocalizedText
   questionCount: number
-  settings: GeneratorSettings
+  settings: GeneratorSettings | ConceptSettings
 }
 
 export interface SessionStats {
