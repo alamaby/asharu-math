@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import AppHeader from './components/layout/AppHeader'
 import BottomNavigation from './components/layout/BottomNavigation'
 import { LanguageProvider } from './i18n/LanguageContext'
@@ -6,6 +7,7 @@ import ConceptLearnScreen from './screens/ConceptLearnScreen'
 import GardenScreen from './screens/GardenScreen'
 import HomeScreen from './screens/HomeScreen'
 import type { GardenLevelId } from './lib/gardenQuestionGenerator'
+import type { AquariumLevelId } from './lib/aquariumQuestionGenerator'
 import LearnScreen from './screens/LearnScreen'
 import LegalScreen from './screens/LegalScreen'
 import LevelSelectScreen from './screens/LevelSelectScreen'
@@ -15,7 +17,11 @@ import SettingsScreen from './screens/SettingsScreen'
 import { NavigationProvider, useNavigation } from './state/NavigationContext'
 import { ProgressProvider, useProgress } from './state/ProgressContext'
 
+const AquariumScreen = lazy(() => import('./screens/AquariumScreen'))
+const AquariumCanvasLazyHint = 'aquarium'
+
 function ScreenRouter() {
+  void AquariumCanvasLazyHint
   const { screen } = useNavigation()
   switch (screen.name) {
     case 'home':
@@ -36,6 +42,16 @@ function ScreenRouter() {
       return <ConceptLearnScreen levelId={screen.levelId} problems={screen.problems} />
     case 'garden':
       return <GardenScreen levelId={screen.levelId as GardenLevelId} />
+    case 'aquarium':
+      return (
+        <Suspense
+          fallback={
+            <div className="py-10 text-center text-sm font-bold text-slate-400">Memuat akuarium…</div>
+          }
+        >
+          <AquariumScreen levelId={screen.levelId as AquariumLevelId} />
+        </Suspense>
+      )
     case 'practice':
       return (
         <PracticeScreen key={JSON.stringify(screen.settings ?? null)} settings={screen.settings} />

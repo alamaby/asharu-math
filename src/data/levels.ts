@@ -344,6 +344,67 @@ export const LEVELS: readonly LevelDefinition[] = [
     questionCount: 5,
     settings: { operation: 'subtraction', digitCount: 2, carryMode: 'required', questionCount: 5 },
   },
+  // ---- Akuarium Ikan Ceria (paralel, 2-digit 4 level, canvas Three.js) ----
+  {
+    id: 'akuarium-1',
+    number: 16,
+    grade: 2,
+    levelKind: 'column',
+    requires: 'k1-jembatan-2-digit',
+    name: { id: 'Akuarium: Tambah Tanpa Simpan 🐠', en: 'Aquarium: Add Without Carrying 🐠' },
+    goal: {
+      id: 'Menjumlahkan 2 digit tanpa menyimpan lewat akuarium',
+      en: 'Add 2-digit numbers without carrying via the aquarium',
+    },
+    example: { id: 'akuarium ikan', en: 'fish aquarium' },
+    questionCount: 5,
+    settings: { operation: 'addition', digitCount: 2, carryMode: 'none', questionCount: 5 },
+  },
+  {
+    id: 'akuarium-2',
+    number: 17,
+    grade: 2,
+    levelKind: 'column',
+    requires: 'akuarium-1',
+    name: { id: 'Akuarium: Tambah Dengan Simpan 🐠', en: 'Aquarium: Add With Carrying 🐠' },
+    goal: {
+      id: 'Menjumlahkan 2 digit dengan menyimpan lewat akuarium',
+      en: 'Add 2-digit numbers with carrying via the aquarium',
+    },
+    example: { id: 'akuarium ikan', en: 'fish aquarium' },
+    questionCount: 5,
+    settings: { operation: 'addition', digitCount: 2, carryMode: 'required', questionCount: 5 },
+  },
+  {
+    id: 'akuarium-3',
+    number: 18,
+    grade: 2,
+    levelKind: 'column',
+    requires: 'akuarium-2',
+    name: { id: 'Akuarium: Kurang Tanpa Tukar 🐠', en: 'Aquarium: Subtract Without Trading 🐠' },
+    goal: {
+      id: 'Mengurangkan 2 digit tanpa menukar lewat akuarium',
+      en: 'Subtract 2-digit numbers without trading via the aquarium',
+    },
+    example: { id: 'akuarium ikan', en: 'fish aquarium' },
+    questionCount: 5,
+    settings: { operation: 'subtraction', digitCount: 2, carryMode: 'none', questionCount: 5 },
+  },
+  {
+    id: 'akuarium-4',
+    number: 19,
+    grade: 2,
+    levelKind: 'column',
+    requires: 'akuarium-3',
+    name: { id: 'Akuarium: Kurang Dengan Tukar 🐠', en: 'Aquarium: Subtract With Trading 🐠' },
+    goal: {
+      id: 'Mengurangkan 2 digit dengan menukar lewat akuarium',
+      en: 'Subtract 2-digit numbers with trading via the aquarium',
+    },
+    example: { id: 'akuarium ikan', en: 'fish aquarium' },
+    questionCount: 5,
+    settings: { operation: 'subtraction', digitCount: 2, carryMode: 'required', questionCount: 5 },
+  },
 ]
 
 export function getLevel(id: string): LevelDefinition | undefined {

@@ -38,6 +38,10 @@ export default function LevelSelectScreen() {
                       navigate({ name: 'garden', levelId: level.id })
                       return
                     }
+                    if (level.id.startsWith('akuarium-')) {
+                      navigate({ name: 'aquarium', levelId: level.id })
+                      return
+                    }
                     return level.levelKind === 'concept'
                       ? navigate({ name: 'concept-learn', levelId: level.id })
                       : navigate({ name: 'learn', levelId: level.id })

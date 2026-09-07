@@ -27,6 +27,7 @@ export type Screen =
     }
   | { name: 'concept-learn'; levelId: string; problems?: ConceptProblem[] }
   | { name: 'garden'; levelId: string }
+  | { name: 'aquarium'; levelId: string }
   | { name: 'practice'; settings?: GeneratorSettings }
   | { name: 'result'; summary: SessionSummary }
   | { name: 'achievements' }
