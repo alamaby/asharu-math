@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import * as THREE from 'three'
 
@@ -14,6 +14,7 @@ type AquariumCanvasProps = {
 }
 
 function hasWebGL(): boolean {
+  if (typeof window === 'undefined') return false
   try {
     const c = document.createElement('canvas')
     return !!(window.WebGLRenderingContext && (c.getContext('webgl') || c.getContext('experimental-webgl')))
@@ -35,8 +36,7 @@ function CanvasFallback({ message }: { message: string }) {
 
 export default function AquariumCanvas(props: AquariumCanvasProps) {
   const [hidden, setHidden] = useState(false)
-  // canvas always — deteksi sync agar tidak setState di effect
-  const webGL = hasWebGL()
+  const webGL = useMemo(() => hasWebGL(), [])
 
   useEffect(() => {
     const onVis = () => setHidden(document.hidden)

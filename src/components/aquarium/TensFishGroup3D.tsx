@@ -1,8 +1,9 @@
-import * as THREE from 'three'
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Text } from '@react-three/drei'
+import * as THREE from 'three'
 import Fish3D from './Fish3D'
+import { useProgress } from '../../state/ProgressContext'
 
 type TensFishGroup3DProps = {
   position?: [number, number, number]
@@ -19,6 +20,7 @@ export default function TensFishGroup3D({
 }: TensFishGroup3DProps) {
   const ringRef = useRef<THREE.Mesh>(null)
   const groupRef = useRef<THREE.Group>(null)
+  const { progress } = useProgress()
 
   // 10 ikan in circle formation
   const fishPositions = useMemo(() => {
@@ -30,6 +32,7 @@ export default function TensFishGroup3D({
   }, [])
 
   useFrame(({ clock }) => {
+    if (!progress.animationsEnabled) return
     if (groupRef.current) {
       const t = clock.getElapsedTime()
       // slow rotation of entire group

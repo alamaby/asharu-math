@@ -1,6 +1,8 @@
 import * as THREE from 'three'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
+
+import { useProgress } from '../../state/ProgressContext'
 
 // Shared low-poly geometries/materials — disposed on unmount via effect not needed as reused
 const bodyGeo = new THREE.BoxGeometry(0.55, 0.32, 0.22)
@@ -34,15 +36,30 @@ export default function Fish3D({
   highlight = false,
 }: Fish3DProps) {
   const groupRef = useRef<THREE.Group>(null)
+  const posRef = useRef<[number, number, number]>(position)
+  const { progress } = useProgress()
   const bodyMat = variant === 'ones' ? matOnesBody : matTensBody
   const tailMat = variant === 'ones' ? matTailOnes : matTailTens
   const dotMat = variant === 'ones' ? matOnesDot : matTensDot
 
-  // subtle floating wiggle
+  useEffect(() => {
+    posRef.current = position
+    if (groupRef.current) {
+      groupRef.current.position.set(position[0], position[1], position[2])
+      groupRef.current.scale.set(scale, scale, scale)
+    }
+  }, [position, scale])
+
+  // floating wiggle — skip when animations disabled or reduced-motion
   useFrame(({ clock }) => {
     if (!groupRef.current) return
+    if (!progress.animationsEnabled) return
+    const target = posRef.current
+    // keep x/z in sync with prop even if position changed
+    if (Math.abs(groupRef.current.position.x - target[0]) > 0.001) groupRef.current.position.x = target[0]
+    if (Math.abs(groupRef.current.position.z - target[2]) > 0.001) groupRef.current.position.z = target[2]
     const t = clock.getElapsedTime() + wiggleOffset
-    groupRef.current.position.y = position[1] + Math.sin(t * 1.2) * 0.06
+    groupRef.current.position.y = target[1] + Math.sin(t * 1.2) * 0.06
     groupRef.current.rotation.z = Math.sin(t * 0.9) * 0.08
     if (highlight) {
       const s = 1 + Math.sin(t * 2.5) * 0.06
@@ -54,7 +71,7 @@ export default function Fish3D({
     <group
       ref={groupRef}
       position={position}
-      scale={highlight ? scale : scale}
+      scale={scale}
       dispose={null}
     >
       {/* Body */}

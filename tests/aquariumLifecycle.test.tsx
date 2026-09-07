@@ -63,16 +63,16 @@ describe('Akuarium — lifecycle & kontrol (render)', () => {
   it('AquariumScreen render dan tombol interaktif ada', async () => {
     const AquariumScreen = (await import('../src/screens/AquariumScreen')).default
     renderScreenWithProviders(<AquariumScreen levelId="akuarium-1" />)
-    expect(await screen.findByText(/Akuarium Ikan Ceria/i)).not.toBeNull()
-    // canvas always — fallback WebGL muncul atau canvas tampil
+    // heading spesifik — gagal sebelumnya karena getByText menemukan 2 node (header + subtitle)
+    expect(await screen.findByRole('heading', { name: /Akuarium Ikan Ceria/i })).not.toBeNull()
     const canvasOrFallback = document.querySelector('canvas') ?? screen.queryByRole('alert')
-    expect(canvasOrFallback != null || (await screen.findByText(/Akuarium Ikan Ceria/i)) != null).toBe(true)
+    expect(canvasOrFallback != null || screen.queryByRole('heading', { name: /Akuarium/i }) != null).toBe(true)
   })
 
   it('NumericKeypad tersedia tanpa drag (a11y)', async () => {
     const AquariumScreen = (await import('../src/screens/AquariumScreen')).default
     renderScreenWithProviders(<AquariumScreen levelId="akuarium-2" />)
-    await screen.findByText(/Akuarium Ikan Ceria/i)
+    await screen.findByRole('heading', { name: /Akuarium Ikan Ceria/i })
     for (let d = 0; d <= 9; d++) {
       expect(screen.getByLabelText(`Angka ${d}`)).not.toBeNull()
     }
@@ -83,7 +83,7 @@ describe('Akuarium — lifecycle & kontrol (render)', () => {
     const spy = vi.spyOn(aquariumSound, 'speak')
     const AquariumScreen = (await import('../src/screens/AquariumScreen')).default
     renderScreenWithProviders(<AquariumScreen levelId="akuarium-2" />)
-    await screen.findByText(/Akuarium Ikan Ceria/i)
+    await screen.findByRole('heading', { name: /Akuarium Ikan Ceria/i })
     const hintBtn = screen.getByText('💡 Petunjuk')
     fireEvent.click(hintBtn)
     fireEvent.click(hintBtn)
@@ -95,7 +95,7 @@ describe('Akuarium — lifecycle & kontrol (render)', () => {
     const spy = vi.spyOn(aquariumSound, 'stopAllAudio')
     const AquariumScreen = (await import('../src/screens/AquariumScreen')).default
     const { unmount } = renderScreenWithProviders(<AquariumScreen levelId="akuarium-1" />)
-    await screen.findByText(/Akuarium Ikan Ceria/i)
+    await screen.findByRole('heading', { name: /Akuarium Ikan Ceria/i })
     unmount()
     expect(spy).toHaveBeenCalled()
     spy.mockRestore()

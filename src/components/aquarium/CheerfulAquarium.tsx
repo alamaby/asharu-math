@@ -33,7 +33,7 @@ import { playTap } from '../../lib/sound'
 
 type Phase =
   | 'intro'
-  | 'tutorial'
+  // 'tutorial' phase handled via tutorialOpen boolean + tutorialStep
   | 'showQuestion'
   | 'exchangeOrGroup'
   | 'enterOnesAnswer'

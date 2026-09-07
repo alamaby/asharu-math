@@ -55,6 +55,9 @@ Menambahkan modul animasi interaktif "Akuarium Ikan Ceria" untuk penjumlahan/pen
 ## Progress Log
 - 2026-09-07 13:55:00 — Audit codebase + baseline bersih (lint ok, typecheck ok, 30 files 232 tests) + draft plan Three.js canvas-always low-poly DOM-board
 - 2026-09-07 14:00:00 — Plan file dibuat, mulai eksekusi M1
+- 2026-09-07 14:30:00 — Commit c9b4bad: 31 files 3083+ lines, lazy AquariumScreen, three/fiber chunks, 32 files 261 tests
+- 2026-09-07 14:35:00 — Review c9b4bad → temuan T-01..T-07, plan perbaikan ditulis di 2026-09-07-akuarium-ikan-ceria-review-fix-plan.md
+- 2026-09-07 14:42:00 — Fix T-01..T-07: App.tsx dead-code, WebGL hasWebGL guard+useMemo, Fish3D posRef+useProgress+reduced-motion, TensFishGroup3D reduced-motion, AquariumEnvironment3D reduced-motion, CheerfulAquarium tutorial phase, test heading query. Verifikasi: lint ok, typecheck ok, 32 files 261 tests passed, build ok.
 
 ## Notes
 - Stack existing: React 18.3 + TS 5.6 strict + Vite 6.3 + Tailwind v4 + Vitest 3.1, tanpa router, tanpa Three.js. Garden (kebun apel) jadi referensi langsung: placeValueMath, gardenQuestionGenerator, gardenSound, MagicAppleGarden pattern.

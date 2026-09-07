@@ -18,10 +18,8 @@ import { NavigationProvider, useNavigation } from './state/NavigationContext'
 import { ProgressProvider, useProgress } from './state/ProgressContext'
 
 const AquariumScreen = lazy(() => import('./screens/AquariumScreen'))
-const AquariumCanvasLazyHint = 'aquarium'
 
 function ScreenRouter() {
-  void AquariumCanvasLazyHint
   const { screen } = useNavigation()
   switch (screen.name) {
     case 'home':

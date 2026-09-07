@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 
+import { useProgress } from '../../state/ProgressContext'
+
 const sandMat = new THREE.MeshLambertMaterial({ color: '#fef3c7' })
 const rockMat = new THREE.MeshLambertMaterial({ color: '#a8a29e' })
 const plantMat = new THREE.MeshLambertMaterial({ color: '#34d399' })
@@ -9,6 +11,7 @@ const plantDarkMat = new THREE.MeshLambertMaterial({ color: '#059669' })
 
 export default function AquariumEnvironment3D() {
   const bubbleRefs = useRef<THREE.Mesh[]>([])
+  const { progress } = useProgress()
 
   // bubbles rising — max 10, deterministic seeds (avoid Math.random purity lint)
   const bubbleData = useMemo(() => {
@@ -28,6 +31,7 @@ export default function AquariumEnvironment3D() {
   }, [])
 
   useFrame(({ clock }) => {
+    if (!progress.animationsEnabled) return
     const t = clock.getElapsedTime()
     for (let i = 0; i < bubbleRefs.current.length; i++) {
       const m = bubbleRefs.current[i]
