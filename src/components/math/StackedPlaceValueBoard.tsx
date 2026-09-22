@@ -121,7 +121,7 @@ export default function StackedPlaceValueBoard({
         return (
           <div key={`label-${column.index}`} style={place(i, 1)}>
             <span
-              className={`w-11 text-center text-[0.65rem] font-black uppercase ${labelColor(id, tone)} ${highlighted ? labelHighlight(id, tone) : ''}`}
+              className={`inline-block w-11 text-center text-[0.65rem] font-black uppercase ${labelColor(id, tone)} ${highlighted ? labelHighlight(id, tone) : ''}`}
             >
               {labelText(id)}
             </span>

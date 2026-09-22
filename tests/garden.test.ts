@@ -4,6 +4,7 @@ import {
   splitTensOnes,
   splitPlaces,
   totalFromHundreds,
+  combinedForAddition,
   exchangeTenOnesToBasket,
   openBasketToTenApples,
   exchangeTenTensToHundred,
@@ -193,6 +194,14 @@ describe('placeValueMath — ratusan 3-digit', () => {
     expect(isCorrectAt(245, 138, 'addition', 2, 3, 4)).toBe(false)
   })
 
+  it('helper turunan aman untuk operan 3-digit (regresi crash kebun-5/6)', () => {
+    // needsCarry/needsBorrow dipanggil komponen dengan operan mentah 100..999.
+    expect(() => needsCarry(245, 138)).not.toThrow()
+    expect(() => needsBorrow(432, 176)).not.toThrow()
+    expect(needsBorrow(432, 176)).toBe(true)
+    expect(combinedForAddition(245, 138)).toEqual({ tens: 4 + 3, ones: 5 + 8 })
+  })
+
   it('generator kebun-5/6: 3-digit required', () => {
     for (let i = 0; i < 20; i++) {
       const add = generateGardenProblem({ levelId: 'kebun-5' })
@@ -201,6 +210,8 @@ describe('placeValueMath — ratusan 3-digit', () => {
       expect(hasCarry(add.firstOperand, add.secondOperand)).toBe(true)
       expect(add.firstOperand).toBeGreaterThanOrEqual(100)
       expect(add.firstOperand).toBeLessThanOrEqual(999)
+      expect(add.expectedResult).toBeLessThanOrEqual(999)
+      expect(add.columns.length).toBe(3)
       const sub = generateGardenProblem({ levelId: 'kebun-6' })
       expect(sub.operation).toBe('subtraction')
       expect(sub.digitCount).toBe(3)

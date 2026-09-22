@@ -9,13 +9,8 @@ import PlaceValueBoard from './PlaceValueBoard'
 import NumericKeypad from '../input/NumericKeypad'
 import { useI18n } from '../../i18n/LanguageContext'
 import { useProgress } from '../../state/ProgressContext'
-import {
-  splitTensOnes,
-  splitPlaces,
-  needsCarry,
-  needsBorrow,
-  isCorrectAt,
-} from '../../lib/placeValueMath'
+import { splitPlaces, isCorrectAt } from '../../lib/placeValueMath'
+import { hasBorrow, hasCarry } from '../../lib/arithmetic'
 import {
   speak,
   repeatLastNarration,
@@ -62,11 +57,8 @@ export default function MagicAppleGarden({
   const isAdd = problem.operation === 'addition'
   const top = problem.firstOperand
   const bottom = problem.secondOperand
-  const carryNeeded = isAdd && needsCarry(top, bottom)
-  const borrowNeeded = !isAdd && needsBorrow(top, bottom)
-
-  const topSplit = splitTensOnes(Math.min(top, 99))
-  const botSplit = splitTensOnes(Math.min(bottom, 99))
+  const carryNeeded = isAdd && hasCarry(top, bottom)
+  const borrowNeeded = !isAdd && hasBorrow(top, bottom)
 
   const width = problem.columns.length
   if (width !== 2 && width !== 3) {
@@ -77,18 +69,7 @@ export default function MagicAppleGarden({
   const topPlaces = splitPlaces(Math.min(top, 999))
   const botPlaces = splitPlaces(Math.min(bottom, 999))
 
-  // Visual state
-  const initialTens = isAdd ? topSplit.tens + botSplit.tens : topSplit.tens
-  const initialOnes = isAdd ? topSplit.ones + botSplit.ones : topSplit.ones
-  const afterTens =
-    isAdd && carryNeeded ? initialTens + 1 : !isAdd && borrowNeeded ? initialTens - 1 : initialTens
-  const afterOnes =
-    isAdd && carryNeeded
-      ? initialOnes - 10
-      : !isAdd && borrowNeeded
-        ? initialOnes + 10
-        : initialOnes
-
+  // Carry/borrow berantai untuk ratusan (S→P→R)
   const onesSum = topPlaces.ones + botPlaces.ones
   const carry1 = isAdd && onesSum >= 10 ? 1 : 0
   const tensSum = topPlaces.tens + botPlaces.tens + carry1
@@ -96,6 +77,30 @@ export default function MagicAppleGarden({
   const borrow1 = !isAdd && topPlaces.ones < botPlaces.ones ? 1 : 0
   const tensEffective = topPlaces.tens - borrow1
   const borrow2 = !isAdd && tensEffective < botPlaces.tens ? 1 : 0
+
+  // Visual state
+  const initialTens = isAdd ? topPlaces.tens + botPlaces.tens : topPlaces.tens
+  const initialOnes = isAdd ? topPlaces.ones + botPlaces.ones : topPlaces.ones
+  // 2-digit: pertahankan perilaku lama (puluhan boleh >9 karena tak ada kartu R).
+  // 3-digit: normalisasi penuh S→P→R.
+  const afterTens = isThree
+    ? isAdd
+      ? initialTens + carry1 - (carry2 ? 10 : 0)
+      : initialTens - borrow1 + (borrow2 ? 10 : 0)
+    : isAdd && carryNeeded
+      ? initialTens + 1
+      : !isAdd && borrowNeeded
+        ? initialTens - 1
+        : initialTens
+  const afterOnes = isThree
+    ? isAdd
+      ? initialOnes - (carry1 ? 10 : 0)
+      : initialOnes + (borrow1 ? 10 : 0)
+    : isAdd && carryNeeded
+      ? initialOnes - 10
+      : !isAdd && borrowNeeded
+        ? initialOnes + 10
+        : initialOnes
   const initialHundreds = isAdd ? topPlaces.hundreds + botPlaces.hundreds : topPlaces.hundreds
   const afterHundreds = isAdd
     ? topPlaces.hundreds + botPlaces.hundreds + carry2
@@ -105,7 +110,9 @@ export default function MagicAppleGarden({
   const [visualOnes, setVisualOnes] = useState(initialOnes)
   const [visualHundreds, setVisualHundreds] = useState(initialHundreds)
   const [exchanged, setExchanged] = useState(false)
+  const [exchangedHundred, setExchangedHundred] = useState(false)
   const [opened, setOpened] = useState(false)
+  const [openedHundred, setOpenedHundred] = useState(false)
   const [phase, setPhase] = useState<GardenPhase>('intro')
   const [onesAnswer, setOnesAnswer] = useState<number | null>(null)
   const [tensAnswer, setTensAnswer] = useState<number | null>(null)
@@ -146,32 +153,41 @@ export default function MagicAppleGarden({
     }
   }, [clearTimers])
 
-  // Reset when problem changes — keyed by problem.id, also handles normal phase flow
+  // Reset when problem changes — keyed by problem.id, also handles normal phase flow.
+  // Reset sinkron (tanpa setTimeout): timer soal lama dibersihkan DULU,
+  // lalu state di-reset. Timer soal baru dijadwalkan oleh effect intro/
+  // showQuestion SETELAH effect ini, sehingga tidak ikut terhapus.
+  // (Versi async sebelumnya menghapus timer intro 600ms yang baru
+  // dijadwalkan pada mount yang sama → fase macet di 'intro' selamanya.)
+  // Reset sinkron disengaja + aman (deps hanya problem.id); cascading render
+  // tidak terjadi karena effect hanya fire saat soal berganti.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    const id = window.setTimeout(() => {
-      setVisualTens(initialTens)
-      setVisualOnes(initialOnes)
-      setVisualHundreds(initialHundreds)
-      setExchanged(false)
-      setOpened(false)
-      setPhase('intro')
-      setOnesAnswer(null)
-      setTensAnswer(null)
-      setHundredsAnswer(null)
-      setActiveColumn('ones')
-      setFeedback(null)
-      setHighlight('ones')
-      setAnimating(false)
-      setWrongAttempts(0)
-      setWrongOnes(false)
-      setWrongTens(false)
-      setWrongHundreds(false)
-      setHasCheckedOnce(false)
-      clearTimers()
-      stopAllAudio()
-    }, 0)
-    timersRef.current.push(id)
-  }, [problem.id, initialTens, initialOnes, initialHundreds, clearTimers])
+    clearTimers()
+    stopAllAudio()
+    setVisualTens(initialTens)
+    setVisualOnes(initialOnes)
+    setVisualHundreds(initialHundreds)
+    setExchanged(false)
+    setExchangedHundred(false)
+    setOpened(false)
+    setOpenedHundred(false)
+    setPhase('intro')
+    setOnesAnswer(null)
+    setTensAnswer(null)
+    setHundredsAnswer(null)
+    setActiveColumn('ones')
+    setFeedback(null)
+    setHighlight('ones')
+    setAnimating(false)
+    setWrongAttempts(0)
+    setWrongOnes(false)
+    setWrongTens(false)
+    setWrongHundreds(false)
+    setHasCheckedOnce(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [problem.id])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const narrate = useCallback(
     (text: string) => {
@@ -224,17 +240,41 @@ export default function MagicAppleGarden({
     setFeedback({ kind: 'info', text: t('garden.tenToBasket') })
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
-      setVisualTens(afterTens)
-      setVisualOnes(afterOnes)
-      setVisualHundreds(afterHundreds)
+      if (isThree) {
+        setVisualOnes(afterOnes)
+        setVisualTens(exchangedHundred ? afterTens : initialTens + carry1)
+      } else {
+        setVisualTens(afterTens)
+        setVisualOnes(afterOnes)
+        setVisualHundreds(afterHundreds)
+      }
       setExchanged(true)
       setAnimating(false)
-      setPhase('enterOnesAnswer')
-      setHighlight('ones')
-      setFeedback({ kind: 'info', text: t('garden.enterOnes') })
+      if (isThree && carry2 > 0 && !exchangedHundred) {
+        setPhase('exchangeOrRegroup')
+        setHighlight('hundreds')
+        setFeedback({ kind: 'info', text: t('garden.tenTensToHundred') })
+      } else {
+        setPhase('enterOnesAnswer')
+        setHighlight('ones')
+        setFeedback({ kind: 'info', text: t('garden.enterOnes') })
+      }
     }, duration)
     timersRef.current.push(id)
-  }, [animating, exchanged, afterTens, afterOnes, afterHundreds, narrate, t])
+  }, [
+    animating,
+    exchanged,
+    exchangedHundred,
+    isThree,
+    afterTens,
+    afterOnes,
+    afterHundreds,
+    initialTens,
+    carry1,
+    carry2,
+    narrate,
+    t,
+  ])
 
   const doOpen = useCallback(() => {
     if (animating || opened) return
@@ -244,17 +284,91 @@ export default function MagicAppleGarden({
     setFeedback({ kind: 'info', text: t('garden.openBasket') })
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
-      setVisualTens(afterTens)
-      setVisualOnes(afterOnes)
-      setVisualHundreds(afterHundreds)
+      if (isThree) {
+        setVisualOnes(afterOnes)
+        setVisualTens(openedHundred ? afterTens : initialTens - borrow1)
+      } else {
+        setVisualTens(afterTens)
+        setVisualOnes(afterOnes)
+        setVisualHundreds(afterHundreds)
+      }
       setOpened(true)
       setAnimating(false)
-      setPhase('enterOnesAnswer')
-      setHighlight('ones')
-      setFeedback({ kind: 'info', text: t('garden.enterOnes') })
+      if (isThree && borrow2 > 0 && !openedHundred) {
+        setPhase('exchangeOrRegroup')
+        setHighlight('hundreds')
+        setFeedback({ kind: 'info', text: t('garden.openHundredAction') })
+      } else {
+        setPhase('enterOnesAnswer')
+        setHighlight('ones')
+        setFeedback({ kind: 'info', text: t('garden.enterOnes') })
+      }
     }, duration)
     timersRef.current.push(id)
-  }, [animating, opened, afterTens, afterOnes, afterHundreds, narrate, t])
+  }, [
+    animating,
+    opened,
+    openedHundred,
+    isThree,
+    afterTens,
+    afterOnes,
+    afterHundreds,
+    initialTens,
+    borrow1,
+    borrow2,
+    narrate,
+    t,
+  ])
+
+  const doExchangeHundred = useCallback(() => {
+    if (animating || exchangedHundred) return
+    setAnimating(true)
+    playPutToBasket()
+    narrate(t('garden.tenTensToHundred'))
+    setFeedback({ kind: 'info', text: t('garden.tenTensToHundred') })
+    const duration = prefersReducedMotion.current ? 50 : 700
+    const id = window.setTimeout(() => {
+      setVisualTens(afterTens)
+      setVisualHundreds(afterHundreds)
+      setExchangedHundred(true)
+      setAnimating(false)
+      if (carry1 > 0 && !exchanged) {
+        setPhase('exchangeOrRegroup')
+        setHighlight('ones')
+        setFeedback({ kind: 'info', text: t('garden.tenToBasket') })
+      } else {
+        setPhase('enterOnesAnswer')
+        setHighlight('ones')
+        setFeedback({ kind: 'info', text: t('garden.enterOnes') })
+      }
+    }, duration)
+    timersRef.current.push(id)
+  }, [animating, exchanged, exchangedHundred, afterTens, afterHundreds, carry1, narrate, t])
+
+  const doOpenHundred = useCallback(() => {
+    if (animating || openedHundred) return
+    setAnimating(true)
+    playOpenBasket()
+    narrate(t('garden.openHundredAction'))
+    setFeedback({ kind: 'info', text: t('garden.openHundredAction') })
+    const duration = prefersReducedMotion.current ? 50 : 700
+    const id = window.setTimeout(() => {
+      setVisualTens(afterTens)
+      setVisualHundreds(afterHundreds)
+      setOpenedHundred(true)
+      setAnimating(false)
+      if (borrow1 > 0 && !opened) {
+        setPhase('exchangeOrRegroup')
+        setHighlight('ones')
+        setFeedback({ kind: 'info', text: t('garden.openBasket') })
+      } else {
+        setPhase('enterOnesAnswer')
+        setHighlight('ones')
+        setFeedback({ kind: 'info', text: t('garden.enterOnes') })
+      }
+    }, duration)
+    timersRef.current.push(id)
+  }, [animating, opened, openedHundred, afterTens, afterHundreds, borrow1, narrate, t])
 
   const handleHint = () => {
     playTap()
@@ -278,6 +392,14 @@ export default function MagicAppleGarden({
       narrate(text)
     } else if (isAdd && carryNeeded && !exchanged) {
       const text = t('garden.tenToBasket')
+      setFeedback({ kind: 'info', text })
+      narrate(text)
+    } else if (isThree && isAdd && carry2 > 0 && !exchangedHundred) {
+      const text = t('garden.tenTensToHundred')
+      setFeedback({ kind: 'info', text })
+      narrate(text)
+    } else if (isThree && !isAdd && borrow2 > 0 && !openedHundred) {
+      const text = t('garden.openHundredAction')
       setFeedback({ kind: 'info', text })
       narrate(text)
     } else {
@@ -370,7 +492,9 @@ export default function MagicAppleGarden({
     setVisualOnes(initialOnes)
     setVisualHundreds(initialHundreds)
     setExchanged(false)
+    setExchangedHundred(false)
     setOpened(false)
+    setOpenedHundred(false)
     setOnesAnswer(null)
     setTensAnswer(null)
     setHundredsAnswer(null)
@@ -429,11 +553,16 @@ export default function MagicAppleGarden({
     }
   }
 
-  const carryShown = isAdd && carryNeeded && exchanged
-  const borrowShown = !isAdd && borrowNeeded && opened
+  const carryShown = isAdd && carryNeeded && (isThree ? exchangedHundred || exchanged : exchanged)
+  const borrowShown = !isAdd && borrowNeeded && (isThree ? openedHundred || opened : opened)
+  // Aksi bertahap 3-digit: tukar/buka satuan dulu, ratusan setelahnya.
+  const showOnesAction = !isThree || carry1 === 0 || exchanged
+  const showHundredAddAction = isThree && isAdd && carry2 > 0 && !exchangedHundred
+  const showOnesBorrowAction = !isThree || borrow1 === 0 || opened
+  const showHundredSubAction = isThree && !isAdd && borrow2 > 0 && !openedHundred
 
   const carryValues = isThree
-    ? [carry2 ? 1 : null, carry1 ? 1 : null, null]
+    ? [carry2 > 0 && exchangedHundred ? 1 : null, carry1 > 0 && exchanged ? 1 : null, null]
     : [carryShown ? 1 : null, null]
   const borrowValues = borrowShown
     ? isThree
@@ -505,7 +634,7 @@ export default function MagicAppleGarden({
 
       {/* Aksi pertukaran — sinkron dengan angka bersusun */}
       <div className="flex flex-wrap gap-2">
-        {isAdd && carryNeeded && !exchanged && phase !== 'intro' && (
+        {isAdd && carryNeeded && !exchanged && showOnesAction && phase !== 'intro' && (
           <button
             type="button"
             onClick={doExchange}
@@ -516,7 +645,18 @@ export default function MagicAppleGarden({
             {t('garden.exchangeAction')} (10 → 1)
           </button>
         )}
-        {!isAdd && borrowNeeded && !opened && (
+        {showHundredAddAction && phase !== 'intro' && (
+          <button
+            type="button"
+            onClick={doExchangeHundred}
+            disabled={animating}
+            className="min-h-11 rounded-2xl border-b-4 border-violet-600 bg-violet-500 px-4 text-sm font-black text-white hover:bg-violet-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300 disabled:opacity-40"
+            aria-label={t('garden.exchangeHundredAction')}
+          >
+            {t('garden.exchangeHundredAction')} (10 → 1)
+          </button>
+        )}
+        {!isAdd && borrowNeeded && !opened && showOnesBorrowAction && (
           <button
             type="button"
             onClick={doOpen}
@@ -525,6 +665,17 @@ export default function MagicAppleGarden({
             aria-label={t('garden.openAction')}
           >
             {t('garden.openAction')} (1 → 10)
+          </button>
+        )}
+        {showHundredSubAction && phase !== 'intro' && (
+          <button
+            type="button"
+            onClick={doOpenHundred}
+            disabled={animating}
+            className="min-h-11 rounded-2xl border-b-4 border-violet-600 bg-violet-500 px-4 text-sm font-black text-white hover:bg-violet-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300 disabled:opacity-40"
+            aria-label={t('garden.openHundredAction')}
+          >
+            {t('garden.openHundredAction')} (1 → 10)
           </button>
         )}
       </div>

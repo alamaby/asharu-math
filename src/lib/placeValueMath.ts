@@ -40,11 +40,11 @@ export function totalFromHundreds(split: HundredsSplit): number {
 }
 
 export function basketsFor(value: number): number {
-  return splitTensOnes(value).tens
+  return splitPlaces(value).tens
 }
 
 export function applesFor(value: number): number {
-  return splitTensOnes(value).ones
+  return splitPlaces(value).ones
 }
 
 /** Validasi invariant kebun */
@@ -92,8 +92,8 @@ export function openHundredToTenTens(
 
 /** Hitung gabungan apel/keranjang untuk penjumlahan */
 export function combinedForAddition(first: number, second: number): PlaceSplit {
-  const a = splitTensOnes(first)
-  const b = splitTensOnes(second)
+  const a = splitPlaces(first)
+  const b = splitPlaces(second)
   return { tens: a.tens + b.tens, ones: a.ones + b.ones }
 }
 
@@ -123,6 +123,7 @@ export function isCorrectOnesAnswer(
   return givenOnes === expected
 }
 
+/** Khusus 2-digit — untuk 3-digit gunakan isCorrectAt. */
 export function isCorrectTensAnswer(
   top: number,
   bottom: number,

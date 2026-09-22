@@ -4,6 +4,7 @@ import {
   splitTensOnes,
   splitPlaces,
   totalFromHundreds,
+  combinedForAddition,
   formGroup,
   splitGroup,
   formHundred,
@@ -200,12 +201,21 @@ describe('aquariumPlaceValueMath — ratusan 3-digit', () => {
     expect(isCorrectAt(245, 138, 'addition', 0, 3, 4)).toBe(false)
   })
 
+  it('helper turunan aman untuk operan 3-digit (regresi crash akuarium-5/6)', () => {
+    expect(() => needsCarry(245, 138)).not.toThrow()
+    expect(() => needsBorrow(432, 176)).not.toThrow()
+    expect(needsBorrow(432, 176)).toBe(true)
+    expect(combinedForAddition(245, 138)).toEqual({ tens: 4 + 3, ones: 5 + 8 })
+  })
+
   it('generator akuarium-5/6: 3-digit required', () => {
     for (let i = 0; i < 20; i++) {
       const add = generateAquariumProblem({ levelId: 'akuarium-5' })
       expect(add.operation).toBe('addition')
       expect(add.digitCount).toBe(3)
       expect(hasCarry(add.firstOperand, add.secondOperand)).toBe(true)
+      expect(add.expectedResult).toBeLessThanOrEqual(999)
+      expect(add.columns.length).toBe(3)
       const sub = generateAquariumProblem({ levelId: 'akuarium-6' })
       expect(sub.operation).toBe('subtraction')
       expect(sub.firstOperand).toBeGreaterThanOrEqual(sub.secondOperand)

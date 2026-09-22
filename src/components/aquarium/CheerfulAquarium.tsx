@@ -12,13 +12,8 @@ import AquariumTutorial, { TUTORIAL_STEPS_COUNT } from './AquariumTutorial'
 import NumericKeypad from '../input/NumericKeypad'
 import { useI18n } from '../../i18n/LanguageContext'
 import { useProgress } from '../../state/ProgressContext'
-import {
-  splitTensOnes,
-  splitPlaces,
-  needsCarry,
-  needsBorrow,
-  isCorrectAt,
-} from '../../lib/aquariumPlaceValueMath'
+import { splitPlaces, isCorrectAt } from '../../lib/aquariumPlaceValueMath'
+import { hasBorrow, hasCarry } from '../../lib/arithmetic'
 import {
   speak,
   repeatLastNarration,
@@ -61,11 +56,8 @@ export default function CheerfulAquarium({
   const isAdd = problem.operation === 'addition'
   const top = problem.firstOperand
   const bottom = problem.secondOperand
-  const carryNeeded = isAdd && needsCarry(top, bottom)
-  const borrowNeeded = !isAdd && needsBorrow(top, bottom)
-
-  const topSplit = splitTensOnes(Math.min(top, 99))
-  const botSplit = splitTensOnes(Math.min(bottom, 99))
+  const carryNeeded = isAdd && hasCarry(top, bottom)
+  const borrowNeeded = !isAdd && hasBorrow(top, bottom)
 
   const width = problem.columns.length
   if (width !== 2 && width !== 3) {
@@ -76,17 +68,6 @@ export default function CheerfulAquarium({
   const topPlaces = splitPlaces(Math.min(top, 999))
   const botPlaces = splitPlaces(Math.min(bottom, 999))
 
-  const initialTens = isAdd ? topSplit.tens + botSplit.tens : topSplit.tens
-  const initialOnes = isAdd ? topSplit.ones + botSplit.ones : topSplit.ones
-  const afterTens =
-    isAdd && carryNeeded ? initialTens + 1 : !isAdd && borrowNeeded ? initialTens - 1 : initialTens
-  const afterOnes =
-    isAdd && carryNeeded
-      ? initialOnes - 10
-      : !isAdd && borrowNeeded
-        ? initialOnes + 10
-        : initialOnes
-
   // Carry/borrow berantai untuk ratusan (S→P→R)
   const onesSum = topPlaces.ones + botPlaces.ones
   const carry1 = isAdd && onesSum >= 10 ? 1 : 0
@@ -95,6 +76,29 @@ export default function CheerfulAquarium({
   const borrow1 = !isAdd && topPlaces.ones < botPlaces.ones ? 1 : 0
   const tensEffective = topPlaces.tens - borrow1
   const borrow2 = !isAdd && tensEffective < botPlaces.tens ? 1 : 0
+
+  const initialTens = isAdd ? topPlaces.tens + botPlaces.tens : topPlaces.tens
+  const initialOnes = isAdd ? topPlaces.ones + botPlaces.ones : topPlaces.ones
+  // 2-digit: pertahankan perilaku lama (puluhan boleh >9 karena tak ada kartu R).
+  // 3-digit: normalisasi penuh S→P→R.
+  const afterTens = isThree
+    ? isAdd
+      ? initialTens + carry1 - (carry2 ? 10 : 0)
+      : initialTens - borrow1 + (borrow2 ? 10 : 0)
+    : isAdd && carryNeeded
+      ? initialTens + 1
+      : !isAdd && borrowNeeded
+        ? initialTens - 1
+        : initialTens
+  const afterOnes = isThree
+    ? isAdd
+      ? initialOnes - (carry1 ? 10 : 0)
+      : initialOnes + (borrow1 ? 10 : 0)
+    : isAdd && carryNeeded
+      ? initialOnes - 10
+      : !isAdd && borrowNeeded
+        ? initialOnes + 10
+        : initialOnes
   const initialHundreds = isAdd ? topPlaces.hundreds + botPlaces.hundreds : topPlaces.hundreds
   const afterHundreds = isAdd
     ? topPlaces.hundreds + botPlaces.hundreds + carry2
@@ -104,7 +108,9 @@ export default function CheerfulAquarium({
   const [visualOnes, setVisualOnes] = useState(initialOnes)
   const [visualHundreds, setVisualHundreds] = useState(initialHundreds)
   const [exchanged, setExchanged] = useState(false)
+  const [exchangedHundred, setExchangedHundred] = useState(false)
   const [opened, setOpened] = useState(false)
+  const [openedHundred, setOpenedHundred] = useState(false)
   const [phase, setPhase] = useState<Phase>('intro')
   const [tutorialStep, setTutorialStep] = useState(0)
   const [tutorialOpen, setTutorialOpen] = useState(false)
@@ -148,34 +154,43 @@ export default function CheerfulAquarium({
     }
   }, [clearTimers])
 
+  // Reset sinkron (tanpa setTimeout): timer soal lama dibersihkan DULU,
+  // lalu state di-reset. Timer soal baru dijadwalkan oleh effect intro/
+  // showQuestion SETELAH effect ini, sehingga tidak ikut terhapus.
+  // (Versi async sebelumnya menghapus timer intro 600ms/tutorial yang baru
+  // dijadwalkan pada mount yang sama → fase macet di 'intro' selamanya.)
+  // Reset sinkron disengaja + aman (deps hanya problem.id); cascading render
+  // tidak terjadi karena effect hanya fire saat soal berganti.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    const id = window.setTimeout(() => {
-      setVisualTens(initialTens)
-      setVisualOnes(initialOnes)
-      setVisualHundreds(initialHundreds)
-      setExchanged(false)
-      setOpened(false)
-      setPhase('intro')
-      setTutorialStep(0)
-      setTutorialOpen(false)
-      setOnesAnswer(null)
-      setTensAnswer(null)
-      setHundredsAnswer(null)
-      setActiveColumn('ones')
-      setFeedback(null)
-      setSubtitle(null)
-      setHighlight('ones')
-      setAnimating(false)
-      setWrongAttempts(0)
-      setWrongOnes(false)
-      setWrongTens(false)
-      setWrongHundreds(false)
-      setHasCheckedOnce(false)
-      clearTimers()
-      stopAllAudio()
-    }, 0)
-    timersRef.current.push(id)
-  }, [problem.id, initialTens, initialOnes, initialHundreds, clearTimers])
+    clearTimers()
+    stopAllAudio()
+    setVisualTens(initialTens)
+    setVisualOnes(initialOnes)
+    setVisualHundreds(initialHundreds)
+    setExchanged(false)
+    setExchangedHundred(false)
+    setOpened(false)
+    setOpenedHundred(false)
+    setPhase('intro')
+    setTutorialStep(0)
+    setTutorialOpen(false)
+    setOnesAnswer(null)
+    setTensAnswer(null)
+    setHundredsAnswer(null)
+    setActiveColumn('ones')
+    setFeedback(null)
+    setSubtitle(null)
+    setHighlight('ones')
+    setAnimating(false)
+    setWrongAttempts(0)
+    setWrongOnes(false)
+    setWrongTens(false)
+    setWrongHundreds(false)
+    setHasCheckedOnce(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [problem.id])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const narrate = useCallback(
     (text: string) => {
@@ -270,17 +285,66 @@ export default function CheerfulAquarium({
     setFeedback({ kind: 'info', text: t('aquarium.tenToGroup') })
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
-      setVisualTens(afterTens)
-      setVisualOnes(afterOnes)
-      setVisualHundreds(afterHundreds)
+      if (isThree) {
+        setVisualOnes(afterOnes)
+        setVisualTens(exchangedHundred ? afterTens : initialTens + carry1)
+      } else {
+        setVisualTens(afterTens)
+        setVisualOnes(afterOnes)
+        setVisualHundreds(afterHundreds)
+      }
       setExchanged(true)
       setAnimating(false)
-      setPhase('enterOnesAnswer')
-      setHighlight('ones')
-      setFeedback({ kind: 'info', text: t('aquarium.enterOnes') })
+      if (isThree && carry2 > 0 && !exchangedHundred) {
+        setPhase('exchangeOrGroup')
+        setHighlight('hundreds')
+        setFeedback({ kind: 'info', text: t('aquarium.tenGroupsToHundred') })
+      } else {
+        setPhase('enterOnesAnswer')
+        setHighlight('ones')
+        setFeedback({ kind: 'info', text: t('aquarium.enterOnes') })
+      }
     }, duration)
     timersRef.current.push(id)
-  }, [animating, exchanged, afterTens, afterOnes, afterHundreds, narrate, t])
+  }, [
+    animating,
+    exchanged,
+    exchangedHundred,
+    isThree,
+    afterTens,
+    afterOnes,
+    afterHundreds,
+    initialTens,
+    carry1,
+    carry2,
+    narrate,
+    t,
+  ])
+
+  const doFormHundred = useCallback(() => {
+    if (animating || exchangedHundred) return
+    setAnimating(true)
+    playFormGroup()
+    narrate(t('aquarium.tenGroupsToHundred'))
+    setFeedback({ kind: 'info', text: t('aquarium.tenGroupsToHundred') })
+    const duration = prefersReducedMotion.current ? 50 : 700
+    const id = window.setTimeout(() => {
+      setVisualTens(afterTens)
+      setVisualHundreds(afterHundreds)
+      setExchangedHundred(true)
+      setAnimating(false)
+      if (carry1 > 0 && !exchanged) {
+        setPhase('exchangeOrGroup')
+        setHighlight('ones')
+        setFeedback({ kind: 'info', text: t('aquarium.tenToGroup') })
+      } else {
+        setPhase('enterOnesAnswer')
+        setHighlight('ones')
+        setFeedback({ kind: 'info', text: t('aquarium.enterOnes') })
+      }
+    }, duration)
+    timersRef.current.push(id)
+  }, [animating, exchanged, exchangedHundred, afterTens, afterHundreds, carry1, narrate, t])
 
   const doSplitGroup = useCallback(() => {
     if (animating || opened) return
@@ -290,17 +354,66 @@ export default function CheerfulAquarium({
     setFeedback({ kind: 'info', text: t('aquarium.splitGroup') })
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
-      setVisualTens(afterTens)
-      setVisualOnes(afterOnes)
-      setVisualHundreds(afterHundreds)
+      if (isThree) {
+        setVisualOnes(afterOnes)
+        setVisualTens(openedHundred ? afterTens : initialTens - borrow1)
+      } else {
+        setVisualTens(afterTens)
+        setVisualOnes(afterOnes)
+        setVisualHundreds(afterHundreds)
+      }
       setOpened(true)
       setAnimating(false)
-      setPhase('enterOnesAnswer')
-      setHighlight('ones')
-      setFeedback({ kind: 'info', text: t('aquarium.enterOnes') })
+      if (isThree && borrow2 > 0 && !openedHundred) {
+        setPhase('exchangeOrGroup')
+        setHighlight('hundreds')
+        setFeedback({ kind: 'info', text: t('aquarium.splitHundredAction') })
+      } else {
+        setPhase('enterOnesAnswer')
+        setHighlight('ones')
+        setFeedback({ kind: 'info', text: t('aquarium.enterOnes') })
+      }
     }, duration)
     timersRef.current.push(id)
-  }, [animating, opened, afterTens, afterOnes, afterHundreds, narrate, t])
+  }, [
+    animating,
+    opened,
+    openedHundred,
+    isThree,
+    afterTens,
+    afterOnes,
+    afterHundreds,
+    initialTens,
+    borrow1,
+    borrow2,
+    narrate,
+    t,
+  ])
+
+  const doSplitHundred = useCallback(() => {
+    if (animating || openedHundred) return
+    setAnimating(true)
+    playSplitGroup()
+    narrate(t('aquarium.splitHundredAction'))
+    setFeedback({ kind: 'info', text: t('aquarium.splitHundredAction') })
+    const duration = prefersReducedMotion.current ? 50 : 700
+    const id = window.setTimeout(() => {
+      setVisualTens(afterTens)
+      setVisualHundreds(afterHundreds)
+      setOpenedHundred(true)
+      setAnimating(false)
+      if (borrow1 > 0 && !opened) {
+        setPhase('exchangeOrGroup')
+        setHighlight('ones')
+        setFeedback({ kind: 'info', text: t('aquarium.splitGroup') })
+      } else {
+        setPhase('enterOnesAnswer')
+        setHighlight('ones')
+        setFeedback({ kind: 'info', text: t('aquarium.enterOnes') })
+      }
+    }, duration)
+    timersRef.current.push(id)
+  }, [animating, opened, openedHundred, afterTens, afterHundreds, borrow1, narrate, t])
 
   const handleHint = () => {
     playTap()
@@ -324,6 +437,14 @@ export default function CheerfulAquarium({
       narrate(text)
     } else if (isAdd && carryNeeded && !exchanged) {
       const text = t('aquarium.tenToGroup')
+      setFeedback({ kind: 'info', text })
+      narrate(text)
+    } else if (isThree && isAdd && carry2 > 0 && !exchangedHundred) {
+      const text = t('aquarium.tenGroupsToHundred')
+      setFeedback({ kind: 'info', text })
+      narrate(text)
+    } else if (isThree && !isAdd && borrow2 > 0 && !openedHundred) {
+      const text = t('aquarium.splitHundredAction')
       setFeedback({ kind: 'info', text })
       narrate(text)
     } else {
@@ -412,7 +533,9 @@ export default function CheerfulAquarium({
     setVisualOnes(initialOnes)
     setVisualHundreds(initialHundreds)
     setExchanged(false)
+    setExchangedHundred(false)
     setOpened(false)
+    setOpenedHundred(false)
     setOnesAnswer(null)
     setTensAnswer(null)
     setHundredsAnswer(null)
@@ -471,11 +594,11 @@ export default function CheerfulAquarium({
     }
   }
 
-  const carryShown = isAdd && carryNeeded && exchanged
-  const borrowShown = !isAdd && borrowNeeded && opened
+  const carryShown = isAdd && carryNeeded && (isThree ? exchangedHundred || exchanged : exchanged)
+  const borrowShown = !isAdd && borrowNeeded && (isThree ? openedHundred || opened : opened)
 
   const carryValues = isThree
-    ? [carry2 ? 1 : null, carry1 ? 1 : null, null]
+    ? [carry2 > 0 && exchangedHundred ? 1 : null, carry1 > 0 && exchanged ? 1 : null, null]
     : [carryShown ? 1 : null, null]
   const borrowValues = borrowShown
     ? isThree
@@ -495,6 +618,11 @@ export default function CheerfulAquarium({
     !tutorialOpen
   const isCompleted = phase === 'completed'
   const digitsDisabled = animating || isCompleted || phase === 'intro' || tutorialOpen
+  // Aksi bertahap 3-digit: bentuk/pecah satuan dulu, ratusan setelahnya.
+  const showOnesFormAction = !isThree || carry1 === 0 || exchanged
+  const showHundredFormAction = isThree && isAdd && carry2 > 0 && !exchangedHundred
+  const showOnesSplitAction = !isThree || borrow1 === 0 || opened
+  const showHundredSplitAction = isThree && !isAdd && borrow2 > 0 && !openedHundred
 
   return (
     <div className="space-y-4">
@@ -536,6 +664,7 @@ export default function CheerfulAquarium({
         ones={visualOnes}
         hundreds={visualHundreds}
         showHundreds={isThree}
+        hundredsUnitLabel={t('aquarium.tankLabel')}
         highlight={highlight}
       />
 
@@ -553,12 +682,12 @@ export default function CheerfulAquarium({
           data-testid="aquarium-hundreds-overlay"
           className="mx-auto w-fit rounded-2xl border-2 border-violet-200 bg-violet-50 px-3 py-1 text-xs font-black text-violet-700"
         >
-          {visualHundreds} peti · {visualHundreds * 100}
+          {visualHundreds} {t('aquarium.tankLabel')} · {visualHundreds * 100}
         </div>
       )}
 
       <div className="flex flex-wrap gap-2">
-        {isAdd && carryNeeded && !exchanged && phase !== 'intro' && (
+        {isAdd && carryNeeded && !exchanged && showOnesFormAction && phase !== 'intro' && (
           <button
             type="button"
             onClick={() => {
@@ -572,7 +701,21 @@ export default function CheerfulAquarium({
             {t('aquarium.formGroupAction')} (10 → 1)
           </button>
         )}
-        {!isAdd && borrowNeeded && !opened && phase !== 'intro' && (
+        {showHundredFormAction && phase !== 'intro' && (
+          <button
+            type="button"
+            onClick={() => {
+              playPickFish()
+              doFormHundred()
+            }}
+            disabled={animating}
+            className="min-h-11 rounded-2xl border-b-4 border-violet-600 bg-violet-500 px-4 text-sm font-black text-white hover:bg-violet-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300 disabled:opacity-40"
+            aria-label={t('aquarium.formHundredAction')}
+          >
+            {t('aquarium.formHundredAction')} (10 → 1)
+          </button>
+        )}
+        {!isAdd && borrowNeeded && !opened && showOnesSplitAction && phase !== 'intro' && (
           <button
             type="button"
             onClick={() => {
@@ -584,6 +727,20 @@ export default function CheerfulAquarium({
             aria-label={t('aquarium.splitGroupAction')}
           >
             {t('aquarium.splitGroupAction')} (1 → 10)
+          </button>
+        )}
+        {showHundredSplitAction && phase !== 'intro' && (
+          <button
+            type="button"
+            onClick={() => {
+              playPickFish()
+              doSplitHundred()
+            }}
+            disabled={animating}
+            className="min-h-11 rounded-2xl border-b-4 border-violet-600 bg-violet-500 px-4 text-sm font-black text-white hover:bg-violet-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300 disabled:opacity-40"
+            aria-label={t('aquarium.splitHundredAction')}
+          >
+            {t('aquarium.splitHundredAction')} (1 → 10)
           </button>
         )}
       </div>
@@ -640,7 +797,7 @@ export default function CheerfulAquarium({
       />
 
       <p className="sr-only" aria-live="polite">
-        {isThree ? `${visualHundreds} peti ratusan, ` : ''}
+        {isThree ? `${visualHundreds} ${t('aquarium.tankLabel')} ratusan, ` : ''}
         {visualTens} kelompok puluhan, {visualOnes} ikan satuan. Pertanyaan {currentIndex + 1} dari{' '}
         {total}.
       </p>

@@ -27,6 +27,17 @@ function aquariumSettingsFor(levelId: AquariumLevelId): GeneratorSettings {
 }
 
 export function generateAquariumProblem(options: AquariumGeneratorOptions): MathProblem {
+  // Level 3-digit tambah: hasil harus muat 3 kolom (≤999) agar papan R/P/S bisa menampungnya.
+  if (options.levelId === 'akuarium-5') {
+    for (let i = 0; i < 50; i++) {
+      const p = generateProblem(
+        { operation: 'addition', digitCount: 3, carryMode: 'required', questionCount: 1 },
+        options.previous ?? null,
+      )
+      if (p.expectedResult <= 999) return p
+    }
+    return buildProblem('addition', 245, 138)
+  }
   const settings = aquariumSettingsFor(options.levelId)
   return generateProblem(settings, options.previous ?? null)
 }

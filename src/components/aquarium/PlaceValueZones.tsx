@@ -4,6 +4,7 @@ type Props = {
   hundreds?: number
   highlight?: 'tens' | 'ones' | 'hundreds' | null
   showHundreds?: boolean
+  hundredsUnitLabel?: string
 }
 
 export default function PlaceValueZones({
@@ -12,6 +13,7 @@ export default function PlaceValueZones({
   hundreds = 0,
   highlight,
   showHundreds,
+  hundredsUnitLabel = 'peti',
 }: Props) {
   const showR = showHundreds ?? hundreds > 0
   return (
@@ -27,7 +29,9 @@ export default function PlaceValueZones({
             </span>
             <h3 className="text-sm font-black text-violet-800">RATUSAN</h3>
             <span className="ml-auto flex items-center gap-1 text-xs font-bold text-violet-700">
-              <span className="rounded-full bg-violet-100 px-2 py-0.5">{hundreds} peti</span>
+              <span className="rounded-full bg-violet-100 px-2 py-0.5">
+                {hundreds} {hundredsUnitLabel}
+              </span>
               <span className="text-violet-500">· {hundreds * 100}</span>
             </span>
           </div>

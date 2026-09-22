@@ -1,10 +1,10 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-09-22 23:20:00
+Last Updated: 2026-09-23 00:15:00
 Format Version: 1
 
 ## Current State
-- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.4.1` (papan R/P/S sejajar + ratusan 3-digit + fix Periksa akuarium-kebun).
+- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.4.2` (review fix: crash 3-digit + fase macet intro + visual ratusan).
 - Sesi Belajar penjumlahan: input sekali per kolom — ketik jumlah di Kotak Hitung, jawaban + simpanan terisi otomatis (`carry-down` auto untuk kolom turunan carry; `carry-digit` dihapus).
 - Konten: K1 3 konsep (membilang/banding/nilai-tempat) + 4 kolom 1–2 digit; K2 11 bersusun + **4 cerita** (cerita-1..4) + Tantangan adaptif; 11 achievement (`bintang-kelas-1` mencakup 7 K1, `bintang-cerita` mencakup 4 cerita).
 - Rantai K2: `level-11 → cerita-1 → cerita-2 → cerita-3 → cerita-4 → tantangan`.
@@ -27,7 +27,9 @@ Format Version: 1
 - Unlock: `requires` + veteran bypass `K1_IDS` 7; `isLevelUnlocked` — level yang sudah selesai selalu `true`; next linear via `LEVELS` order.
 
 ## Open Items / Blockers
-- Verifikasi manual browser plan akuarium-garden BELUM dilakukan (360px/desktop, 23+22, 245+138 S→P→R, Periksa saat tutorial) — butuh browser interaktif.
+- Verifikasi manual browser plan akuarium-garden BELUM dilakukan (259+178 tukar bertahap S→R, 432−176 pecah bertahap, Periksa saat tutorial, 360px/desktop) — butuh browser interaktif.
+- Tindak lanjut terpisah (di luar scope review ini): duplikat `number` 20–23 antara level cerita dan level kebun/akuarium-5/6 (plan S7 melarang ubah number level lama).
+- Pre-existing flake: `tests/screens/PracticeScreenStory.test.tsx` gagal di full-suite (baseline maupun kini), lolos terisolasi; file di luar diff review.
 - Sisa AdSense: verifikasi 4 display unit produksi di dashboard setelah deploy.
 - Coverage report (`@vitest/coverage-v8`) belum dipasang (opsional).
 - Uji manual PWA di perangkat nyata setelah deploy Vercel berikutnya (checklist di plan).
@@ -35,6 +37,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-09-23 00:15:00 — Review fix papan ratusan (crash 3-digit, fase macet, visual)](2026-09-23/001500-review-fix-papan-ratusan.md)
 - [2026-09-22 23:20:00 — Papan R/P/S sejajar + ratusan 3-digit + fix Periksa](2026-09-22/232000-aquarium-garden-ratusan-dan-periksa.md)
 - [2026-09-22 19:38:00 — Soal cerita Kelas 2 multi-langkah (4 level + generator + i18n)](2026-09-22/193800-soal-cerita-kelas-2.md)
 - [2026-09-13 21:45:00 — Sesi belajar input angka sekali per kolom](2026-09-13/214500-sesi-belajar-input-angka-sekali.md)

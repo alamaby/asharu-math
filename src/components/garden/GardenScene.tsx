@@ -58,7 +58,7 @@ export default function GardenScene({
                 disabled={disabled || animating}
                 pulse={highlight === 'hundreds'}
                 onClick={() => onCrateClick?.(i)}
-                label={`Peti ratusan ${i + 1}, berisi 100 apel`}
+                label={`${t('garden.crateLabel')} ${i + 1}`}
               />
             ))}
             {hundreds > 9 && (

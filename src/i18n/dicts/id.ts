@@ -419,7 +419,7 @@ const id = {
   'garden.hintHundreds': 'Periksa lagi jumlah peti di kolom ratusan.',
   'garden.hundredsArea': 'Area Ratusan',
   'garden.hundredsColor': 'Ratusan: ungu violet',
-  'garden.crateLabel': 'Peti ratusan',
+  'garden.crateLabel': 'Peti ratusan 100 apel',
   'garden.exchangeHundredAction': 'Tukarkan 10 keranjang menjadi 1 peti',
   'garden.openHundredAction': 'Buka 1 peti menjadi 10 keranjang',
   'garden.tenTensToHundred': 'Sepuluh keranjang puluhan dapat ditukar menjadi satu peti ratusan.',

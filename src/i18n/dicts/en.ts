@@ -420,7 +420,7 @@ const en: Dict = {
   'garden.hintHundreds': 'Check the crates in the hundreds column again.',
   'garden.hundredsArea': 'Hundreds Area',
   'garden.hundredsColor': 'Hundreds: violet purple',
-  'garden.crateLabel': 'Hundreds crate',
+  'garden.crateLabel': 'Hundreds crate of 100 apples',
   'garden.exchangeHundredAction': 'Exchange 10 baskets for 1 crate',
   'garden.openHundredAction': 'Open 1 crate into 10 baskets',
   'garden.tenTensToHundred': 'Ten tens baskets can be exchanged for one hundreds crate.',
