@@ -24,14 +24,14 @@ function kerjakan(state: LearnState, problem: MathProblem): LearnState {
       s = ketik(s, String(step.expected))
       s = learnReducer(s, { type: 'check-interim' })
       s = learnReducer(s, { type: 'next' })
-    } else if (step.kind === 'answer-digit' || step.kind === 'carry-digit') {
+    } else if (step.kind === 'answer-digit') {
       s = learnReducer(s, digit(step.expectedDigit))
       s = learnReducer(s, { type: 'next' })
     } else if (step.kind === 'borrow-question') {
       s = learnReducer(s, { type: 'choose', answer: 'tidak-bisa' })
       s = learnReducer(s, { type: 'next' })
     } else {
-      // intro, borrow-explain, review: langsung lanjut
+      // intro, carry-down, borrow-explain, review: langsung lanjut
       s = learnReducer(s, { type: 'next' })
     }
   }
@@ -39,7 +39,7 @@ function kerjakan(state: LearnState, problem: MathProblem): LearnState {
 }
 
 describe('reducer mode belajar — alur ketik-sekali', () => {
-  it('jawaban digit benar melengkapi langkah dan menjadwalkan auto-lanjut', () => {
+  it('jumlah benar mengisi jawaban + simpanan otomatis dan menjadwalkan auto-lanjut', () => {
     const problem = buildProblem('addition', 23, 14) // tanpa carry
     let s = initState([problem])
     s = learnReducer(s, { type: 'next' }) // intro → interim satuan
@@ -47,12 +47,21 @@ describe('reducer mode belajar — alur ketik-sekali', () => {
     s = learnReducer(s, { type: 'check-interim' })
     expect(s.stepComplete).toBe(true)
     expect(s.autoAdvanceToken).not.toBeNull()
-    s = learnReducer(s, { type: 'next' }) // → jawaban satuan
-    expect(s.autoAdvanceToken).toBeNull()
-    s = learnReducer(s, digit(7))
-    expect(s.stepComplete).toBe(true)
+    // Tanpa ketik ulang: jawaban satuan langsung terisi
     expect(s.answers[1]).toBe(7)
-    expect(s.autoAdvanceToken).not.toBeNull()
+  })
+
+  it('jumlah dengan carry mengisi jawaban puluhan dan simpanan sekaligus', () => {
+    const problem = buildProblem('addition', 26, 87) // satuan 6 + 7 = 13
+    let s = initState([problem])
+    s = learnReducer(s, { type: 'next' }) // intro → interim satuan
+    s = ketik(s, '13')
+    s = learnReducer(s, { type: 'check-interim' })
+    expect(s.stepComplete).toBe(true)
+    expect(s.answers[2]).toBe(3)
+    expect(s.carries[1]).toBe(1)
+    s = learnReducer(s, { type: 'next' }) // → interim puluhan
+    expect(s.autoAdvanceToken).toBeNull()
   })
 
   it('interim salah dikosongkan untuk dicoba ulang, benar lalu auto-lanjut', () => {
@@ -122,7 +131,7 @@ describe('reducer mode belajar — auto-lanjut dari review', () => {
       if (step.kind === 'interim-sum') {
         s = ketik(s, String(step.expected))
         s = learnReducer(s, { type: 'check-interim' })
-      } else if (step.kind === 'answer-digit' || step.kind === 'carry-digit') {
+      } else if (step.kind === 'answer-digit') {
         s = learnReducer(s, digit(step.expectedDigit))
       } else if (step.kind === 'borrow-question') {
         s = learnReducer(s, { type: 'choose', answer: 'tidak-bisa' })

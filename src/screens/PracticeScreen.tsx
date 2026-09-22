@@ -4,9 +4,11 @@ import HintPanel from '../components/guide/HintPanel'
 import ProgressBar from '../components/guide/ProgressBar'
 import MascotBubble from '../components/layout/MascotBubble'
 import NumericKeypad from '../components/input/NumericKeypad'
+import StoryCard from '../components/story/StoryCard'
 import VerticalMathProblem from '../components/math/VerticalMathProblem'
 import { useI18n } from '../i18n/LanguageContext'
 import { buildProblem, generateSession } from '../lib/problemGenerator'
+import { generateStorySession } from '../lib/storyGenerator'
 import { starsFor } from '../lib/scoring'
 import { playCorrect, playWrong } from '../lib/sound'
 import {
@@ -24,7 +26,12 @@ import type {
   MathProblem,
   OperationChoice,
   OperationType,
+  SessionStats,
   SessionSummary,
+  StoryFamily,
+  StoryPart,
+  StoryProblem,
+  StorySettings,
 } from '../types'
 
 interface ProblemResult {
@@ -49,6 +56,24 @@ interface SessionState {
   results: ProblemResult[]
 }
 
+interface StoryQueueItem {
+  story: StoryProblem
+  part: StoryPart
+}
+
+interface StorySessionState {
+  queue: StoryQueueItem[]
+  index: number
+  interim: string
+  attempts: number
+  wrongInPart: number
+  feedback: Feedback | null
+  locked: boolean
+  results: { part: StoryPart; wrongAttempts: number }[]
+  settings: GeneratorSettings | null
+  title: string
+}
+
 function startSession(
   problems: MathProblem[],
   settings: GeneratorSettings | null,
@@ -71,6 +96,13 @@ function startSession(
     locked: false,
     results: [],
   }
+}
+
+function familiesForPractice(digits: DigitCount, op: OperationChoice): readonly StoryFamily[] {
+  const f0: StoryFamily[] = op === 'addition' ? ['f0-add'] : op === 'subtraction' ? ['f0-sub'] : ['f0-add', 'f0-sub']
+  if (digits <= 1) return f0 as readonly StoryFamily[]
+  if (digits === 2) return [...f0, 'f1-diff'] as readonly StoryFamily[]
+  return [...f0, 'f1-diff', 'f2-transfer', 'f3-chain', 'f4-join3', 'f5-tiered'] as readonly StoryFamily[]
 }
 
 function OptionGroup<T extends string | number>(props: {
@@ -113,13 +145,43 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
   const { recordAnswer } = useProgress()
   const { t } = useI18n()
 
-  const [phase, setPhase] = useState<'setup' | 'solving'>(initialSettings ? 'solving' : 'setup')
+  const [phase, setPhase] = useState<'setup' | 'solving' | 'solving-story'>(
+    initialSettings?.presentation === 'story' ? 'solving-story' : initialSettings ? 'solving' : 'setup',
+  )
   const [session, setSession] = useState<SessionState | null>(() =>
-    initialSettings
+    initialSettings?.presentation !== 'story' && initialSettings
       ? startSession(generateSession(initialSettings), initialSettings, t('practice.sessionTitle'))
       : null,
   )
+  const [storySession, setStorySession] = useState<StorySessionState | null>(() => {
+    if (initialSettings?.presentation !== 'story' || !initialSettings) return null
+    const storySettings: StorySettings = {
+      kind: 'story',
+      operation: initialSettings.operation,
+      digitCount: initialSettings.digitCount,
+      carryMode: initialSettings.carryMode,
+      questionCount: initialSettings.questionCount,
+      families: familiesForPractice(initialSettings.digitCount, initialSettings.operation),
+    }
+    const stems = generateStorySession(storySettings)
+    const queue = stems.flatMap((s) => s.parts.map((p) => ({ story: s, part: p })))
+    return {
+      queue,
+      index: 0,
+      interim: '',
+      attempts: 0,
+      wrongInPart: 0,
+      feedback: null,
+      locked: false,
+      results: [],
+      settings: initialSettings,
+      title: t('practice.sessionTitle'),
+    }
+  })
 
+  const [formMode, setFormMode] = useState<'column' | 'story'>(
+    initialSettings?.presentation ?? 'column',
+  )
   const [formOperation, setFormOperation] = useState<OperationChoice>('addition')
   const [formDigits, setFormDigits] = useState<DigitCount>(2)
   const [formCount, setFormCount] = useState(5)
@@ -144,6 +206,32 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
   }
 
   const startConfigured = () => {
+    if (formMode === 'story') {
+      const storySettings: StorySettings = {
+        kind: 'story',
+        operation: formOperation,
+        digitCount: formDigits,
+        carryMode: formCarry,
+        questionCount: formCount,
+        families: familiesForPractice(formDigits, formOperation),
+      }
+      const stems = generateStorySession(storySettings)
+      const queue = stems.flatMap((s) => s.parts.map((p) => ({ story: s, part: p })))
+      setStorySession({
+        queue,
+        index: 0,
+        interim: '',
+        attempts: 0,
+        wrongInPart: 0,
+        feedback: null,
+        locked: false,
+        results: [],
+        settings: { operation: formOperation, digitCount: formDigits, carryMode: formCarry, questionCount: formCount, presentation: 'story' as const },
+        title: t('practice.sessionTitle'),
+      })
+      setPhase('solving-story')
+      return
+    }
     const settings: GeneratorSettings = {
       operation: formOperation,
       digitCount: formDigits,
@@ -181,7 +269,7 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
     setPhase('solving')
   }
 
-  const finishSession = (finished: SessionState) => {
+  const finishColumnSession = (finished: SessionState) => {
     const totalQuestions = finished.results.length
     const correctFirstTry = finished.results.filter((r) => r.wrongAttempts === 0).length
     const wrongAttempts = finished.results.reduce((sum, r) => sum + r.wrongAttempts, 0)
@@ -193,6 +281,33 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
         ...recordAnswer({ problem: result.problem, wrongAttempts: result.wrongAttempts }).map(
           (a) => a.id,
         ),
+      )
+    }
+    const summary: SessionSummary = {
+      title: finished.title,
+      totalQuestions,
+      correctFirstTry,
+      wrongAttempts,
+      recovered,
+      stars,
+      levelId: null,
+      settings: finished.settings,
+      nextLevelId: null,
+      newAchievementIds: [...new Set(newAchievementIds)],
+    }
+    navigate({ name: 'result', summary })
+  }
+
+  const finishStorySession = (finished: StorySessionState) => {
+    const totalQuestions = finished.results.length
+    const correctFirstTry = finished.results.filter((r) => r.wrongAttempts === 0).length
+    const wrongAttempts = finished.results.reduce((sum, r) => sum + r.wrongAttempts, 0)
+    const recovered = finished.results.filter((r) => r.wrongAttempts > 0).length
+    const stars = starsFor(correctFirstTry, totalQuestions)
+    const newAchievementIds: string[] = []
+    for (const r of finished.results) {
+      newAchievementIds.push(
+        ...recordAnswer({ problem: r.part.math, wrongAttempts: r.wrongAttempts }).map((a) => a.id),
       )
     }
     const summary: SessionSummary = {
@@ -234,7 +349,7 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
         locked: false,
       })
     } else {
-      finishSession({ ...current, results })
+      finishColumnSession({ ...current, results })
     }
   }
 
@@ -313,7 +428,7 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
   const switchToGuided = () => {
     if (!session || !problem) return
     const remaining = session.problems.slice(session.index)
-    const initialStats = {
+    const initialStats: SessionStats = {
       correctFirstTry: session.results.filter((r) => r.wrongAttempts === 0).length,
       wrongAttempts:
         session.results.reduce((sum, r) => sum + r.wrongAttempts, 0) + session.wrongInProblem,
@@ -329,13 +444,137 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
     })
   }
 
-  if (phase === 'setup' || !session || !problem) {
+  // ─── Story helpers ──────────────────────────────────────────────────────────
+
+  const storyItem = storySession?.queue[storySession.index]
+  const storyPart = storyItem?.part
+  const storyProblem = storyItem?.story
+
+  const updateStorySession = (patch: Partial<StorySessionState>) => {
+    setStorySession((current) => (current ? { ...current, ...patch } : current))
+  }
+
+  const storyHandleDigit = (digit: number) => {
+    if (!storySession || storySession.locked || !storyPart) return
+    updateStorySession({
+      interim: (storySession.interim + String(digit)).slice(0, 3),
+      feedback: null,
+    })
+  }
+
+  const storyHandleBackspace = () => {
+    if (!storySession || storySession.locked) return
+    updateStorySession({ interim: storySession.interim.slice(0, -1) })
+  }
+
+  const storyHandleCheck = () => {
+    if (!storyPart || !storySession || storySession.locked || storySession.interim === '') return
+    const snapshot = storySession
+    const answer = Number(snapshot.interim)
+    if (answer === storyPart.expectedAnswer) {
+      playCorrect()
+      const feedback: Feedback = { kind: 'correct', text: t('concept.correctFeedback') }
+      const nextResults = [...snapshot.results, { part: storyPart, wrongAttempts: snapshot.wrongInPart }]
+      updateStorySession({ feedback, locked: true })
+      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
+      timeoutRef.current = window.setTimeout(() => {
+        if (snapshot.index + 1 < snapshot.queue.length) {
+          updateStorySession({
+            index: snapshot.index + 1,
+            interim: '',
+            attempts: 0,
+            wrongInPart: 0,
+            feedback: null,
+            locked: false,
+            results: nextResults,
+          })
+        } else {
+          finishStorySession({ ...snapshot, results: nextResults })
+        }
+      }, 700)
+      return
+    }
+    playWrong()
+    const attempts = snapshot.attempts + 1
+    const wrongInPart = snapshot.wrongInPart + 1
+    if (attempts >= 3) {
+      updateStorySession({
+        attempts: 0,
+        wrongInPart,
+        interim: String(storyPart.expectedAnswer),
+        feedback: { kind: 'info', text: t('concept.revealedFeedback', { answer: String(storyPart.expectedAnswer) }) },
+        locked: true,
+      })
+      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
+      timeoutRef.current = window.setTimeout(() => {
+        const nextResults = [...snapshot.results, { part: storyPart, wrongAttempts: wrongInPart }]
+        if (snapshot.index + 1 < snapshot.queue.length) {
+          updateStorySession({
+            index: snapshot.index + 1,
+            interim: '',
+            attempts: 0,
+            wrongInPart: 0,
+            feedback: null,
+            locked: false,
+            results: nextResults,
+          })
+        } else {
+          finishStorySession({ ...snapshot, results: nextResults })
+        }
+      }, 1200)
+      return
+    }
+    updateStorySession({
+      attempts,
+      wrongInPart,
+      feedback: { kind: 'wrong', text: t('concept.wrongFeedback') },
+      locked: true,
+    })
+    if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
+    timeoutRef.current = window.setTimeout(() => updateStorySession({ locked: false }), 600)
+  }
+
+  const storySwitchToGuided = () => {
+    if (!storyPart) return
+    const remaining = storySession!.queue.slice(storySession!.index)
+    const initialStats: SessionStats = {
+      correctFirstTry: storySession!.results.filter((r) => r.wrongAttempts === 0).length,
+      wrongAttempts:
+        storySession!.results.reduce((sum, r) => sum + r.wrongAttempts, 0) + storySession!.wrongInPart,
+      recovered: storySession!.results.filter((r) => r.wrongAttempts > 0).length,
+      totalDone: storySession!.results.length,
+    }
+    navigate({
+      name: 'learn',
+      levelId: null,
+      problems: remaining.map((q) => q.part.math),
+      initialStats,
+      title: storySession!.title,
+    })
+  }
+
+  useEffect(() => {
+    if (!storySession?.feedback) return
+    if (storySession.feedback.kind === 'correct') playCorrect()
+    else if (storySession.feedback.kind === 'wrong') playWrong()
+  }, [storySession?.feedback])
+
+  if (phase === 'setup' || (!session && !storySession && !problem && !storyPart)) {
     return (
       <div className="space-y-5">
         <MascotBubble text={t('practice.bubble')} mood="happy" />
 
         <section className="space-y-4 rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm md:p-5">
           <h2 className="text-base font-black text-slate-800">{t('practice.configTitle')}</h2>
+          <OptionGroup
+            label={t('practice.modeLabel')}
+            value={formMode}
+            onChange={setFormMode}
+            options={[
+              { value: 'column', label: t('practice.modeColumn') },
+              { value: 'story', label: t('practice.modeStory') },
+            ]}
+          />
           <OptionGroup
             label={t('practice.operationLabel')}
             value={formOperation}
@@ -460,6 +699,65 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
       </div>
     )
   }
+
+  // ─── Story solving phase ────────────────────────────────────────────────────
+
+  if (phase === 'solving-story' && storySession && storyPart && storyProblem) {
+    const checkDisabled = storySession.interim === '' || storySession.locked
+    return (
+      <div className="space-y-4">
+        <section aria-label={t('practice.progressAria')} className="space-y-1.5">
+          <div className="flex items-baseline justify-between">
+            <h1 className="text-base font-black text-slate-800 md:text-lg">{storySession.title}</h1>
+            <p className="text-xs font-bold text-slate-500">
+              {t('learn.questionOf', {
+                current: storySession.index + 1,
+                total: storySession.queue.length,
+              })}
+            </p>
+          </div>
+          <ProgressBar
+            value={storySession.index / storySession.queue.length}
+            label="Progres cerita"
+          />
+        </section>
+
+        <div className="rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm">
+          <StoryCard story={storyProblem} part={storyPart} />
+        </div>
+
+        <div className="flex flex-col items-center gap-3">
+          <div
+            aria-live="polite"
+            className="flex h-16 w-full max-w-xs items-center justify-center rounded-2xl border-2 border-sky-200 bg-white text-3xl font-black text-slate-800"
+          >
+            {storySession.interim || <span className="text-slate-300">...</span>}
+          </div>
+          <NumericKeypad
+            onDigit={storyHandleDigit}
+            onBackspace={storyHandleBackspace}
+            onCheck={storyHandleCheck}
+            checkDisabled={checkDisabled}
+            checkLabel={t('keypad.checkDefault')}
+          />
+          {storySession.attempts >= 2 && !storySession.locked && (
+            <button
+              type="button"
+              onClick={storySwitchToGuided}
+              className="min-h-11 rounded-2xl border-2 border-violet-200 bg-violet-50 px-4 text-sm font-bold text-violet-700 hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300"
+            >
+              {t('story.tryColumn')}
+            </button>
+          )}
+          <FeedbackMessage feedback={storySession.feedback} />
+        </div>
+      </div>
+    )
+  }
+
+  // ─── Column solving phase ───────────────────────────────────────────────────
+
+  if (!session || !problem) return null
 
   const required = requiredAnswerColumnIndexes(problem)
   const checkDisabled =

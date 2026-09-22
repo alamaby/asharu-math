@@ -44,17 +44,21 @@ function buildAdditionSteps(
     const gridColumn = gridColumnOf(width, col.indexFromRight)
     if (!columnUsedByResult(gridColumn, width, resultText)) continue
 
-    // Kolom tambahan yang hanya berisi turunan carry, mis. ratusan pada 26 + 87
+    // Kolom tambahan hasil carry terakhir, mis. ratusan pada 26 + 87.
+    // Anak cukup mengamati; digit terisi otomatis tanpa input.
     if (col.a === 0 && col.b === 0 && col.carryIn > 0) {
       steps.push({
-        kind: 'answer-digit',
+        kind: 'carry-down',
         columnIndex: gridColumn,
         place: col.place,
-        expectedDigit: col.resultDigit,
+        digit: col.resultDigit,
       })
       continue
     }
 
+    // Anak cukup mengetik jumlah sekali; digit jawaban dan kotak simpan
+    // terisi otomatis oleh reducer saat jumlah benar.
+    const destination = plan.columns[i + 1]
     steps.push({
       kind: 'interim-sum',
       columnIndex: gridColumn,
@@ -63,32 +67,16 @@ function buildAdditionSteps(
       addendB: col.b,
       carryIn: col.carryIn,
       expected: col.rawSum,
+      expectedDigit: col.resultDigit,
+      carry:
+        col.carryOut > 0 && destination
+          ? {
+              digit: col.carryOut,
+              columnIndex: gridColumnOf(width, destination.indexFromRight),
+              place: destination.place,
+            }
+          : undefined,
     })
-
-    if (col.rawSum >= 10) {
-      steps.push({
-        kind: 'answer-digit',
-        columnIndex: gridColumn,
-        place: col.place,
-        expectedDigit: col.resultDigit,
-      })
-      const destination = plan.columns[i + 1]
-      if (col.carryOut > 0 && destination) {
-        steps.push({
-          kind: 'carry-digit',
-          columnIndex: gridColumnOf(width, destination.indexFromRight),
-          place: destination.place,
-          expectedDigit: col.carryOut,
-        })
-      }
-    } else {
-      steps.push({
-        kind: 'answer-digit',
-        columnIndex: gridColumn,
-        place: col.place,
-        expectedDigit: col.resultDigit,
-      })
-    }
   }
 
   steps.push({ kind: 'review', operation: 'addition', first, second, result })

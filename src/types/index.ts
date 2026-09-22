@@ -35,6 +35,17 @@ export type LearningStep =
       addendB: number
       carryIn: number
       expected: number
+      /** Digit jawaban yang terisi otomatis saat jumlah benar */
+      expectedDigit: number
+      /** Kotak simpan yang ikut terisi otomatis saat jumlah >= 10 */
+      carry?: { digit: number; columnIndex: number; place: PlaceValue }
+    }
+  | {
+      /** Kolom hasil carry terakhir: terisi otomatis, tanpa input anak */
+      kind: 'carry-down'
+      columnIndex: number
+      place: PlaceValue
+      digit: number
     }
   | {
       kind: 'answer-digit'
@@ -49,12 +60,6 @@ export type LearningStep =
         topOriginal: number
         effective: number
       }
-    }
-  | {
-      kind: 'carry-digit'
-      columnIndex: number
-      place: PlaceValue
-      expectedDigit: number
     }
   | {
       kind: 'borrow-question'
@@ -97,6 +102,8 @@ export interface GeneratorSettings {
   digitCount: DigitCount
   carryMode: CarryMode
   questionCount: number
+  /** Cara penyajian soal; default 'column' bila undefined (backward-compatible) */
+  presentation?: 'column' | 'story'
 }
 
 export type ConceptKind = 'counting' | 'compare' | 'place-value'
@@ -138,12 +145,67 @@ export interface ConceptProblem {
   choices: string[]
 }
 
-export type LevelKind = 'column' | 'concept'
+export type LevelKind = 'column' | 'concept' | 'story'
 
 export interface ConceptSettings {
   kind: 'concept'
   conceptKind: ConceptKind
   questionCount: number
+}
+
+export type StoryFamily =
+  | 'f0-add'
+  | 'f0-sub'
+  | 'f1-diff'
+  | 'f2-transfer'
+  | 'f3-chain'
+  | 'f4-join3'
+  | 'f5-tiered'
+
+export type StoryItem =
+  | 'marbles'
+  | 'apples'
+  | 'books'
+  | 'fish'
+  | 'cakes'
+  | 'pencils'
+  | 'candies'
+  | 'balls'
+  | 'flowers'
+  | 'birds'
+
+export interface StoryPart {
+  id: string
+  family: StoryFamily
+  operation: OperationType
+  a: number
+  b: number
+  expectedAnswer: number
+  /** Urutan part dalam stem, 0-based */
+  partIndex: number
+  totalParts: number
+  /** Soal kolom ekuivalen untuk bantuan bersusun + statistik carry/borrow */
+  math: MathProblem
+  /** Param render-time; kunci per famili didokumentasikan di src/i18n/story.ts */
+  stemParams: Record<string, string | number>
+}
+
+export interface StoryProblem {
+  id: string
+  family: StoryFamily
+  operation: OperationChoice
+  stemParams: Record<string, string | number>
+  parts: StoryPart[]
+}
+
+export interface StorySettings {
+  kind: 'story'
+  operation: OperationChoice
+  digitCount: DigitCount
+  carryMode: CarryMode
+  /** Jumlah PART yang dinilai (bukan jumlah stem) */
+  questionCount: number
+  families: readonly StoryFamily[]
 }
 
 export interface LevelDefinition {
@@ -159,7 +221,7 @@ export interface LevelDefinition {
   goal: LocalizedText
   example: LocalizedText
   questionCount: number
-  settings: GeneratorSettings | ConceptSettings
+  settings: GeneratorSettings | ConceptSettings | StorySettings
 }
 
 export interface SessionStats {

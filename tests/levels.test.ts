@@ -54,6 +54,28 @@ describe('isLevelUnlocked', () => {
     expect(isLevelUnlocked('tidak-ada', [])).toBe(false)
     expect(isLevelUnlocked('tidak-ada', ['level-1'])).toBe(false)
   })
+
+  it('rantai cerita: cerita-1 terbuka setelah level-11', () => {
+    expect(isLevelUnlocked('cerita-1', ['level-11'])).toBe(true)
+    expect(isLevelUnlocked('cerita-1', [])).toBe(false)
+    expect(isLevelUnlocked('cerita-2', ['cerita-1'])).toBe(true)
+    expect(isLevelUnlocked('cerita-3', ['cerita-2'])).toBe(true)
+    expect(isLevelUnlocked('cerita-4', ['cerita-3'])).toBe(true)
+    // tantangan harus setelah cerita-4
+    expect(isLevelUnlocked('tantangan', ['level-11'])).toBe(false)
+    expect(isLevelUnlocked('tantangan', ['cerita-4'])).toBe(true)
+  })
+
+  it('semua level story punya settings.kind === story dan requires menunjuk id valid', () => {
+    const ids = new Set(LEVELS.map((l) => l.id))
+    for (const level of LEVELS) {
+      if (level.levelKind !== 'story') continue
+      expect((level.settings as { kind?: string }).kind).toBe('story')
+      if (level.requires !== null) {
+        expect(ids.has(level.requires)).toBe(true)
+      }
+    }
+  })
 })
 
 describe('getNextLevelId linear', () => {
@@ -64,5 +86,13 @@ describe('getNextLevelId linear', () => {
     expect(getNextLevelId(LEVELS[LEVELS.length - 1].id)).toBeNull()
     expect(getNextLevelId('tidak-ada')).toBeNull()
     expect(getNextLevelId(null)).toBeNull()
+  })
+
+  it('rantai cerita linier: level-11 -> cerita-1 ... -> tantangan', () => {
+    expect(getNextLevelId('level-11')).toBe('cerita-1')
+    expect(getNextLevelId('cerita-1')).toBe('cerita-2')
+    expect(getNextLevelId('cerita-2')).toBe('cerita-3')
+    expect(getNextLevelId('cerita-3')).toBe('cerita-4')
+    expect(getNextLevelId('cerita-4')).toBe('tantangan')
   })
 })

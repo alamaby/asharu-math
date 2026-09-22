@@ -143,16 +143,12 @@ const id = {
     `Ayo jumlahkan ${p.first} + ${p.second}! Kita mulai dari kolom satuan. Tekan tombol Berikutnya untuk mulai.`,
   'steps.introSub': (p: { first: number; second: number }) =>
     `Ayo kurangkan ${p.first} − ${p.second}! Mulai dari kolom satuan. Tekan tombol Berikutnya untuk mulai.`,
-  'steps.writeCarryAnswer': (p: { carryIn: number; place: string }) =>
-    `Tulis angka simpan ${p.carryIn} di kotak jawaban ${p.place}.`,
   'steps.interimFirst': (p: { a: number; b: number }) =>
-    `Mulai dari satuan. Berapa ${p.a} + ${p.b}? Tulis hasilnya di Kotak Hitung, lalu tekan tombol hijau Periksa.`,
+    `Mulai dari satuan. Berapa ${p.a} + ${p.b}? Tulis hasilnya di Kotak Hitung — kotak jawaban ikut terisi otomatis.`,
   'steps.interimNext': (p: { sumText: string }) =>
-    `Sekarang hitung ${p.sumText}. Tulis hasilnya di Kotak Hitung, lalu tekan tombol hijau Periksa.`,
-  'steps.answerFromSum': (p: { rawSum: number; digit: number; place: string }) =>
-    `Hasilnya ${p.rawSum}. Tulis ${p.digit} di kotak jawaban ${p.place}.`,
-  'steps.writeCarryBox': (p: { carryOut: number; place: string }) =>
-    `Simpan angka ${p.carryOut} di kotak simpan ${p.place}.`,
+    `Sekarang hitung ${p.sumText}. Tulis hasilnya di Kotak Hitung — kotak jawaban ikut terisi otomatis.`,
+  'steps.carryDown': (p: { digit: number; place: string }) =>
+    `Angka simpan ${p.digit} turun ke kotak jawaban ${p.place}.`,
   'steps.writeAnswerPlain': (p: { digit: number; place: string }) =>
     `Tulis ${p.digit} di kotak jawaban ${p.place}.`,
   'steps.reviewAdd': (p: { first: number; second: number; result: number }) =>
@@ -212,8 +208,64 @@ const id = {
   'concept.correctFeedback': 'Benar! Hebat!',
   'concept.wrongFeedback': 'Belum tepat. Coba lagi ya!',
   'concept.revealedFeedback': (p: { answer: string }) => `Jawaban yang benar adalah ${p.answer}.`,
+  // Story (soal cerita) — 47 key
+  'story.stem-f0-add': (p: { name: string; item: string; a: number; b: number }) =>
+    `${p.name} punya ${p.a} ${p.item}. Teman-temannya memberi ${p.b} ${p.item} lagi. Berapa sekarang ${p.item} ${p.name}?`,
+  'story.stem-f0-sub': (p: { name: string; item: string; a: number; b: number }) =>
+    `${p.name} punya ${p.a} ${p.item}. Dibagikan sebanyak ${p.b} ${p.item}. Berapa ${p.item} ${p.name} sekarang?`,
+  'story.stem-f1-diff': (p: { nameA: string; nameB: string; item: string; x: number; y: number }) =>
+    `${p.nameA} punya ${p.x} ${p.item}, lebih banyak ${p.y} dari ${p.nameB}.`,
+  'story.stem-f2-transfer-color': (p: { nameA: string; nameB: string; item: string; x: number; p: number; q: number; r: number; s: number }) =>
+    `${p.nameA} punya ${p.x} ${p.item} merah. ${p.p} di antaranya hijau dan ${p.q} di antaranya biru. ${p.nameB} mempunyai ${p.s} ${p.item} kuning. Berapa ${p.item} yang berpindah?`,
+  'story.stem-f2-transfer-size': (p: { nameA: string; nameB: string; item: string; x: number; p: number; q: number; r: number; s: number }) =>
+    `${p.nameA} punya ${p.x} ${p.item}. ${p.p} di antaranya besar dan ${p.q} di antaranya kecil. ${p.nameB} mempunyai ${p.s} ${p.item} sedang. Berapa ${p.item} yang berpindah?`,
+  'story.stem-f3-chain': (p: { nameA: string; nameB: string; nameC: string; item: string; m: number; n: number }) =>
+    `${p.nameC} punya ${p.n} ${p.item}. ${p.nameB} punya ${p.m} ${p.item} lebih banyak dari ${p.nameC}. ${p.nameA} punya ${p.n} ${p.item} sebanyak ${p.nameB}.`,
+  'story.stem-f4-join3': (p: { nameA: string; nameB: string; nameC: string; item: string; x: number; y: number; z: number }) =>
+    `${p.nameA} punya ${p.x} ${p.item}, ${p.nameB} punya ${p.y} ${p.item}, dan ${p.nameC} punya ${p.z} ${p.item}.`,
+  'story.stem-f5-tiered': (p: { nameA: string; nameB: string; item: string; x: number; y: number; z: number }) =>
+    `${p.nameA} punya ${p.x} ${p.item}. Diminim ${p.y} ${p.item} oleh ${p.nameB}. Sisa ${p.item} itu ditambah ${p.z} ${p.item} lagi.`,
+  'story.part-f1-b': (p: { nameB: string; item: string }) =>
+    `Berapa ${p.item} milik ${p.nameB}?`,
+  'story.part-f1-total': (p: { nameA: string; nameB: string; item: string }) =>
+    `Berapa jumlah ${p.item} ${p.nameA} dan ${p.nameB} together?`,
+  'story.part-f2-p-r': (p: { nameA: string; item: string }) =>
+    `Berapa ${p.item} milik ${p.nameA} setelah dipindahkan?`,
+  'story.part-f2-x-r': (p: { nameA: string; item: string }) =>
+    `Sisa berapa ${p.item} milik ${p.nameA}?`,
+  'story.part-f2-s+r': (p: { nameB: string; item: string }) =>
+    `Berapa ${p.item} milik ${p.nameB} setelah menerima?`,
+  'story.part-f3-b': (p: { nameB: string; item: string }) =>
+    `Berapa ${p.item} milik ${p.nameB}?`,
+  'story.part-f3-a': (p: { nameA: string; item: string }) =>
+    `Berapa ${p.item} milik ${p.nameA}?`,
+  'story.part-f3-total': (p: { nameA: string; nameB: string; nameC: string; item: string }) =>
+    `Total berapa ${p.item} mereka bertiga?`,
+  'story.part-f4-total3': (p: { nameA: string; nameB: string; nameC: string; item: string }) =>
+    `Berapa jumlah semua ${p.item} mereka?`,
+  'story.part-f4-totalAC': (p: { nameA: string; nameC: string; item: string }) =>
+    `Berapa ${p.item} milik ${p.nameA} dan ${p.nameC} together?`,
+  'story.part-f5-rest': (p: { nameA: string; item: string }) =>
+    `Berapa sisa ${p.item} milik ${p.nameA}?`,
+  'story.part-f5-final': (p: { nameA: string; item: string }) =>
+    `Berapa ${p.item} milik ${p.nameA} setelah ditambah?`,
+  'story.item-marbles': 'kelereng',
+  'story.item-apples': 'apel',
+  'story.item-books': 'buku',
+  'story.item-fish': 'ikan',
+  'story.item-cakes': 'kue',
+  'story.item-pencils': 'pensil',
+  'story.item-candies': 'permen',
+  'story.item-balls': 'bola',
+  'story.item-flowers': 'bunga',
+  'story.item-birds': 'burung',
+  'story.partOf': (p: { current: number; total: number }) => `Bagian ${p.current} dari ${p.total}`,
+  'story.tryColumn': '📐 Belajar Bersusun',
   'practice.sessionTitle': 'Latihan Soal',
   'practice.customSessionTitle': 'Soal Buatan Sendiri',
+  'practice.modeLabel': 'Jenis penyajian',
+  'practice.modeColumn': 'Bersusun',
+  'practice.modeStory': 'Soal cerita',
   'mascot.aria': 'Asya, maskot Asharu Math',
   'place.units': 'satuan',
   'place.tens': 'puluhan',
@@ -352,9 +404,11 @@ const id = {
   'aquarium.tenToGroup': 'Sepuluh ikan satuan dapat membentuk satu kelompok puluhan.',
   'aquarium.splitGroup': 'Satu kelompok puluhan dapat berpencar menjadi sepuluh ikan satuan.',
   'aquarium.countTens': 'Sekarang hitung kolom puluhan.',
-  'aquarium.notEnough': 'Dua ikan belum cukup untuk diambil tujuh. Yuk, tukarkan satu kelompok puluhan.',
+  'aquarium.notEnough':
+    'Dua ikan belum cukup untuk diambil tujuh. Yuk, tukarkan satu kelompok puluhan.',
   'aquarium.successCarry': 'Hebat! Sepuluh ikan satuan sudah menjadi satu kelompok puluhan.',
-  'aquarium.successBorrow': 'Bagus! Satu kelompok puluhan sudah ditukar menjadi sepuluh ikan satuan.',
+  'aquarium.successBorrow':
+    'Bagus! Satu kelompok puluhan sudah ditukar menjadi sepuluh ikan satuan.',
   'aquarium.correctGeneral': 'Hebat, jawabanmu benar!',
   'aquarium.tryAgain': 'Hampir benar. Yuk, hitung kembali ikan di kolom satuan.',
   'aquarium.hintOnes': 'Periksa lagi jumlah ikan di kolom satuan.',
@@ -375,7 +429,8 @@ const id = {
   'aquarium.check': 'Periksa',
   'aquarium.reset': 'Ulangi Soal',
   'aquarium.next': 'Soal Berikutnya',
-  'aquarium.progress': (p: { current: number; total: number }) => `Soal ${p.current} dari ${p.total}`,
+  'aquarium.progress': (p: { current: number; total: number }) =>
+    `Soal ${p.current} dari ${p.total}`,
   'aquarium.resultTitle': 'Akuarium Selesai! 🎉',
   'aquarium.tryAquarium': '🐠 Coba Akuarium Ikan',
   'aquarium.level1Name': 'Akuarium: Tambah Tanpa Simpan',

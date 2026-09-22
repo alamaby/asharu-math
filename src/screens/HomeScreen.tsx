@@ -27,6 +27,8 @@ export default function HomeScreen() {
     if (!lastLevel) return
     if (lastLevel.levelKind === 'concept') {
       navigate({ name: 'concept-learn', levelId: lastLevel.id })
+    } else if (lastLevel.levelKind === 'story') {
+      navigate({ name: 'story-learn', levelId: lastLevel.id })
     } else {
       navigate({ name: 'learn', levelId: lastLevel.id })
     }

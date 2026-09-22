@@ -29,6 +29,11 @@ export function stepInstruction(
       return step.operation === 'addition'
         ? t('steps.introAdd', { first: step.first, second: step.second })
         : t('steps.introSub', { first: step.first, second: step.second })
+    case 'carry-down':
+      return t('steps.carryDown', {
+        digit: step.digit,
+        place: placeLabel(t, step.place),
+      })
     case 'interim-sum': {
       if (step.place === 'units' && step.carryIn === 0) {
         return t('steps.interimFirst', { a: step.addendA, b: step.addendB })
@@ -65,11 +70,6 @@ export function stepInstruction(
       }
       return t('steps.writeAnswerPlain', { digit: step.expectedDigit, place })
     }
-    case 'carry-digit':
-      return t('steps.writeCarryBox', {
-        carryOut: step.expectedDigit,
-        place: placeLabel(t, step.place),
-      })
     case 'borrow-question':
       return t('steps.borrowQuestion', { top: step.top, bottom: step.bottom })
     case 'borrow-explain': {

@@ -23,6 +23,8 @@ export default function ResultScreen({ summary }: ResultScreenProps) {
   const nextLevel = summary.nextLevelId ? getLevel(summary.nextLevelId) : undefined
   const isConceptLevel = currentLevel?.levelKind === 'concept'
   const isNextConcept = nextLevel?.levelKind === 'concept'
+  const isStoryLevel = currentLevel?.levelKind === 'story'
+  const isNextStory = nextLevel?.levelKind === 'story'
 
   return (
     <div className="space-y-5">
@@ -98,7 +100,9 @@ export default function ResultScreen({ summary }: ResultScreenProps) {
             onClick={() =>
               isConceptLevel
                 ? navigate({ name: 'concept-learn', levelId: summary.levelId! })
-                : navigate({ name: 'learn', levelId: summary.levelId! })
+                : isStoryLevel
+                  ? navigate({ name: 'story-learn', levelId: summary.levelId! })
+                  : navigate({ name: 'learn', levelId: summary.levelId! })
             }
             className="min-h-14 w-full rounded-2xl border-b-4 border-sky-600 bg-sky-500 text-base font-black text-white hover:bg-sky-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
           >
@@ -111,7 +115,9 @@ export default function ResultScreen({ summary }: ResultScreenProps) {
             onClick={() =>
               isNextConcept
                 ? navigate({ name: 'concept-learn', levelId: summary.nextLevelId! })
-                : navigate({ name: 'learn', levelId: summary.nextLevelId! })
+                : isNextStory
+                  ? navigate({ name: 'story-learn', levelId: summary.nextLevelId! })
+                  : navigate({ name: 'learn', levelId: summary.nextLevelId! })
             }
             className="min-h-14 w-full rounded-2xl border-b-4 border-emerald-600 bg-emerald-500 text-base font-black text-white hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300"
           >

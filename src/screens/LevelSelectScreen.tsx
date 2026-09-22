@@ -42,9 +42,11 @@ export default function LevelSelectScreen() {
                       navigate({ name: 'aquarium', levelId: level.id })
                       return
                     }
-                    return level.levelKind === 'concept'
-                      ? navigate({ name: 'concept-learn', levelId: level.id })
-                      : navigate({ name: 'learn', levelId: level.id })
+                    return level.levelKind === 'story'
+                      ? navigate({ name: 'story-learn', levelId: level.id })
+                      : level.levelKind === 'concept'
+                        ? navigate({ name: 'concept-learn', levelId: level.id })
+                        : navigate({ name: 'learn', levelId: level.id })
                   }}
                 />
               ))}

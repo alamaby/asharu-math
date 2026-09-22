@@ -144,16 +144,12 @@ const en: Dict = {
     `Let's add ${p.first} + ${p.second}! We start from the ones column. Press Next to begin.`,
   'steps.introSub': (p: { first: number; second: number }) =>
     `Let's subtract ${p.second} from ${p.first}! We start from the ones column. Press Next to begin.`,
-  'steps.writeCarryAnswer': (p: { carryIn: number; place: string }) =>
-    `Write the carried ${p.carryIn} into the ${p.place} answer box.`,
   'steps.interimFirst': (p: { a: number; b: number }) =>
-    `Start with the ones. What is ${p.a} + ${p.b}? Type it in the Counting Box, then press the green Check button.`,
+    `Start with the ones. What is ${p.a} + ${p.b}? Type it in the Counting Box — the answer fills in by itself.`,
   'steps.interimNext': (p: { sumText: string }) =>
-    `Now compute ${p.sumText}. Type it in the Counting Box, then press the green Check button.`,
-  'steps.answerFromSum': (p: { rawSum: number; digit: number; place: string }) =>
-    `That makes ${p.rawSum}. Write ${p.digit} in the ${p.place} answer box.`,
-  'steps.writeCarryBox': (p: { carryOut: number; place: string }) =>
-    `Carry the ${p.carryOut} into the ${p.place} carry box.`,
+    `Now compute ${p.sumText}. Type it in the Counting Box — the answer fills in by itself.`,
+  'steps.carryDown': (p: { digit: number; place: string }) =>
+    `The carried ${p.digit} comes down into the ${p.place} answer box.`,
   'steps.writeAnswerPlain': (p: { digit: number; place: string }) =>
     `Write ${p.digit} in the ${p.place} answer box.`,
   'steps.reviewAdd': (p: { first: number; second: number; result: number }) =>
@@ -210,8 +206,64 @@ const en: Dict = {
   'concept.correctFeedback': 'Correct! Great!',
   'concept.wrongFeedback': 'Not quite. Try again!',
   'concept.revealedFeedback': (p: { answer: string }) => `The correct answer is ${p.answer}.`,
+  // Story (word problems) — 47 keys
+  'story.stem-f0-add': (p: { name: string; item: string; a: number; b: number }) =>
+    `${p.name} has ${p.a} ${p.item}s. Friends gave ${p.name} ${p.b} more ${p.item}s. How many ${p.item}s does ${p.name} have now?`,
+  'story.stem-f0-sub': (p: { name: string; item: string; a: number; b: number }) =>
+    `${p.name} has ${p.a} ${p.item}s. ${p.b} ${p.item}s were given away. How many ${p.item}s does ${p.name} have now?`,
+  'story.stem-f1-diff': (p: { nameA: string; nameB: string; item: string; x: number; y: number }) =>
+    `${p.nameA} has ${p.x} ${p.item}s, which is ${p.y} more than ${p.nameB}.`,
+  'story.stem-f2-transfer-color': (p: { nameA: string; nameB: string; item: string; x: number; p: number; q: number; r: number; s: number }) =>
+    `${p.nameA} has ${p.x} ${p.item}s. ${p.p} are red and ${p.q} are blue. ${p.nameB} has ${p.s} yellow ${p.item}s. How many ${p.item}s changed hands?`,
+  'story.stem-f2-transfer-size': (p: { nameA: string; nameB: string; item: string; x: number; p: number; q: number; r: number; s: number }) =>
+    `${p.nameA} has ${p.x} ${p.item}s. ${p.p} are big and ${p.q} are small. ${p.nameB} has ${p.s} medium ${p.item}s. How many ${p.item}s changed hands?`,
+  'story.stem-f3-chain': (p: { nameA: string; nameB: string; nameC: string; item: string; m: number; n: number }) =>
+    `${p.nameC} has ${p.n} ${p.item}s. ${p.nameB} has ${p.m} more ${p.item}s than ${p.nameC}. ${p.nameA} has as many ${p.item}s as ${p.nameB}.`,
+  'story.stem-f4-join3': (p: { nameA: string; nameB: string; nameC: string; item: string; x: number; y: number; z: number }) =>
+    `${p.nameA} has ${p.x} ${p.item}s, ${p.nameB} has ${p.y} ${p.item}s, and ${p.nameC} has ${p.z} ${p.item}s.`,
+  'story.stem-f5-tiered': (p: { nameA: string; nameB: string; item: string; x: number; y: number; z: number }) =>
+    `${p.nameA} has ${p.x} ${p.item}s. ${p.nameB} took ${p.y} ${p.item}s. Then ${p.nameA} got ${p.z} more ${p.item}s.`,
+  'story.part-f1-b': (p: { nameB: string; item: string }) =>
+    `How many ${p.item}s does ${p.nameB} have?`,
+  'story.part-f1-total': (p: { nameA: string; nameB: string; item: string }) =>
+    `How many ${p.item}s do ${p.nameA} and ${p.nameB} have together?`,
+  'story.part-f2-p-r': (p: { nameA: string; item: string }) =>
+    `How many ${p.item}s does ${p.nameA} have after moving?`,
+  'story.part-f2-x-r': (p: { nameA: string; item: string }) =>
+    `How many ${p.item}s does ${p.nameA} have left?`,
+  'story.part-f2-s+r': (p: { nameB: string; item: string }) =>
+    `How many ${p.item}s does ${p.nameB} have after receiving?`,
+  'story.part-f3-b': (p: { nameB: string; item: string }) =>
+    `How many ${p.item}s does ${p.nameB} have?`,
+  'story.part-f3-a': (p: { nameA: string; item: string }) =>
+    `How many ${p.item}s does ${p.nameA} have?`,
+  'story.part-f3-total': (p: { nameA: string; nameB: string; nameC: string; item: string }) =>
+    `What is the total ${p.item}s among all three?`,
+  'story.part-f4-total3': (p: { nameA: string; nameB: string; nameC: string; item: string }) =>
+    `How many ${p.item}s do they have in total?`,
+  'story.part-f4-totalAC': (p: { nameA: string; nameC: string; item: string }) =>
+    `How many ${p.item}s do ${p.nameA} and ${p.nameC} have together?`,
+  'story.part-f5-rest': (p: { nameA: string; item: string }) =>
+    `How many ${p.item}s does ${p.nameA} have left?`,
+  'story.part-f5-final': (p: { nameA: string; item: string }) =>
+    `How many ${p.item}s does ${p.nameA} have now?`,
+  'story.item-marbles': 'marbles',
+  'story.item-apples': 'apples',
+  'story.item-books': 'books',
+  'story.item-fish': 'fish',
+  'story.item-cakes': 'cakes',
+  'story.item-pencils': 'pencils',
+  'story.item-candies': 'candies',
+  'story.item-balls': 'balls',
+  'story.item-flowers': 'flowers',
+  'story.item-birds': 'birds',
+  'story.partOf': (p: { current: number; total: number }) => `Part ${p.current} of ${p.total}`,
+  'story.tryColumn': '📐 Learn in Columns',
   'practice.sessionTitle': 'Practice Session',
   'practice.customSessionTitle': 'Your Own Question',
+  'practice.modeLabel': 'Presentation type',
+  'practice.modeColumn': 'Columns',
+  'practice.modeStory': 'Story problems',
   'mascot.aria': 'Asya, Asharu Math mascot',
   'place.units': 'ones',
   'place.tens': 'tens',

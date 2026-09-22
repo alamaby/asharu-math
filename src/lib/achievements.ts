@@ -95,6 +95,19 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
       ].every((id) => stats.completedLevelIds.includes(id)),
   },
   {
+    id: 'bintang-cerita',
+    name: { id: 'Bintang Cerita', en: 'Story Star' },
+    description: {
+      id: 'Menyelesaikan semua level soal cerita',
+      en: 'Completed every story problem level',
+    },
+    icon: '📖',
+    check: (stats) =>
+      ['cerita-1', 'cerita-2', 'cerita-3', 'cerita-4'].every((id) =>
+        stats.completedLevelIds.includes(id),
+      ),
+  },
+  {
     id: 'tanpa-menyerah',
     name: { id: 'Tanpa Menyerah', en: 'Never Give Up' },
     description: {

@@ -62,7 +62,12 @@ export type LearnAction =
   | { type: 'repeat' }
 
 function isAutoCompleteStep(step: LearningStep): boolean {
-  return step.kind === 'intro' || step.kind === 'borrow-explain' || step.kind === 'review'
+  return (
+    step.kind === 'intro' ||
+    step.kind === 'borrow-explain' ||
+    step.kind === 'review' ||
+    step.kind === 'carry-down'
+  )
 }
 
 function currentStepOf(state: LearnState): LearningStep | undefined {
@@ -124,23 +129,26 @@ function replayTo(state: LearnState, targetIndex: number): LearnState {
 
   for (let i = 0; i < targetIndex; i++) {
     const step = problem.learningSteps[i]
-    if (step.kind === 'answer-digit') {
+    if (step.kind === 'interim-sum') {
+      // Jumlah kolom sudah benar: jawaban + simpanan ikut terisi otomatis
       answers[step.columnIndex] = step.expectedDigit
       doneAnswerColumns = uniqueAdd(doneAnswerColumns, step.columnIndex)
-    } else if (step.kind === 'carry-digit') {
-      carries[step.columnIndex] = step.expectedDigit
+      if (step.carry) carries[step.carry.columnIndex] = step.carry.digit
+    } else if (step.kind === 'answer-digit') {
+      answers[step.columnIndex] = step.expectedDigit
+      doneAnswerColumns = uniqueAdd(doneAnswerColumns, step.columnIndex)
+    } else if (step.kind === 'carry-down') {
+      answers[step.columnIndex] = step.digit
+      doneAnswerColumns = uniqueAdd(doneAnswerColumns, step.columnIndex)
     } else if (step.kind === 'borrow-explain') {
       for (const change of step.changes) borrowValues[change.columnIndex] = change.after
     }
   }
 
   const step = problem.learningSteps[targetIndex]
-  const filled =
-    step.kind === 'answer-digit'
-      ? answers[step.columnIndex] !== null
-      : step.kind === 'carry-digit'
-        ? carries[step.columnIndex] !== null
-        : false
+  // carry-down selalu auto-complete (isAutoCompleteStep); interim-sum tidak
+  // pernah "sudah terisi" karena ia sendiri yang mengisi jawaban.
+  const filled = step.kind === 'answer-digit' ? answers[step.columnIndex] !== null : false
 
   return {
     ...state,
@@ -216,43 +224,8 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
           feedback: { kind: 'wrong', text: digitHint(action.digit, step.expectedDigit, attempts) },
         }
       }
-      if (step.kind === 'carry-digit') {
-        const carries = [...state.carries]
-        if (action.digit === step.expectedDigit) {
-          carries[step.columnIndex] = action.digit
-          return {
-            ...state,
-            carries,
-            stepComplete: true,
-            attempts: 0,
-            feedback: { kind: 'correct', text: 'Bagus sekali! Simpanannya sudah benar.' },
-            autoAdvanceToken: nextToken(),
-          }
-        }
-        const attempts = state.attempts + 1
-        const wrongInProblem = state.wrongInProblem + 1
-        carries[step.columnIndex] = attempts >= 3 ? step.expectedDigit : null
-        if (attempts >= 3) {
-          return {
-            ...state,
-            carries,
-            stepComplete: true,
-            attempts: 0,
-            wrongInProblem,
-            feedback: {
-              kind: 'info',
-              text: `Tidak apa-apa. Angka simpan yang benar adalah ${step.expectedDigit}.`,
-            },
-          }
-        }
-        return {
-          ...state,
-          carries,
-          attempts,
-          wrongInProblem,
-          feedback: { kind: 'wrong', text: digitHint(action.digit, step.expectedDigit, attempts) },
-        }
-      }
+      // Penjumlahan: jawaban + simpanan sudah terisi otomatis dari
+      // Kotak Hitung, sehingga langkah carry-digit tak lagi dipakai.
       return state
     }
 
@@ -265,11 +238,6 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
         const answers = [...state.answers]
         answers[step.columnIndex] = null
         return { ...state, answers }
-      }
-      if (step.kind === 'carry-digit') {
-        const carries = [...state.carries]
-        carries[step.columnIndex] = null
-        return { ...state, carries }
       }
       return state
     }
@@ -320,13 +288,27 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
         step.carryIn > 0
           ? `${step.carryIn} + ${step.addendA} + ${step.addendB}`
           : `${step.addendA} + ${step.addendB}`
+      /** Jawaban + simpanan terisi otomatis dari jumlah yang benar. */
+      const fillInterim = (
+        state: Pick<LearnState, 'answers' | 'carries' | 'doneAnswerColumns'>,
+      ): Pick<LearnState, 'answers' | 'carries' | 'doneAnswerColumns'> => {
+        const answers = [...state.answers]
+        answers[step.columnIndex] = step.expectedDigit
+        const carries = [...state.carries]
+        if (step.carry) carries[step.carry.columnIndex] = step.carry.digit
+        return {
+          answers,
+          carries,
+          doneAnswerColumns: uniqueAdd(state.doneAnswerColumns, step.columnIndex),
+        }
+      }
       if (state.interim !== '' && given === step.expected) {
-        const text =
-          step.expected >= 10
-            ? `Bagus! Tulis ${step.expected % 10} di kotak jawaban, lalu simpan ${Math.floor(step.expected / 10)}.`
-            : 'Bagus! Sekarang tulis hasilnya di kotak jawaban.'
+        const text = step.carry
+          ? `Bagus! ${step.expected} → ${step.expectedDigit} di kotak jawaban, simpan ${step.carry.digit} di kotak simpan.`
+          : `Bagus! Kotak jawaban terisi ${step.expectedDigit}.`
         return {
           ...state,
+          ...fillInterim(state),
           stepComplete: true,
           attempts: 0,
           feedback: { kind: 'correct', text },
@@ -336,15 +318,19 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
       const attempts = state.attempts + 1
       const wrongInProblem = state.wrongInProblem + 1
       if (attempts >= 3) {
+        const carryText = step.carry
+          ? ` Angka ${step.expectedDigit} terisi di kotak jawaban, ${step.carry.digit} di kotak simpan.`
+          : ''
         return {
           ...state,
+          ...fillInterim(state),
           interim: String(step.expected),
           stepComplete: true,
           attempts: 0,
           wrongInProblem,
           feedback: {
             kind: 'info',
-            text: `Tidak apa-apa, kita coba bersama. ${sumText} = ${step.expected}.`,
+            text: `Tidak apa-apa, kita coba bersama. ${sumText} = ${step.expected}.${carryText}`,
           },
         }
       }
@@ -380,6 +366,15 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
           const values = [...updated.borrowValues]
           for (const change of nextStep.changes) values[change.columnIndex] = change.after
           updated.borrowValues = values
+        }
+        if (nextStep.kind === 'carry-down') {
+          // Kolom turunan carry turun otomatis: tanpa input anak
+          const answers = [...updated.answers]
+          answers[nextStep.columnIndex] = nextStep.digit
+          updated.answers = answers
+          updated.doneAnswerColumns = uniqueAdd(updated.doneAnswerColumns, nextStep.columnIndex)
+          // Auto-lanjut agar anak tinggal membaca narasi turunnya angka simpan
+          updated.autoAdvanceToken = nextToken()
         }
         if (nextStep.kind === 'review') {
           updated.answers = problem.columns.map((column) =>
@@ -433,10 +428,19 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
         )
         reset.stepComplete = false
       }
-      if (step.kind === 'carry-digit') {
-        const carries = [...state.carries]
-        carries[step.columnIndex] = null
-        reset.carries = carries
+      if (step.kind === 'interim-sum') {
+        // Ulangi hitung kolom: bersihkan hasil otomatis sebelumnya
+        const answers = [...state.answers]
+        answers[step.columnIndex] = null
+        reset.answers = answers
+        reset.doneAnswerColumns = state.doneAnswerColumns.filter(
+          (index) => index !== step.columnIndex,
+        )
+        if (step.carry) {
+          const carries = [...state.carries]
+          carries[step.carry.columnIndex] = null
+          reset.carries = carries
+        }
         reset.stepComplete = false
       }
       return reset
@@ -468,7 +472,7 @@ export default function LearnScreen({
   const [problems] = useState<MathProblem[]>(() => {
     if (providedProblems && providedProblems.length > 0) return providedProblems
     const level = levelId ? getLevel(levelId) : undefined
-    if (!level || level.levelKind === 'concept') {
+    if (!level || level.levelKind !== 'column') {
       return generateSession({
         operation: 'mixed',
         digitCount: 2,
@@ -637,9 +641,7 @@ export default function LearnScreen({
   const activeCell =
     step?.kind === 'answer-digit'
       ? { kind: 'answer' as const, columnIndex: step.columnIndex }
-      : step?.kind === 'carry-digit'
-        ? { kind: 'carry' as const, columnIndex: step.columnIndex }
-        : null
+      : null
   const highlightColumn = step && 'columnIndex' in step ? step.columnIndex : null
   const mood =
     isReview || state.feedback?.kind === 'correct'
@@ -662,8 +664,7 @@ export default function LearnScreen({
   const canCheck = step?.kind === 'interim-sum' && !state.stepComplete && state.interim !== ''
   // Tombol angka hanya aktif pada langkah yang memang menerima input angka
   const acceptsDigits =
-    !state.stepComplete &&
-    (step?.kind === 'interim-sum' || step?.kind === 'answer-digit' || step?.kind === 'carry-digit')
+    !state.stepComplete && (step?.kind === 'interim-sum' || step?.kind === 'answer-digit')
 
   const onCheck = () => {
     if (canCheck) {

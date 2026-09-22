@@ -13,6 +13,7 @@ import type {
   MathProblem,
   SessionStats,
   SessionSummary,
+  StoryProblem,
 } from '../types'
 
 export type Screen =
@@ -26,6 +27,7 @@ export type Screen =
       title?: string
     }
   | { name: 'concept-learn'; levelId: string; problems?: ConceptProblem[] }
+  | { name: 'story-learn'; levelId: string; problems?: StoryProblem[] }
   | { name: 'garden'; levelId: string }
   | { name: 'aquarium'; levelId: string }
   | { name: 'practice'; settings?: GeneratorSettings }

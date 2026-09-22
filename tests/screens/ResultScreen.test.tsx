@@ -93,4 +93,20 @@ describe('ResultScreen', () => {
     unmount()
     window.localStorage.clear()
   })
+
+  it('retry story mengarah ke story-learn, next story bercabang benar', () => {
+    const seed = defaultProgress()
+    seed.completedLevelIds = ['level-11', 'cerita-1']
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seed))
+    const { unmount } = renderScreenWithProviders(
+      <ResultScreen
+        summary={makeSummary({ levelId: 'cerita-1', nextLevelId: 'cerita-2' })}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Ulangi Level Ini/ }))
+    expect(screen.getByTestId('probe-screen').textContent).toBe('story-learn')
+    cleanup()
+    unmount()
+    window.localStorage.clear()
+  })
 })

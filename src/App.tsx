@@ -14,6 +14,7 @@ import LevelSelectScreen from './screens/LevelSelectScreen'
 import PracticeScreen from './screens/PracticeScreen'
 import ResultScreen from './screens/ResultScreen'
 import SettingsScreen from './screens/SettingsScreen'
+import StoryLearnScreen from './screens/StoryLearnScreen'
 import { NavigationProvider, useNavigation } from './state/NavigationContext'
 import { ProgressProvider, useProgress } from './state/ProgressContext'
 
@@ -38,6 +39,8 @@ function ScreenRouter() {
       )
     case 'concept-learn':
       return <ConceptLearnScreen levelId={screen.levelId} problems={screen.problems} />
+    case 'story-learn':
+      return <StoryLearnScreen levelId={screen.levelId} problems={screen.problems} />
     case 'garden':
       return <GardenScreen levelId={screen.levelId as GardenLevelId} />
     case 'aquarium':
