@@ -6,7 +6,8 @@ import AquariumEnvironment3D from './AquariumEnvironment3D'
 type AquariumScene3DProps = {
   tens: number
   ones: number
-  highlight?: 'tens' | 'ones' | null
+  hundreds?: number
+  highlight?: 'tens' | 'ones' | 'hundreds' | null
   animating?: boolean
   regroupProgress?: number
   splitProgress?: number
@@ -26,8 +27,8 @@ function onesPositions(count: number, highlight: boolean): [number, number, numb
     const x = startX + col * stepX + (row % 2 === 1 ? 0.45 : 0)
     const y = startY - row * stepY
     // slight jitter so not rigid grid
-    const jx = (Math.sin(i * 1.9) * 0.12)
-    const jy = (Math.cos(i * 2.3) * 0.1)
+    const jx = Math.sin(i * 1.9) * 0.12
+    const jy = Math.cos(i * 2.3) * 0.1
     positions.push([x + jx, y + jy, 0.05 + (highlight ? 0.06 : 0)])
   }
   return positions
@@ -54,13 +55,18 @@ function tensPositions(count: number): [number, number, number][] {
 export default function AquariumScene3D({
   tens,
   ones,
+  hundreds: _hundreds = 0,
   highlight = null,
   animating: _animating = false,
   regroupProgress = 1,
   splitProgress = 1,
 }: AquariumScene3DProps) {
-  const tPos = useMemo(() => tensPositions(tens), [tens])
-  const oPos = useMemo(() => onesPositions(ones, highlight === 'ones'), [ones, highlight])
+  // S5: overlay DOM peti ungu. Cap cegah overflow saat tambah 3-digit.
+  const tPos = useMemo(() => tensPositions(Math.min(tens, 19)), [tens])
+  const oPos = useMemo(
+    () => onesPositions(Math.min(ones, 19), highlight === 'ones'),
+    [ones, highlight],
+  )
 
   const rg = Math.min(1, regroupProgress)
   const sp = Math.min(1, splitProgress)

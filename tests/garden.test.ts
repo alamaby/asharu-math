@@ -2,12 +2,17 @@ import { describe, it, expect } from 'vitest'
 import {
   APPLES_PER_BASKET,
   splitTensOnes,
+  splitPlaces,
+  totalFromHundreds,
   exchangeTenOnesToBasket,
   openBasketToTenApples,
+  exchangeTenTensToHundred,
+  openHundredToTenTens,
   needsCarry,
   needsBorrow,
   isCorrectOnesAnswer,
   isCorrectTensAnswer,
+  isCorrectAt,
 } from '../src/lib/placeValueMath'
 import { buildProblem } from '../src/lib/problemGenerator'
 import {
@@ -151,5 +156,56 @@ describe('gardenQuestionGenerator — aturan 2-digit', () => {
 describe('buildProblem invarian', () => {
   it('soal negatif ditolak', () => {
     expect(() => buildProblem('subtraction', 10, 20)).toThrow()
+  })
+})
+
+describe('placeValueMath — ratusan 3-digit', () => {
+  it('splitPlaces 0/245/999', () => {
+    expect(splitPlaces(0)).toEqual({ hundreds: 0, tens: 0, ones: 0 })
+    expect(splitPlaces(245)).toEqual({ hundreds: 2, tens: 4, ones: 5 })
+    expect(splitPlaces(999)).toEqual({ hundreds: 9, tens: 9, ones: 9 })
+  })
+
+  it('splitPlaces throw di luar 0..999', () => {
+    expect(() => splitPlaces(-1)).toThrow()
+    expect(() => splitPlaces(1000)).toThrow()
+    expect(() => splitPlaces(1.5)).toThrow()
+  })
+
+  it('totalFromHundreds konsisten', () => {
+    expect(totalFromHundreds({ hundreds: 2, tens: 4, ones: 5 })).toBe(245)
+  })
+
+  it('10 keranjang → 1 peti', () => {
+    expect(exchangeTenTensToHundred(10, 2)).toEqual({ hundreds: 3, tens: 0 })
+    expect(() => exchangeTenTensToHundred(9, 0)).toThrow()
+  })
+
+  it('1 peti → 10 keranjang', () => {
+    expect(openHundredToTenTens(2, 3)).toEqual({ hundreds: 1, tens: 13 })
+    expect(() => openHundredToTenTens(0, 5)).toThrow()
+  })
+
+  it('isCorrectAt 245+138=383 per kolom', () => {
+    expect(isCorrectAt(245, 138, 'addition', 2, 3, 3)).toBe(true)
+    expect(isCorrectAt(245, 138, 'addition', 1, 3, 8)).toBe(true)
+    expect(isCorrectAt(245, 138, 'addition', 0, 3, 3)).toBe(true)
+    expect(isCorrectAt(245, 138, 'addition', 2, 3, 4)).toBe(false)
+  })
+
+  it('generator kebun-5/6: 3-digit required', () => {
+    for (let i = 0; i < 20; i++) {
+      const add = generateGardenProblem({ levelId: 'kebun-5' })
+      expect(add.operation).toBe('addition')
+      expect(add.digitCount).toBe(3)
+      expect(hasCarry(add.firstOperand, add.secondOperand)).toBe(true)
+      expect(add.firstOperand).toBeGreaterThanOrEqual(100)
+      expect(add.firstOperand).toBeLessThanOrEqual(999)
+      const sub = generateGardenProblem({ levelId: 'kebun-6' })
+      expect(sub.operation).toBe('subtraction')
+      expect(sub.digitCount).toBe(3)
+      expect(sub.firstOperand).toBeGreaterThanOrEqual(sub.secondOperand)
+      expect(hasBorrow(sub.firstOperand, sub.secondOperand)).toBe(true)
+    }
   })
 })

@@ -1,7 +1,8 @@
 import type { MathProblem, GeneratorSettings } from '../types'
 import { buildProblem, generateProblem } from './problemGenerator'
 
-export type AquariumLevelId = 'akuarium-1' | 'akuarium-2' | 'akuarium-3' | 'akuarium-4'
+export type AquariumLevelId =
+  'akuarium-1' | 'akuarium-2' | 'akuarium-3' | 'akuarium-4' | 'akuarium-5' | 'akuarium-6'
 
 export interface AquariumGeneratorOptions {
   levelId: AquariumLevelId
@@ -18,6 +19,10 @@ function aquariumSettingsFor(levelId: AquariumLevelId): GeneratorSettings {
       return { operation: 'subtraction', digitCount: 2, carryMode: 'none', questionCount: 1 }
     case 'akuarium-4':
       return { operation: 'subtraction', digitCount: 2, carryMode: 'required', questionCount: 1 }
+    case 'akuarium-5':
+      return { operation: 'addition', digitCount: 3, carryMode: 'required', questionCount: 1 }
+    case 'akuarium-6':
+      return { operation: 'subtraction', digitCount: 3, carryMode: 'required', questionCount: 1 }
   }
 }
 

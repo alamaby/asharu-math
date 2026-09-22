@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import type { MathProblem } from '../../types'
 import GardenScene from './GardenScene'
-import StackedOperation from './StackedOperation'
+import StackedPlaceValueBoard from '../math/StackedPlaceValueBoard'
 import GardenFeedbackPanel from './GardenFeedbackPanel'
 import GardenControls from './GardenControls'
 import GardenProgress from './GardenProgress'
@@ -11,10 +11,10 @@ import { useI18n } from '../../i18n/LanguageContext'
 import { useProgress } from '../../state/ProgressContext'
 import {
   splitTensOnes,
+  splitPlaces,
   needsCarry,
   needsBorrow,
-  isCorrectOnesAnswer,
-  isCorrectTensAnswer,
+  isCorrectAt,
 } from '../../lib/placeValueMath'
 import {
   speak,
@@ -36,6 +36,7 @@ type GardenPhase =
   | 'enterOnesAnswer'
   | 'countTens'
   | 'enterTensAnswer'
+  | 'enterHundredsAnswer'
   | 'checkAnswer'
   | 'feedback'
   | 'completed'
@@ -64,8 +65,17 @@ export default function MagicAppleGarden({
   const carryNeeded = isAdd && needsCarry(top, bottom)
   const borrowNeeded = !isAdd && needsBorrow(top, bottom)
 
-  const topSplit = splitTensOnes(top)
-  const botSplit = splitTensOnes(bottom)
+  const topSplit = splitTensOnes(Math.min(top, 99))
+  const botSplit = splitTensOnes(Math.min(bottom, 99))
+
+  const width = problem.columns.length
+  if (width !== 2 && width !== 3) {
+    throw new Error(`MagicAppleGarden hanya untuk 2-3 digit, got width ${width}`)
+  }
+  const isThree = width === 3
+
+  const topPlaces = splitPlaces(Math.min(top, 999))
+  const botPlaces = splitPlaces(Math.min(bottom, 999))
 
   // Visual state
   const initialTens = isAdd ? topSplit.tens + botSplit.tens : topSplit.tens
@@ -79,24 +89,41 @@ export default function MagicAppleGarden({
         ? initialOnes + 10
         : initialOnes
 
+  const onesSum = topPlaces.ones + botPlaces.ones
+  const carry1 = isAdd && onesSum >= 10 ? 1 : 0
+  const tensSum = topPlaces.tens + botPlaces.tens + carry1
+  const carry2 = isAdd && tensSum >= 10 ? 1 : 0
+  const borrow1 = !isAdd && topPlaces.ones < botPlaces.ones ? 1 : 0
+  const tensEffective = topPlaces.tens - borrow1
+  const borrow2 = !isAdd && tensEffective < botPlaces.tens ? 1 : 0
+  const initialHundreds = isAdd ? topPlaces.hundreds + botPlaces.hundreds : topPlaces.hundreds
+  const afterHundreds = isAdd
+    ? topPlaces.hundreds + botPlaces.hundreds + carry2
+    : topPlaces.hundreds - borrow2
+
   const [visualTens, setVisualTens] = useState(initialTens)
   const [visualOnes, setVisualOnes] = useState(initialOnes)
+  const [visualHundreds, setVisualHundreds] = useState(initialHundreds)
   const [exchanged, setExchanged] = useState(false)
   const [opened, setOpened] = useState(false)
   const [phase, setPhase] = useState<GardenPhase>('intro')
   const [onesAnswer, setOnesAnswer] = useState<number | null>(null)
   const [tensAnswer, setTensAnswer] = useState<number | null>(null)
-  const [activeColumn, setActiveColumn] = useState<'ones' | 'tens' | null>('ones')
+  const [hundredsAnswer, setHundredsAnswer] = useState<number | null>(null)
+  const [activeColumn, setActiveColumn] = useState<'ones' | 'tens' | 'hundreds' | null>('ones')
   const [feedback, setFeedback] = useState<{
     kind: 'correct' | 'wrong' | 'info'
     text: string
   } | null>(null)
-  const [highlight, setHighlight] = useState<'tens' | 'ones' | null>('ones')
+  const [highlight, setHighlight] = useState<'tens' | 'ones' | 'hundreds' | null>('ones')
   const [animating, setAnimating] = useState(false)
   const [wrongAttempts, setWrongAttempts] = useState(0)
   const [wrongOnes, setWrongOnes] = useState(false)
   const [wrongTens, setWrongTens] = useState(false)
+  const [wrongHundreds, setWrongHundreds] = useState(false)
   const [hasCheckedOnce, setHasCheckedOnce] = useState(false)
+  const enterHundredsText = t('garden.enterHundreds')
+  const hintHundredsText = t('garden.hintHundreds')
 
   const timersRef = useRef<number[]>([])
   const prefersReducedMotion = useRef(false)
@@ -124,11 +151,13 @@ export default function MagicAppleGarden({
     const id = window.setTimeout(() => {
       setVisualTens(initialTens)
       setVisualOnes(initialOnes)
+      setVisualHundreds(initialHundreds)
       setExchanged(false)
       setOpened(false)
       setPhase('intro')
       setOnesAnswer(null)
       setTensAnswer(null)
+      setHundredsAnswer(null)
       setActiveColumn('ones')
       setFeedback(null)
       setHighlight('ones')
@@ -136,12 +165,13 @@ export default function MagicAppleGarden({
       setWrongAttempts(0)
       setWrongOnes(false)
       setWrongTens(false)
+      setWrongHundreds(false)
       setHasCheckedOnce(false)
       clearTimers()
       stopAllAudio()
     }, 0)
     timersRef.current.push(id)
-  }, [problem.id, initialTens, initialOnes, clearTimers])
+  }, [problem.id, initialTens, initialOnes, initialHundreds, clearTimers])
 
   const narrate = useCallback(
     (text: string) => {
@@ -196,6 +226,7 @@ export default function MagicAppleGarden({
     const id = window.setTimeout(() => {
       setVisualTens(afterTens)
       setVisualOnes(afterOnes)
+      setVisualHundreds(afterHundreds)
       setExchanged(true)
       setAnimating(false)
       setPhase('enterOnesAnswer')
@@ -203,7 +234,7 @@ export default function MagicAppleGarden({
       setFeedback({ kind: 'info', text: t('garden.enterOnes') })
     }, duration)
     timersRef.current.push(id)
-  }, [animating, exchanged, afterTens, afterOnes, narrate, t])
+  }, [animating, exchanged, afterTens, afterOnes, afterHundreds, narrate, t])
 
   const doOpen = useCallback(() => {
     if (animating || opened) return
@@ -215,6 +246,7 @@ export default function MagicAppleGarden({
     const id = window.setTimeout(() => {
       setVisualTens(afterTens)
       setVisualOnes(afterOnes)
+      setVisualHundreds(afterHundreds)
       setOpened(true)
       setAnimating(false)
       setPhase('enterOnesAnswer')
@@ -222,7 +254,7 @@ export default function MagicAppleGarden({
       setFeedback({ kind: 'info', text: t('garden.enterOnes') })
     }, duration)
     timersRef.current.push(id)
-  }, [animating, opened, afterTens, afterOnes, narrate, t])
+  }, [animating, opened, afterTens, afterOnes, afterHundreds, narrate, t])
 
   const handleHint = () => {
     playTap()
@@ -236,6 +268,10 @@ export default function MagicAppleGarden({
       setFeedback({ kind: 'info', text })
       narrate(text)
       setHighlight('tens')
+    } else if (phase === 'enterHundredsAnswer') {
+      setFeedback({ kind: 'info', text: hintHundredsText })
+      narrate(hintHundredsText)
+      setHighlight('hundreds')
     } else if (!isAdd && borrowNeeded && !opened) {
       const text = t('garden.notEnough')
       setFeedback({ kind: 'info', text })
@@ -257,20 +293,39 @@ export default function MagicAppleGarden({
 
   const handleCheck = () => {
     if (animating) return
-    if (onesAnswer === null || tensAnswer === null) {
-      const text = onesAnswer === null ? t('garden.enterOnes') : t('garden.enterTens')
-      setFeedback({ kind: 'wrong', text })
+    if (phase === 'intro') {
+      const text = t('garden.startUnit')
+      setFeedback({ kind: 'info', text })
       narrate(text)
-      setHighlight(onesAnswer === null ? 'ones' : 'tens')
       return
     }
-    const onesOk = isCorrectOnesAnswer(top, bottom, problem.operation, onesAnswer)
-    const tensOk = isCorrectTensAnswer(top, bottom, problem.operation, tensAnswer)
-    if (onesOk && tensOk) {
+    if (onesAnswer === null || tensAnswer === null || (isThree && hundredsAnswer === null)) {
+      const text =
+        onesAnswer === null
+          ? t('garden.enterOnes')
+          : tensAnswer === null
+            ? t('garden.enterTens')
+            : enterHundredsText
+      setFeedback({ kind: 'wrong', text })
+      narrate(text)
+      setHighlight(onesAnswer === null ? 'ones' : tensAnswer === null ? 'tens' : 'hundreds')
+      return
+    }
+    const onesIdx = width - 1
+    const tensIdx = width - 2
+    const hundredsIdx = width - 3
+    const onesOk = isCorrectAt(top, bottom, problem.operation, onesIdx, width, onesAnswer)
+    const tensOk = isCorrectAt(top, bottom, problem.operation, tensIdx, width, tensAnswer)
+    const hundredsOk =
+      !isThree || hundredsAnswer === null
+        ? true
+        : isCorrectAt(top, bottom, problem.operation, hundredsIdx, width, hundredsAnswer)
+    if (onesOk && tensOk && hundredsOk) {
       if (hasCheckedOnce) return // idempoten: jangan gandakan reward
       setHasCheckedOnce(true)
       setWrongOnes(false)
       setWrongTens(false)
+      setWrongHundreds(false)
       const successText =
         isAdd && carryNeeded
           ? t('garden.successCarry')
@@ -290,13 +345,18 @@ export default function MagicAppleGarden({
       // belum tepat — jangan tampilkan silang besar, hanya sorot kolom
       setWrongOnes(!onesOk)
       setWrongTens(!tensOk)
+      setWrongHundreds(isThree && !hundredsOk)
       const attempts = wrongAttempts + 1
       setWrongAttempts(attempts)
       playTryAgain()
-      const text = !onesOk ? t('garden.hintOnes') : t('garden.hintTens')
+      const text = !onesOk
+        ? t('garden.hintOnes')
+        : !tensOk
+          ? t('garden.hintTens')
+          : hintHundredsText
       setFeedback({ kind: 'wrong', text: t('garden.tryAgain') + ' ' + text })
       narrate(t('garden.tryAgain'))
-      setHighlight(!onesOk ? 'ones' : 'tens')
+      setHighlight(!onesOk ? 'ones' : !tensOk ? 'tens' : 'hundreds')
       // jangan reset visual — biarkan anak hitung kembali
       // batasi hint satu langkah
     }
@@ -308,10 +368,12 @@ export default function MagicAppleGarden({
     stopAllAudio()
     setVisualTens(initialTens)
     setVisualOnes(initialOnes)
+    setVisualHundreds(initialHundreds)
     setExchanged(false)
     setOpened(false)
     setOnesAnswer(null)
     setTensAnswer(null)
+    setHundredsAnswer(null)
     setActiveColumn('ones')
     setFeedback(null)
     setHighlight('ones')
@@ -319,6 +381,7 @@ export default function MagicAppleGarden({
     setWrongAttempts(0)
     setWrongOnes(false)
     setWrongTens(false)
+    setWrongHundreds(false)
     setHasCheckedOnce(false)
     setPhase('showQuestion')
   }
@@ -331,15 +394,32 @@ export default function MagicAppleGarden({
       // auto pindah ke puluhan setelah isi satuan
       setActiveColumn('tens')
       setHighlight('tens')
+      if (phase === 'enterOnesAnswer') {
+        setPhase('enterTensAnswer')
+      }
     } else if (activeColumn === 'tens') {
       setTensAnswer(digit)
       setWrongTens(false)
+      if (isThree) {
+        setActiveColumn('hundreds')
+        setHighlight('hundreds')
+        if (phase === 'enterTensAnswer') {
+          setPhase('enterHundredsAnswer')
+        }
+      }
+    } else if (activeColumn === 'hundreds') {
+      setHundredsAnswer(digit)
+      setWrongHundreds(false)
     }
   }
 
   const handleBackspace = () => {
     playTap()
-    if (activeColumn === 'tens' && tensAnswer !== null) {
+    if (activeColumn === 'hundreds' && hundredsAnswer !== null) {
+      setHundredsAnswer(null)
+    } else if (activeColumn === 'hundreds' && hundredsAnswer === null) {
+      setActiveColumn('tens')
+    } else if (activeColumn === 'tens' && tensAnswer !== null) {
       setTensAnswer(null)
     } else if (activeColumn === 'ones' && onesAnswer !== null) {
       setOnesAnswer(null)
@@ -352,9 +432,21 @@ export default function MagicAppleGarden({
   const carryShown = isAdd && carryNeeded && exchanged
   const borrowShown = !isAdd && borrowNeeded && opened
 
+  const carryValues = isThree
+    ? [carry2 ? 1 : null, carry1 ? 1 : null, null]
+    : [carryShown ? 1 : null, null]
+  const borrowValues = borrowShown
+    ? isThree
+      ? [afterHundreds, afterTens, afterOnes]
+      : [afterTens, afterOnes]
+    : isThree
+      ? [null, null, null]
+      : [null, null]
+
   const canCheck =
     onesAnswer !== null &&
     tensAnswer !== null &&
+    (!isThree || hundredsAnswer !== null) &&
     !animating &&
     phase !== 'completed' &&
     phase !== 'intro'
@@ -370,34 +462,36 @@ export default function MagicAppleGarden({
       </div>
 
       <div className="flex justify-center">
-        <StackedOperation
+        <StackedPlaceValueBoard
           problem={problem}
-          onesAnswer={onesAnswer}
-          tensAnswer={tensAnswer}
+          answers={isThree ? [hundredsAnswer, tensAnswer, onesAnswer] : [tensAnswer, onesAnswer]}
           activeColumn={activeColumn}
-          carryShown={carryShown}
-          borrowShown={borrowShown}
+          carryValues={carryValues}
+          borrowValues={borrowValues}
           highlightColumn={highlight}
-          onSelectOnes={() => {
-            setActiveColumn('ones')
-            setHighlight('ones')
+          wrongColumns={isThree ? [wrongHundreds, wrongTens, wrongOnes] : [wrongTens, wrongOnes]}
+          tone="emerald"
+          onSelectColumn={(c) => {
+            setActiveColumn(c)
+            setHighlight(c)
             playTap()
           }}
-          onSelectTens={() => {
-            setActiveColumn('tens')
-            setHighlight('tens')
-            playTap()
-          }}
-          wrongOnes={wrongOnes}
-          wrongTens={wrongTens}
         />
       </div>
 
-      <PlaceValueBoard tens={visualTens} ones={visualOnes} highlight={highlight} />
+      <PlaceValueBoard
+        tens={visualTens}
+        ones={visualOnes}
+        hundreds={visualHundreds}
+        showHundreds={isThree}
+        highlight={highlight}
+      />
 
       <GardenScene
         tens={visualTens}
         ones={visualOnes}
+        hundreds={visualHundreds}
+        showHundreds={isThree}
         highlight={highlight}
         disabled={animating || isCompleted}
         animating={animating}
@@ -406,6 +500,7 @@ export default function MagicAppleGarden({
           if (!isAdd && borrowNeeded && !opened) doOpen()
         }}
         onAppleClick={() => playPickApple()}
+        onCrateClick={() => playPickApple()}
       />
 
       {/* Aksi pertukaran — sinkron dengan angka bersusun */}
@@ -462,8 +557,12 @@ export default function MagicAppleGarden({
       {/* Keypad: besar untuk touch, keyboard & click alternatif untuk drag */}
       <div className="rounded-3xl border-2 border-slate-100 bg-white p-3 shadow-sm">
         <p className="mb-2 text-center text-xs font-black uppercase tracking-wide text-slate-500">
-          {activeColumn === 'ones' ? t('garden.enterOnes') : t('garden.enterTens')} · ketuk kotak
-          jawaban untuk ganti kolom
+          {activeColumn === 'hundreds'
+            ? enterHundredsText
+            : activeColumn === 'ones'
+              ? t('garden.enterOnes')
+              : t('garden.enterTens')}{' '}
+          · ketuk kotak jawaban untuk ganti kolom
         </p>
         <NumericKeypad
           onDigit={handleDigit}
@@ -471,7 +570,7 @@ export default function MagicAppleGarden({
           onCheck={handleCheck}
           checkDisabled={!canCheck}
           checkLabel={t('garden.check')}
-          digitsDisabled={animating || isCompleted}
+          digitsDisabled={animating || isCompleted || phase === 'intro'}
         />
         <p className="mt-2 text-center text-[0.65rem] font-bold text-slate-400">
           Alternatif drag: ketuk keranjang/apel juga bisa — tidak wajib menyeret.
@@ -498,6 +597,7 @@ export default function MagicAppleGarden({
 
       {/* Live region untuk jumlah keranjang/apel — aksesibel tanpa mengandalkan warna */}
       <p className="sr-only" aria-live="polite">
+        {isThree ? `${visualHundreds} peti ratusan, ` : ''}
         {visualTens} keranjang puluhan, {visualOnes} apel satuan. Pertanyaan {currentIndex + 1} dari{' '}
         {total}.
       </p>

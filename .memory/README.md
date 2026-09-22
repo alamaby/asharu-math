@@ -1,15 +1,16 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-09-22 19:38:00
+Last Updated: 2026-09-22 23:20:00
 Format Version: 1
 
 ## Current State
-- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.4.0` (feat soal cerita Kelas 2 multi-langkah).
+- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.4.1` (papan R/P/S sejajar + ratusan 3-digit + fix Periksa akuarium-kebun).
 - Sesi Belajar penjumlahan: input sekali per kolom — ketik jumlah di Kotak Hitung, jawaban + simpanan terisi otomatis (`carry-down` auto untuk kolom turunan carry; `carry-digit` dihapus).
 - Konten: K1 3 konsep (membilang/banding/nilai-tempat) + 4 kolom 1–2 digit; K2 11 bersusun + **4 cerita** (cerita-1..4) + Tantangan adaptif; 11 achievement (`bintang-kelas-1` mencakup 7 K1, `bintang-cerita` mencakup 4 cerita).
 - Rantai K2: `level-11 → cerita-1 → cerita-2 → cerita-3 → cerita-4 → tantangan`.
+- Akuarium/Kebun: papan bersusun unifikasi (`StackedPlaceValueBoard` grid N-kolom, wrapper 2-digit); 4 level 3-digit baru (`kebun-5/6`, `akuarium-5/6`, number 20–23, rantai `akuarium-4→kebun-5→kebun-6→akuarium-5→akuarium-6`); visual ratusan ungu (peti 📦/overlay); input S→P→R; Periksa tidak pernah diam (blokir intro + info).
 - Soal cerita: 6 famili variasi (F0-F5), multi-part, jawab ketik angka + bantuan bersusun. Mode Cerita tersedia di Latihan.
-- Kualitas: ESLint 9 + Prettier aktif; **283 test / 34 file lulus**; CI GitHub Actions Node 20 & 22.
+- Kualitas: ESLint 9 + Prettier aktif; **304 test / 36 file (303 lulus, 1 pre-existing gagal PracticeScreenStory)**; CI GitHub Actions Node 20 & 22.
 - PWA aktif: installable (tombol di HomeScreen), offline via service worker auto-update, petunjuk iOS A2HS.
 - i18n: dua bahasa ID(default)/EN switch instan; concept + story i18n render-time; Home/Result routing per-grade & per-levelKind.
 - AdSense + legal: AdSlot TFAT=1 child; zona bebas iklan Learn/Practice/Concept; Privacy/Terms bilingual (pemilik Alam Aby Bashit, alam.aby.b@gmail.com); ads.txt `pub-4082765898994990` live.
@@ -26,6 +27,7 @@ Format Version: 1
 - Unlock: `requires` + veteran bypass `K1_IDS` 7; `isLevelUnlocked` — level yang sudah selesai selalu `true`; next linear via `LEVELS` order.
 
 ## Open Items / Blockers
+- Verifikasi manual browser plan akuarium-garden BELUM dilakukan (360px/desktop, 23+22, 245+138 S→P→R, Periksa saat tutorial) — butuh browser interaktif.
 - Sisa AdSense: verifikasi 4 display unit produksi di dashboard setelah deploy.
 - Coverage report (`@vitest/coverage-v8`) belum dipasang (opsional).
 - Uji manual PWA di perangkat nyata setelah deploy Vercel berikutnya (checklist di plan).
@@ -33,6 +35,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-09-22 23:20:00 — Papan R/P/S sejajar + ratusan 3-digit + fix Periksa](2026-09-22/232000-aquarium-garden-ratusan-dan-periksa.md)
 - [2026-09-22 19:38:00 — Soal cerita Kelas 2 multi-langkah (4 level + generator + i18n)](2026-09-22/193800-soal-cerita-kelas-2.md)
 - [2026-09-13 21:45:00 — Sesi belajar input angka sekali per kolom](2026-09-13/214500-sesi-belajar-input-angka-sekali.md)
 - [2026-09-06 18:?? — Review M3 polish](2026-09-06/1810-review-k1-m3-fixes.md)

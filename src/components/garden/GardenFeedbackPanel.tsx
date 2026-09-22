@@ -1,7 +1,7 @@
 type GardenFeedbackProps = {
   kind: 'correct' | 'wrong' | 'info' | null
   text: string | null
-  highlightColumn?: 'tens' | 'ones' | null
+  highlightColumn?: 'tens' | 'ones' | 'hundreds' | null
 }
 
 export default function GardenFeedbackPanel({ kind, text, highlightColumn }: GardenFeedbackProps) {
@@ -25,7 +25,11 @@ export default function GardenFeedbackPanel({ kind, text, highlightColumn }: Gar
       {text}
       {highlightColumn && (
         <span className="ml-2 rounded-full bg-white px-2 py-1 text-xs font-black">
-          {highlightColumn === 'ones' ? 'Satuan' : 'Puluhan'}
+          {highlightColumn === 'ones'
+            ? 'Satuan'
+            : highlightColumn === 'tens'
+              ? 'Puluhan'
+              : 'Ratusan'}
         </span>
       )}
     </div>

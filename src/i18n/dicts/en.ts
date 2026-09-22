@@ -213,15 +213,55 @@ const en: Dict = {
     `${p.name} has ${p.a} ${p.item}s. ${p.b} ${p.item}s were given away. How many ${p.item}s does ${p.name} have now?`,
   'story.stem-f1-diff': (p: { nameA: string; nameB: string; item: string; x: number; y: number }) =>
     `${p.nameA} has ${p.x} ${p.item}s, which is ${p.y} more than ${p.nameB}.`,
-  'story.stem-f2-transfer-color': (p: { nameA: string; nameB: string; item: string; x: number; p: number; q: number; r: number; s: number }) =>
+  'story.stem-f2-transfer-color': (p: {
+    nameA: string
+    nameB: string
+    item: string
+    x: number
+    p: number
+    q: number
+    r: number
+    s: number
+  }) =>
     `${p.nameA} has ${p.x} ${p.item}s. ${p.p} are red and ${p.q} are blue. ${p.nameB} has ${p.s} yellow ${p.item}s. How many ${p.item}s changed hands?`,
-  'story.stem-f2-transfer-size': (p: { nameA: string; nameB: string; item: string; x: number; p: number; q: number; r: number; s: number }) =>
+  'story.stem-f2-transfer-size': (p: {
+    nameA: string
+    nameB: string
+    item: string
+    x: number
+    p: number
+    q: number
+    r: number
+    s: number
+  }) =>
     `${p.nameA} has ${p.x} ${p.item}s. ${p.p} are big and ${p.q} are small. ${p.nameB} has ${p.s} medium ${p.item}s. How many ${p.item}s changed hands?`,
-  'story.stem-f3-chain': (p: { nameA: string; nameB: string; nameC: string; item: string; m: number; n: number }) =>
+  'story.stem-f3-chain': (p: {
+    nameA: string
+    nameB: string
+    nameC: string
+    item: string
+    m: number
+    n: number
+  }) =>
     `${p.nameC} has ${p.n} ${p.item}s. ${p.nameB} has ${p.m} more ${p.item}s than ${p.nameC}. ${p.nameA} has as many ${p.item}s as ${p.nameB}.`,
-  'story.stem-f4-join3': (p: { nameA: string; nameB: string; nameC: string; item: string; x: number; y: number; z: number }) =>
+  'story.stem-f4-join3': (p: {
+    nameA: string
+    nameB: string
+    nameC: string
+    item: string
+    x: number
+    y: number
+    z: number
+  }) =>
     `${p.nameA} has ${p.x} ${p.item}s, ${p.nameB} has ${p.y} ${p.item}s, and ${p.nameC} has ${p.z} ${p.item}s.`,
-  'story.stem-f5-tiered': (p: { nameA: string; nameB: string; item: string; x: number; y: number; z: number }) =>
+  'story.stem-f5-tiered': (p: {
+    nameA: string
+    nameB: string
+    item: string
+    x: number
+    y: number
+    z: number
+  }) =>
     `${p.nameA} has ${p.x} ${p.item}s. ${p.nameB} took ${p.y} ${p.item}s. Then ${p.nameA} got ${p.z} more ${p.item}s.`,
   'story.part-f1-b': (p: { nameB: string; item: string }) =>
     `How many ${p.item}s does ${p.nameB} have?`,
@@ -376,6 +416,16 @@ const en: Dict = {
   'garden.openAction': 'Open 1 basket into 10 apples',
   'garden.enterOnes': 'Enter ones answer',
   'garden.enterTens': 'Enter tens answer',
+  'garden.enterHundreds': 'Enter hundreds answer',
+  'garden.hintHundreds': 'Check the crates in the hundreds column again.',
+  'garden.hundredsArea': 'Hundreds Area',
+  'garden.hundredsColor': 'Hundreds: violet purple',
+  'garden.crateLabel': 'Hundreds crate',
+  'garden.exchangeHundredAction': 'Exchange 10 baskets for 1 crate',
+  'garden.openHundredAction': 'Open 1 crate into 10 baskets',
+  'garden.tenTensToHundred': 'Ten tens baskets can be exchanged for one hundreds crate.',
+  'garden.countHundreds': 'Now count the hundreds column.',
+  'garden.successCarryHundred': 'Great! Ten baskets became one hundreds crate.',
   'garden.soundOn': 'Sound on',
   'garden.soundOff': 'Sound off',
   'garden.repeatHint': 'Repeat Hint',
@@ -420,6 +470,16 @@ const en: Dict = {
   'aquarium.splitGroupAction': 'Split 1 group into 10 fish',
   'aquarium.enterOnes': 'Enter ones answer',
   'aquarium.enterTens': 'Enter tens answer',
+  'aquarium.enterHundreds': 'Enter hundreds answer',
+  'aquarium.hintHundreds': 'Check the tanks in the hundreds column again.',
+  'aquarium.hundredsArea': 'Hundreds Area',
+  'aquarium.hundredsColor': 'Hundreds: violet purple',
+  'aquarium.tankLabel': 'Hundreds tank',
+  'aquarium.formHundredAction': 'Form 10 groups into 1 tank',
+  'aquarium.splitHundredAction': 'Split 1 tank into 10 groups',
+  'aquarium.tenGroupsToHundred': 'Ten tens groups can be exchanged for one hundreds tank.',
+  'aquarium.countHundreds': 'Now count the hundreds column.',
+  'aquarium.successCarryHundred': 'Great! Ten groups became one hundreds tank.',
   'aquarium.soundOn': 'Sound on',
   'aquarium.soundOff': 'Sound off',
   'aquarium.repeatHint': 'Repeat Hint',

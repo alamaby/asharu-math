@@ -27,6 +27,11 @@ const STEPS = [
     body: 'Kita selalu mulai menghitung dari kolom satuan (S), lalu lanjut ke puluhan (P).',
     emoji: '🔢',
   },
+  {
+    title: 'Seratus = sepuluh puluhan',
+    body: 'Sepuluh kelompok puluhan dapat ditukar menjadi satu peti/tangki ratusan ungu bernilai 100.',
+    emoji: '📦',
+  },
 ]
 
 export default function AquariumTutorial({ open, onSkip, onNext, step, totalSteps }: Props) {
@@ -45,7 +50,9 @@ export default function AquariumTutorial({ open, onSkip, onNext, step, totalStep
           {s.emoji}
         </p>
         <h2 className="mt-3 text-center text-base font-black text-sky-800">{s.title}</h2>
-        <p className="mt-2 text-center text-sm font-bold leading-relaxed text-slate-600">{s.body}</p>
+        <p className="mt-2 text-center text-sm font-bold leading-relaxed text-slate-600">
+          {s.body}
+        </p>
         <p className="mt-3 text-center text-xs font-bold text-slate-400">
           Langkah {step + 1} dari {n}
         </p>

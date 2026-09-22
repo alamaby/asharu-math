@@ -7,7 +7,8 @@ const AquariumScene3D = lazy(() => import('./AquariumScene3D'))
 type AquariumCanvasProps = {
   tens: number
   ones: number
-  highlight?: 'tens' | 'ones' | null
+  hundreds?: number
+  highlight?: 'tens' | 'ones' | 'hundreds' | null
   animating?: boolean
   regroupProgress?: number
   splitProgress?: number
@@ -17,7 +18,10 @@ function hasWebGL(): boolean {
   if (typeof window === 'undefined') return false
   try {
     const c = document.createElement('canvas')
-    return !!(window.WebGLRenderingContext && (c.getContext('webgl') || c.getContext('experimental-webgl')))
+    return !!(
+      window.WebGLRenderingContext &&
+      (c.getContext('webgl') || c.getContext('experimental-webgl'))
+    )
   } catch {
     return false
   }

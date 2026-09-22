@@ -7,6 +7,12 @@ export interface AquariumSplit {
   ones: number
 }
 
+export interface AquariumHundredsSplit {
+  hundreds: number
+  tens: number
+  ones: number
+}
+
 export function splitTensOnes(value: number): AquariumSplit {
   if (!Number.isInteger(value) || value < 0 || value > 99) {
     throw new Error(`Nilai harus 0..99, got ${value}`)
@@ -16,6 +22,21 @@ export function splitTensOnes(value: number): AquariumSplit {
 
 export function totalFromSplit(split: AquariumSplit): number {
   return split.tens * FISH_PER_GROUP + split.ones
+}
+
+export function splitPlaces(value: number): AquariumHundredsSplit {
+  if (!Number.isInteger(value) || value < 0 || value > 999) {
+    throw new Error(`Nilai harus 0..999, got ${value}`)
+  }
+  return {
+    hundreds: Math.floor(value / 100),
+    tens: Math.floor((value % 100) / 10),
+    ones: value % 10,
+  }
+}
+
+export function totalFromHundreds(split: AquariumHundredsSplit): number {
+  return split.hundreds * 100 + split.tens * FISH_PER_GROUP + split.ones
 }
 
 export function fishesFor(value: number): number {
@@ -44,6 +65,28 @@ export function splitGroup(tens: number, ones: number): AquariumSplit {
     throw new Error(`Butuh minimal 1 kelompok untuk dipecah, got ${tens}`)
   }
   return { tens: tens - 1, ones: ones + FISH_PER_GROUP }
+}
+
+/** 10 kelompok puluhan → 1 tangki ratusan */
+export function formHundred(
+  tens: number,
+  hundreds: number,
+): Pick<AquariumHundredsSplit, 'hundreds' | 'tens'> {
+  if (tens < FISH_PER_GROUP) {
+    throw new Error(`Butuh minimal 10 kelompok untuk membentuk ratusan, got ${tens}`)
+  }
+  return { hundreds: hundreds + 1, tens: tens - FISH_PER_GROUP }
+}
+
+/** 1 tangki ratusan → 10 kelompok puluhan */
+export function splitHundred(
+  hundreds: number,
+  tens: number,
+): Pick<AquariumHundredsSplit, 'hundreds' | 'tens'> {
+  if (hundreds < 1) {
+    throw new Error(`Butuh minimal 1 ratusan untuk dipecah, got ${hundreds}`)
+  }
+  return { hundreds: hundreds - 1, tens: tens + FISH_PER_GROUP }
 }
 
 export function combinedForAddition(first: number, second: number): AquariumSplit {
@@ -95,9 +138,21 @@ export function isCorrectTensAnswer(
 }
 
 /** Total nilai tetap sama sebelum/sesudah pertukaran — invariant untuk test */
-export function totalInvariant(
-  before: AquariumSplit,
-  after: AquariumSplit,
-): boolean {
+export function totalInvariant(before: AquariumSplit, after: AquariumSplit): boolean {
   return totalFromSplit(before) === totalFromSplit(after)
+}
+
+/** Validasi jawaban per kolom generik (columnIndex kiri-ke-kanan, width 2-3) */
+export function isCorrectAt(
+  top: number,
+  bottom: number,
+  operation: 'addition' | 'subtraction',
+  columnIndex: number,
+  width: number,
+  given: number,
+): boolean {
+  const expectedResult = operation === 'addition' ? top + bottom : top - bottom
+  const text = String(expectedResult).padStart(width, '0')
+  const expected = Number(text[columnIndex])
+  return given === expected
 }

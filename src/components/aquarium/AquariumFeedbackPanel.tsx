@@ -3,7 +3,7 @@ type Kind = 'correct' | 'wrong' | 'info' | null
 type Props = {
   kind: Kind
   text: string | null
-  highlightColumn?: 'tens' | 'ones' | null
+  highlightColumn?: 'tens' | 'ones' | 'hundreds' | null
 }
 
 export default function AquariumFeedbackPanel({ kind, text }: Props) {

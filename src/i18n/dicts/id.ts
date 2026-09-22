@@ -215,18 +215,57 @@ const id = {
     `${p.name} punya ${p.a} ${p.item}. Dibagikan sebanyak ${p.b} ${p.item}. Berapa ${p.item} ${p.name} sekarang?`,
   'story.stem-f1-diff': (p: { nameA: string; nameB: string; item: string; x: number; y: number }) =>
     `${p.nameA} punya ${p.x} ${p.item}, lebih banyak ${p.y} dari ${p.nameB}.`,
-  'story.stem-f2-transfer-color': (p: { nameA: string; nameB: string; item: string; x: number; p: number; q: number; r: number; s: number }) =>
+  'story.stem-f2-transfer-color': (p: {
+    nameA: string
+    nameB: string
+    item: string
+    x: number
+    p: number
+    q: number
+    r: number
+    s: number
+  }) =>
     `${p.nameA} punya ${p.x} ${p.item} merah. ${p.p} di antaranya hijau dan ${p.q} di antaranya biru. ${p.nameB} mempunyai ${p.s} ${p.item} kuning. Berapa ${p.item} yang berpindah?`,
-  'story.stem-f2-transfer-size': (p: { nameA: string; nameB: string; item: string; x: number; p: number; q: number; r: number; s: number }) =>
+  'story.stem-f2-transfer-size': (p: {
+    nameA: string
+    nameB: string
+    item: string
+    x: number
+    p: number
+    q: number
+    r: number
+    s: number
+  }) =>
     `${p.nameA} punya ${p.x} ${p.item}. ${p.p} di antaranya besar dan ${p.q} di antaranya kecil. ${p.nameB} mempunyai ${p.s} ${p.item} sedang. Berapa ${p.item} yang berpindah?`,
-  'story.stem-f3-chain': (p: { nameA: string; nameB: string; nameC: string; item: string; m: number; n: number }) =>
+  'story.stem-f3-chain': (p: {
+    nameA: string
+    nameB: string
+    nameC: string
+    item: string
+    m: number
+    n: number
+  }) =>
     `${p.nameC} punya ${p.n} ${p.item}. ${p.nameB} punya ${p.m} ${p.item} lebih banyak dari ${p.nameC}. ${p.nameA} punya ${p.n} ${p.item} sebanyak ${p.nameB}.`,
-  'story.stem-f4-join3': (p: { nameA: string; nameB: string; nameC: string; item: string; x: number; y: number; z: number }) =>
+  'story.stem-f4-join3': (p: {
+    nameA: string
+    nameB: string
+    nameC: string
+    item: string
+    x: number
+    y: number
+    z: number
+  }) =>
     `${p.nameA} punya ${p.x} ${p.item}, ${p.nameB} punya ${p.y} ${p.item}, dan ${p.nameC} punya ${p.z} ${p.item}.`,
-  'story.stem-f5-tiered': (p: { nameA: string; nameB: string; item: string; x: number; y: number; z: number }) =>
+  'story.stem-f5-tiered': (p: {
+    nameA: string
+    nameB: string
+    item: string
+    x: number
+    y: number
+    z: number
+  }) =>
     `${p.nameA} punya ${p.x} ${p.item}. Diminim ${p.y} ${p.item} oleh ${p.nameB}. Sisa ${p.item} itu ditambah ${p.z} ${p.item} lagi.`,
-  'story.part-f1-b': (p: { nameB: string; item: string }) =>
-    `Berapa ${p.item} milik ${p.nameB}?`,
+  'story.part-f1-b': (p: { nameB: string; item: string }) => `Berapa ${p.item} milik ${p.nameB}?`,
   'story.part-f1-total': (p: { nameA: string; nameB: string; item: string }) =>
     `Berapa jumlah ${p.item} ${p.nameA} dan ${p.nameB} together?`,
   'story.part-f2-p-r': (p: { nameA: string; item: string }) =>
@@ -235,10 +274,8 @@ const id = {
     `Sisa berapa ${p.item} milik ${p.nameA}?`,
   'story.part-f2-s+r': (p: { nameB: string; item: string }) =>
     `Berapa ${p.item} milik ${p.nameB} setelah menerima?`,
-  'story.part-f3-b': (p: { nameB: string; item: string }) =>
-    `Berapa ${p.item} milik ${p.nameB}?`,
-  'story.part-f3-a': (p: { nameA: string; item: string }) =>
-    `Berapa ${p.item} milik ${p.nameA}?`,
+  'story.part-f3-b': (p: { nameB: string; item: string }) => `Berapa ${p.item} milik ${p.nameB}?`,
+  'story.part-f3-a': (p: { nameA: string; item: string }) => `Berapa ${p.item} milik ${p.nameA}?`,
   'story.part-f3-total': (p: { nameA: string; nameB: string; nameC: string; item: string }) =>
     `Total berapa ${p.item} mereka bertiga?`,
   'story.part-f4-total3': (p: { nameA: string; nameB: string; nameC: string; item: string }) =>
@@ -378,6 +415,16 @@ const id = {
   'garden.openAction': 'Buka 1 keranjang menjadi 10 apel',
   'garden.enterOnes': 'Masukkan jawaban satuan',
   'garden.enterTens': 'Masukkan jawaban puluhan',
+  'garden.enterHundreds': 'Masukkan jawaban ratusan',
+  'garden.hintHundreds': 'Periksa lagi jumlah peti di kolom ratusan.',
+  'garden.hundredsArea': 'Area Ratusan',
+  'garden.hundredsColor': 'Ratusan: ungu violet',
+  'garden.crateLabel': 'Peti ratusan',
+  'garden.exchangeHundredAction': 'Tukarkan 10 keranjang menjadi 1 peti',
+  'garden.openHundredAction': 'Buka 1 peti menjadi 10 keranjang',
+  'garden.tenTensToHundred': 'Sepuluh keranjang puluhan dapat ditukar menjadi satu peti ratusan.',
+  'garden.countHundreds': 'Sekarang hitung kolom ratusan.',
+  'garden.successCarryHundred': 'Hebat! Sepuluh keranjang sudah menjadi satu peti ratusan.',
   'garden.soundOn': 'Suara hidup',
   'garden.soundOff': 'Suara mati',
   'garden.repeatHint': 'Ulangi Petunjuk',
@@ -423,6 +470,17 @@ const id = {
   'aquarium.splitGroupAction': 'Pecah 1 kelompok menjadi 10 ikan',
   'aquarium.enterOnes': 'Masukkan jawaban satuan',
   'aquarium.enterTens': 'Masukkan jawaban puluhan',
+  'aquarium.enterHundreds': 'Masukkan jawaban ratusan',
+  'aquarium.hintHundreds': 'Periksa lagi jumlah peti di kolom ratusan.',
+  'aquarium.hundredsArea': 'Area Ratusan',
+  'aquarium.hundredsColor': 'Ratusan: ungu violet',
+  'aquarium.tankLabel': 'Tangki ratusan',
+  'aquarium.formHundredAction': 'Bentuk 10 kelompok menjadi 1 tangki',
+  'aquarium.splitHundredAction': 'Pecah 1 tangki menjadi 10 kelompok',
+  'aquarium.tenGroupsToHundred':
+    'Sepuluh kelompok puluhan dapat ditukar menjadi satu tangki ratusan.',
+  'aquarium.countHundreds': 'Sekarang hitung kolom ratusan.',
+  'aquarium.successCarryHundred': 'Hebat! Sepuluh kelompok sudah menjadi satu tangki ratusan.',
   'aquarium.soundOn': 'Suara hidup',
   'aquarium.soundOff': 'Suara mati',
   'aquarium.repeatHint': 'Ulangi Petunjuk',

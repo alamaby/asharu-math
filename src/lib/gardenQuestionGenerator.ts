@@ -2,7 +2,7 @@ import type { MathProblem } from '../types'
 import { buildProblem, generateProblem } from './problemGenerator'
 import type { GeneratorSettings } from '../types'
 
-export type GardenLevelId = 'kebun-1' | 'kebun-2' | 'kebun-3' | 'kebun-4'
+export type GardenLevelId = 'kebun-1' | 'kebun-2' | 'kebun-3' | 'kebun-4' | 'kebun-5' | 'kebun-6'
 
 export interface GardenGeneratorOptions {
   levelId: GardenLevelId
@@ -19,6 +19,10 @@ function gardenSettingsFor(levelId: GardenLevelId): GeneratorSettings {
       return { operation: 'subtraction', digitCount: 2, carryMode: 'none', questionCount: 1 }
     case 'kebun-4':
       return { operation: 'subtraction', digitCount: 2, carryMode: 'required', questionCount: 1 }
+    case 'kebun-5':
+      return { operation: 'addition', digitCount: 3, carryMode: 'required', questionCount: 1 }
+    case 'kebun-6':
+      return { operation: 'subtraction', digitCount: 3, carryMode: 'required', questionCount: 1 }
   }
 }
 

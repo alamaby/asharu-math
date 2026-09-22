@@ -2,12 +2,17 @@ import { describe, it, expect } from 'vitest'
 import {
   FISH_PER_GROUP,
   splitTensOnes,
+  splitPlaces,
+  totalFromHundreds,
   formGroup,
   splitGroup,
+  formHundred,
+  splitHundred,
   needsCarry,
   needsBorrow,
   isCorrectOnesAnswer,
   isCorrectTensAnswer,
+  isCorrectAt,
   totalInvariant,
   totalFromSplit,
 } from '../src/lib/aquariumPlaceValueMath'
@@ -158,5 +163,58 @@ describe('aquariumQuestionGenerator — aturan 2-digit', () => {
 
   it('soal negatif ditolak', () => {
     expect(() => buildProblem('subtraction', 10, 20)).toThrow()
+  })
+})
+
+describe('aquariumPlaceValueMath — ratusan 3-digit', () => {
+  it('splitPlaces 0/245/999', () => {
+    expect(splitPlaces(0)).toEqual({ hundreds: 0, tens: 0, ones: 0 })
+    expect(splitPlaces(245)).toEqual({ hundreds: 2, tens: 4, ones: 5 })
+    expect(splitPlaces(999)).toEqual({ hundreds: 9, tens: 9, ones: 9 })
+  })
+
+  it('splitPlaces throw di luar 0..999', () => {
+    expect(() => splitPlaces(-1)).toThrow()
+    expect(() => splitPlaces(1000)).toThrow()
+    expect(() => splitPlaces(1.5)).toThrow()
+  })
+
+  it('totalFromHundreds konsisten', () => {
+    expect(totalFromHundreds({ hundreds: 2, tens: 4, ones: 5 })).toBe(245)
+  })
+
+  it('10 kelompok → 1 ratusan', () => {
+    expect(formHundred(10, 2)).toEqual({ hundreds: 3, tens: 0 })
+    expect(() => formHundred(9, 0)).toThrow()
+  })
+
+  it('1 ratusan → 10 kelompok', () => {
+    expect(splitHundred(2, 3)).toEqual({ hundreds: 1, tens: 13 })
+    expect(() => splitHundred(0, 5)).toThrow()
+  })
+
+  it('isCorrectAt 245+138=383 per kolom', () => {
+    expect(isCorrectAt(245, 138, 'addition', 2, 3, 3)).toBe(true)
+    expect(isCorrectAt(245, 138, 'addition', 1, 3, 8)).toBe(true)
+    expect(isCorrectAt(245, 138, 'addition', 0, 3, 3)).toBe(true)
+    expect(isCorrectAt(245, 138, 'addition', 0, 3, 4)).toBe(false)
+  })
+
+  it('generator akuarium-5/6: 3-digit required', () => {
+    for (let i = 0; i < 20; i++) {
+      const add = generateAquariumProblem({ levelId: 'akuarium-5' })
+      expect(add.operation).toBe('addition')
+      expect(add.digitCount).toBe(3)
+      expect(hasCarry(add.firstOperand, add.secondOperand)).toBe(true)
+      const sub = generateAquariumProblem({ levelId: 'akuarium-6' })
+      expect(sub.operation).toBe('subtraction')
+      expect(sub.firstOperand).toBeGreaterThanOrEqual(sub.secondOperand)
+      expect(hasBorrow(sub.firstOperand, sub.secondOperand)).toBe(true)
+    }
+  })
+
+  it('fixture 3-digit 245+138=383 dan 432-176=256', () => {
+    expect(buildAquariumFixture('addition', 245, 138).expectedResult).toBe(383)
+    expect(buildAquariumFixture('subtraction', 432, 176).expectedResult).toBe(256)
   })
 })

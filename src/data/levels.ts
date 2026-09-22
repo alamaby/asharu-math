@@ -493,6 +493,78 @@ export const LEVELS: readonly LevelDefinition[] = [
     questionCount: 5,
     settings: { operation: 'subtraction', digitCount: 2, carryMode: 'required', questionCount: 5 },
   },
+  {
+    id: 'kebun-5',
+    number: 20,
+    grade: 2,
+    levelKind: 'column',
+    requires: 'akuarium-4',
+    name: {
+      id: 'Kebun: Tambah 3-Digit Dengan Simpan 📦',
+      en: 'Garden: 3-Digit Add With Carrying 📦',
+    },
+    goal: {
+      id: 'Menjumlahkan 3 digit dengan menyimpan lewat peti ratusan',
+      en: 'Add 3-digit numbers with carrying via hundred crates',
+    },
+    example: { id: 'kebun apel', en: 'apple garden' },
+    questionCount: 5,
+    settings: { operation: 'addition', digitCount: 3, carryMode: 'required', questionCount: 5 },
+  },
+  {
+    id: 'kebun-6',
+    number: 21,
+    grade: 2,
+    levelKind: 'column',
+    requires: 'kebun-5',
+    name: {
+      id: 'Kebun: Kurang 3-Digit Dengan Tukar 📦',
+      en: 'Garden: 3-Digit Subtract With Trading 📦',
+    },
+    goal: {
+      id: 'Mengurangkan 3 digit dengan menukar lewat peti ratusan',
+      en: 'Subtract 3-digit numbers with trading via hundred crates',
+    },
+    example: { id: 'kebun apel', en: 'apple garden' },
+    questionCount: 5,
+    settings: { operation: 'subtraction', digitCount: 3, carryMode: 'required', questionCount: 5 },
+  },
+  {
+    id: 'akuarium-5',
+    number: 22,
+    grade: 2,
+    levelKind: 'column',
+    requires: 'kebun-6',
+    name: {
+      id: 'Akuarium: Tambah 3-Digit Dengan Simpan 🐠',
+      en: 'Aquarium: 3-Digit Add With Carrying 🐠',
+    },
+    goal: {
+      id: 'Menjumlahkan 3 digit dengan menyimpan lewat tangki ratusan',
+      en: 'Add 3-digit numbers with carrying via hundred tanks',
+    },
+    example: { id: 'akuarium ikan', en: 'fish aquarium' },
+    questionCount: 5,
+    settings: { operation: 'addition', digitCount: 3, carryMode: 'required', questionCount: 5 },
+  },
+  {
+    id: 'akuarium-6',
+    number: 23,
+    grade: 2,
+    levelKind: 'column',
+    requires: 'akuarium-5',
+    name: {
+      id: 'Akuarium: Kurang 3-Digit Dengan Tukar 🐠',
+      en: 'Aquarium: Subtract With Trading 3-Digit 🐠',
+    },
+    goal: {
+      id: 'Mengurangkan 3 digit dengan menukar lewat tangki ratusan',
+      en: 'Subtract 3-digit numbers with trading via hundred tanks',
+    },
+    example: { id: 'akuarium ikan', en: 'fish aquarium' },
+    questionCount: 5,
+    settings: { operation: 'subtraction', digitCount: 3, carryMode: 'required', questionCount: 5 },
+  },
 ]
 
 export function getLevel(id: string): LevelDefinition | undefined {

@@ -7,6 +7,12 @@ export interface PlaceSplit {
   ones: number
 }
 
+export interface HundredsSplit {
+  hundreds: number
+  tens: number
+  ones: number
+}
+
 export function splitTensOnes(value: number): PlaceSplit {
   if (!Number.isInteger(value) || value < 0 || value > 99) {
     throw new Error(`Nilai harus 0..99, got ${value}`)
@@ -16,6 +22,21 @@ export function splitTensOnes(value: number): PlaceSplit {
 
 export function totalFromSplit(split: PlaceSplit): number {
   return split.tens * APPLES_PER_BASKET + split.ones
+}
+
+export function splitPlaces(value: number): HundredsSplit {
+  if (!Number.isInteger(value) || value < 0 || value > 999) {
+    throw new Error(`Nilai harus 0..999, got ${value}`)
+  }
+  return {
+    hundreds: Math.floor(value / 100),
+    tens: Math.floor((value % 100) / 10),
+    ones: value % 10,
+  }
+}
+
+export function totalFromHundreds(split: HundredsSplit): number {
+  return split.hundreds * 100 + split.tens * APPLES_PER_BASKET + split.ones
 }
 
 export function basketsFor(value: number): number {
@@ -45,6 +66,28 @@ export function openBasketToTenApples(tens: number, ones: number): PlaceSplit {
     throw new Error(`Butuh minimal 1 keranjang untuk dibuka, got ${tens}`)
   }
   return { tens: tens - 1, ones: ones + APPLES_PER_BASKET }
+}
+
+/** 10 keranjang puluhan → 1 peti ratusan */
+export function exchangeTenTensToHundred(
+  tens: number,
+  hundreds: number,
+): Pick<HundredsSplit, 'hundreds' | 'tens'> {
+  if (tens < APPLES_PER_BASKET) {
+    throw new Error(`Butuh minimal 10 keranjang untuk ditukar, got ${tens}`)
+  }
+  return { hundreds: hundreds + 1, tens: tens - APPLES_PER_BASKET }
+}
+
+/** 1 peti ratusan → 10 keranjang puluhan */
+export function openHundredToTenTens(
+  hundreds: number,
+  tens: number,
+): Pick<HundredsSplit, 'hundreds' | 'tens'> {
+  if (hundreds < 1) {
+    throw new Error(`Butuh minimal 1 peti untuk dibuka, got ${hundreds}`)
+  }
+  return { hundreds: hundreds - 1, tens: tens + APPLES_PER_BASKET }
 }
 
 /** Hitung gabungan apel/keranjang untuk penjumlahan */
@@ -97,4 +140,19 @@ export function isCorrectTensAnswer(
     expectedTens = topSplit.tens - borrow - botSplit.tens
   }
   return givenTens === expectedTens
+}
+
+/** Validasi jawaban per kolom generik (columnIndex kiri-ke-kanan, width 2-3) */
+export function isCorrectAt(
+  top: number,
+  bottom: number,
+  operation: 'addition' | 'subtraction',
+  columnIndex: number,
+  width: number,
+  given: number,
+): boolean {
+  const expectedResult = operation === 'addition' ? top + bottom : top - bottom
+  const text = String(expectedResult).padStart(width, '0')
+  const expected = Number(text[columnIndex])
+  return given === expected
 }
