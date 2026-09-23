@@ -36,6 +36,7 @@ export type Screen =
   | { name: 'settings' }
   | { name: 'privacy' }
   | { name: 'terms' }
+  | { name: 'train' }
 
 export type TabName = 'home' | 'levels' | 'practice' | 'achievements'
 

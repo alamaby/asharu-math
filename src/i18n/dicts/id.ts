@@ -508,6 +508,30 @@ const id = {
   'install.iosMid': 'di Safari, lalu pilih',
   'install.iosAdd': 'Tambahkan ke Layar Utama',
   'install.dismissAria': 'Tutup petunjuk pemasangan',
+
+  // Kereta Angka
+  'train.chooseBranchAria': (p: { answer: string }) => `Pilih jalur dengan jawaban ${p.answer}`,
+  'train.correct': 'Hebat! Jawabanmu benar.',
+  'train.fallbackMsg': 'Perangkat ini tidak mendukung 3D. Tetap bisa bermain dalam mode 2D ya.',
+  'train.grade1': 'Kelas 1',
+  'train.grade2': 'Kelas 2',
+  'train.grade3': 'Kelas 3',
+  'train.hintTitle': 'Petunjuk',
+  'train.mute': 'Matikan suara',
+  'train.paused': 'Jeda',
+  'train.questionOf': (p: { n: number; total: number }) => `Soal ${p.n} dari ${p.total}`,
+  'train.quit': 'Keluar',
+  'train.restart': 'Mulai lagi',
+  'train.resume': 'Lanjutkan',
+  'train.retry': 'Hampir benar, coba lagi.',
+  'train.selectGrade': 'Pilih kelas',
+  'train.sessionDone': 'Perjalanan selesai!',
+  'train.start': '🚂 Berangkat!',
+  'train.starsAria': (p: { stars: number }) => `Bintang: ${p.stars}`,
+  'train.station': 'Stasiun 🎉',
+  'train.subtitle': 'Bantu kereta sampai ke stasiun!',
+  'train.title': 'Petualangan Kereta Angka',
+  'train.unmute': 'Nyalakan suara',
 }
 
 export default id

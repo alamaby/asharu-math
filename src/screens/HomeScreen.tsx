@@ -133,6 +133,14 @@ export default function HomeScreen() {
         </button>
         <button
           type="button"
+          onClick={() => navigate({ name: 'train' })}
+          aria-label={`${t('train.title')} 🚂`}
+          className="min-h-14 w-full rounded-2xl border-b-4 border-amber-600 bg-amber-400 px-4 text-left text-base font-black text-amber-950 hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200"
+        >
+          {t('train.title')} 🚂
+        </button>
+        <button
+          type="button"
           disabled={!lastLevel}
           onClick={handleContinue}
           className="min-h-14 w-full rounded-2xl border-b-4 border-emerald-600 bg-emerald-500 px-4 text-left text-base font-black text-white hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300 disabled:opacity-40"

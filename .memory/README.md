@@ -1,6 +1,6 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-09-23 13:45:00
+Last Updated: 2026-09-23 21:35:00
 Format Version: 1
 
 ## Current State
@@ -10,7 +10,8 @@ Format Version: 1
 - Rantai K2: `level-11 → cerita-1 → cerita-2 → cerita-3 → cerita-4 → tantangan`.
 - Akuarium/Kebun: papan bersusun unifikasi (`StackedPlaceValueBoard` grid N-kolom, wrapper 2-digit); 4 level 3-digit baru (`kebun-5/6`, `akuarium-5/6`, number 20–23, rantai `akuarium-4→kebun-5→kebun-6→akuarium-5→akuarium-6`); visual ratusan ungu (peti 📦/overlay); input S→P→R; Periksa tidak pernah diam (blokir intro + info).
 - Soal cerita: 6 famili variasi (F0-F5), multi-part, jawab ketik angka + bantuan bersusun. Mode Cerita tersedia di Latihan.
-- Kualitas: ESLint 9 + Prettier aktif; **334 test / 39 file (334 lulus)**; CI GitHub Actions Node 20 & 22.
+- Kualitas: ESLint 9 + Prettier aktif; **361 test / 47 file (361 lulus)**; CI GitHub Actions Node 20 & 22.
+- Kereta Angka: screen `train` (Three murni, storage `asharu-train:v1`) — pilih K1–3, 5 soal/sesi, 3 cabang, bintang 3/2/1, hint setelah 2 salah; entry tombol 🚂 di Home.
 - PWA aktif: installable (tombol di HomeScreen), offline via service worker auto-update, petunjuk iOS A2HS.
 - i18n: dua bahasa ID(default)/EN switch instan; concept + story i18n render-time; Home/Result routing per-grade & per-levelKind.
 - AdSense + legal: AdSlot TFAT=1 child; zona bebas iklan Learn/Practice/Concept; Privacy/Terms bilingual (pemilik Alam Aby Bashit, alam.aby.b@gmail.com); ads.txt `pub-4082765898994990` live.
@@ -39,6 +40,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-09-23 21:35:00 — Petualangan Kereta Angka (MVP train)](2026-09-23/213500-petualangan-kereta-angka.md)
 - [2026-09-23 13:45:00 — Perbaiki flake test PracticeScreenStory (seed-dependent)](2026-09-23/134500-perbaiki-flake-practice-screen-story.md)
 - [2026-09-23 12:52:00 — Buka semua level + visual 3 status bintang](2026-09-23/125200-buka-semua-level-visual-bintang.md)
 - [2026-09-23 00:15:00 — Review fix papan ratusan (crash 3-digit, fase macet, visual)](2026-09-23/001500-review-fix-papan-ratusan.md)

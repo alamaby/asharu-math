@@ -19,6 +19,7 @@ import { NavigationProvider, useNavigation } from './state/NavigationContext'
 import { ProgressProvider, useProgress } from './state/ProgressContext'
 
 const AquariumScreen = lazy(() => import('./screens/AquariumScreen'))
+const TrainScreen = lazy(() => import('./screens/TrainScreen'))
 
 function ScreenRouter() {
   const { screen } = useNavigation()
@@ -69,6 +70,16 @@ function ScreenRouter() {
       return <LegalScreen kind="privacy" />
     case 'terms':
       return <LegalScreen kind="terms" />
+    case 'train':
+      return (
+        <Suspense
+          fallback={
+            <div className="py-10 text-center text-sm font-bold text-slate-400">Memuat kereta…</div>
+          }
+        >
+          <TrainScreen />
+        </Suspense>
+      )
   }
 }
 

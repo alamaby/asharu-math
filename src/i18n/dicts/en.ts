@@ -507,6 +507,30 @@ const en: Dict = {
   'install.iosMid': 'button in Safari, then choose',
   'install.iosAdd': 'Add to Home Screen',
   'install.dismissAria': 'Dismiss install hint',
+
+  // Number Train
+  'train.chooseBranchAria': (p: { answer: string }) => `Choose the track with answer ${p.answer}`,
+  'train.correct': 'Great! Your answer is correct.',
+  'train.fallbackMsg': 'This device does not support 3D. You can still play in 2D mode.',
+  'train.grade1': 'Grade 1',
+  'train.grade2': 'Grade 2',
+  'train.grade3': 'Grade 3',
+  'train.hintTitle': 'Hint',
+  'train.mute': 'Turn sound off',
+  'train.paused': 'Paused',
+  'train.questionOf': (p: { n: number; total: number }) => `Question ${p.n} of ${p.total}`,
+  'train.quit': 'Exit',
+  'train.restart': 'Restart',
+  'train.resume': 'Resume',
+  'train.retry': 'Almost there, try again.',
+  'train.selectGrade': 'Choose grade',
+  'train.sessionDone': 'Journey complete!',
+  'train.start': '🚂 All aboard!',
+  'train.starsAria': (p: { stars: number }) => `Stars: ${p.stars}`,
+  'train.station': 'Station 🎉',
+  'train.subtitle': 'Help the train reach the station!',
+  'train.title': 'Number Train Adventure',
+  'train.unmute': 'Turn sound on',
 }
 
 export default en
