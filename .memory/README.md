@@ -1,6 +1,6 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-09-23 12:52:00
+Last Updated: 2026-09-23 13:45:00
 Format Version: 1
 
 ## Current State
@@ -10,12 +10,13 @@ Format Version: 1
 - Rantai K2: `level-11 → cerita-1 → cerita-2 → cerita-3 → cerita-4 → tantangan`.
 - Akuarium/Kebun: papan bersusun unifikasi (`StackedPlaceValueBoard` grid N-kolom, wrapper 2-digit); 4 level 3-digit baru (`kebun-5/6`, `akuarium-5/6`, number 20–23, rantai `akuarium-4→kebun-5→kebun-6→akuarium-5→akuarium-6`); visual ratusan ungu (peti 📦/overlay); input S→P→R; Periksa tidak pernah diam (blokir intro + info).
 - Soal cerita: 6 famili variasi (F0-F5), multi-part, jawab ketik angka + bantuan bersusun. Mode Cerita tersedia di Latihan.
-- Kualitas: ESLint 9 + Prettier aktif; **334 test / 39 file (333 lulus, 1 pre-existing gagal PracticeScreenStory)**; CI GitHub Actions Node 20 & 22.
+- Kualitas: ESLint 9 + Prettier aktif; **334 test / 39 file (334 lulus)**; CI GitHub Actions Node 20 & 22.
 - PWA aktif: installable (tombol di HomeScreen), offline via service worker auto-update, petunjuk iOS A2HS.
 - i18n: dua bahasa ID(default)/EN switch instan; concept + story i18n render-time; Home/Result routing per-grade & per-levelKind.
 - AdSense + legal: AdSlot TFAT=1 child; zona bebas iklan Learn/Practice/Concept; Privacy/Terms bilingual (pemilik Alam Aby Bashit, alam.aby.b@gmail.com); ads.txt `pub-4082765898994990` live.
 - Unlock: semua level selalu terbuka by design; `requires` hanya metadata urutan untuk `getNextLevelId`; `isLevelUnlocked` no-op dokumentatif.
 - LevelCard visual 3 status: belum dicoba (violet-50/border-violet-200/chip✨Belum dicoba), 1–2 bintang (white/border-sky-200), sempurna (amber-50/border-amber-400/bintang text-base/chip🏆Sempurna!).
+- Test stabilitas: flake `PracticeScreenStory.test.tsx` diperbaiki (deterministik per seed via `getAllByText`).
 
 ## Active Decisions
 - Susunan angka soal: operand disimpan sebagai string asli tanpa `reverse()`; perhitungan carry/borrow kanan-ke-kiri terpisah dari jalur tampilan (aturan kritis, jangan dilanggar).
@@ -30,8 +31,7 @@ Format Version: 1
 
 ## Open Items / Blockers
 - Verifikasi manual browser plan akuarium-garden BELUM dilakukan (259+178 tukar bertahap S→R, 432−176 pecah bertahap, Periksa saat tutorial, 360px/desktop) — butuh browser interaktif.
-- Tindak lanjut terpisah (di luar scope review ini): duplikat `number` 20–23 antara level cerita dan level kebun/akuarium-5/6 (plan S7 melarang ubah number level lama).
-- Pre-existing flake: `tests/screens/PracticeScreenStory.test.tsx` gagal di full-suite (baseline maupun kini), lolos terisolasi; file di luar diff review.
+- Tindak lanjut terpisah (di luar scope plan): duplikat `number` 20–23 antara level cerita dan level kebun/akuarium-5/6 (plan S7 melarang ubah number level lama).
 - Sisa AdSense: verifikasi 4 display unit produksi di dashboard setelah deploy.
 - Coverage report (`@vitest/coverage-v8`) belum dipasang (opsional).
 - Uji manual PWA di perangkat nyata setelah deploy Vercel berikutnya (checklist di plan).
@@ -39,6 +39,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-09-23 13:45:00 — Perbaiki flake test PracticeScreenStory (seed-dependent)](2026-09-23/134500-perbaiki-flake-practice-screen-story.md)
 - [2026-09-23 12:52:00 — Buka semua level + visual 3 status bintang](2026-09-23/125200-buka-semua-level-visual-bintang.md)
 - [2026-09-23 00:15:00 — Review fix papan ratusan (crash 3-digit, fase macet, visual)](2026-09-23/001500-review-fix-papan-ratusan.md)
 - [2026-09-22 23:20:00 — Papan R/P/S sejajar + ratusan 3-digit + fix Periksa](2026-09-22/232000-aquarium-garden-ratusan-dan-periksa.md)

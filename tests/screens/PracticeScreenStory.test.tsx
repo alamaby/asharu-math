@@ -27,7 +27,9 @@ describe('PracticeScreenStory', () => {
     // Tidak lagi di setup — tombol "Mulai Latihan" tidak ada
     expect(screen.queryByText('Mulai Latihan')).toBeNull()
     // Sudah di story solving: menampilkan soal cerita + keypad angka
-    expect(screen.getByText(/punya/)).not.toBeNull()
+    // Teks soal acak per seed; stem dan prompt bisa sama-sama mengandung kata yang sama,
+    // jadi cocokkan jamak (deterministik untuk semua seed).
+    expect(screen.getAllByText(/punya/).length).toBeGreaterThanOrEqual(1)
     expect(screen.getByRole('group', { name: 'Keyboard angka' })).not.toBeNull()
   })
 })
