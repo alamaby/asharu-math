@@ -674,8 +674,9 @@ export default function CheerfulAquarium({
         hundreds={visualHundreds}
         highlight={highlight}
         animating={animating}
-        regroupProgress={exchanged ? 1 : 0}
-        splitProgress={opened ? 1 : 0}
+        // S1: selalu 1 agar puluhan terlihat; animasi via animating guard
+        regroupProgress={1}
+        splitProgress={1}
       />
       {isThree && (
         <div

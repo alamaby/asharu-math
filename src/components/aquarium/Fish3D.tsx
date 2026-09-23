@@ -1,8 +1,16 @@
 import * as THREE from 'three'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { ThreeEvent } from '@react-three/fiber'
 import { useFrame } from '@react-three/fiber'
 
 import { useProgress } from '../../state/ProgressContext'
+import {
+  clampToBounds,
+  nextWanderPosition,
+  fleeTarget,
+  type SwimBounds,
+} from '../../lib/aquariumSwim'
+import { playPickFish } from '../../lib/aquariumSound'
 
 // Shared low-poly geometries/materials — disposed on unmount via effect not needed as reused
 const bodyGeo = new THREE.BoxGeometry(0.55, 0.32, 0.22)
@@ -26,6 +34,9 @@ type Fish3DProps = {
   scale?: number
   wiggleOffset?: number
   highlight?: boolean
+  swimBounds?: SwimBounds
+  swimSpeed?: number
+  swimPhase?: number
 }
 
 export default function Fish3D({
@@ -34,13 +45,29 @@ export default function Fish3D({
   scale = 1,
   wiggleOffset = 0,
   highlight = false,
+  swimBounds = undefined,
+  swimSpeed = 0.8,
+  swimPhase = wiggleOffset,
 }: Fish3DProps) {
   const groupRef = useRef<THREE.Group>(null)
   const posRef = useRef<[number, number, number]>(position)
+  const fleeRef = useRef<[number, number]>([0, 0])
+  const fleeTimeoutRef = useRef<number | null>(null)
+  const [flee, setFlee] = useState<[number, number]>([0, 0])
+  const reducedRef = useRef(false)
   const { progress } = useProgress()
   const bodyMat = variant === 'ones' ? matOnesBody : matTensBody
   const tailMat = variant === 'ones' ? matTailOnes : matTailTens
   const dotMat = variant === 'ones' ? matOnesDot : matTensDot
+
+  // S7: detect prefers-reduced-motion once at mount
+  useEffect(() => {
+    try {
+      reducedRef.current = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    } catch {
+      reducedRef.current = false
+    }
+  }, [])
 
   useEffect(() => {
     posRef.current = position
@@ -50,16 +77,97 @@ export default function Fish3D({
     }
   }, [position, scale])
 
-  // floating wiggle — skip when animations disabled or reduced-motion
+  // S6: sync internal flee state to ref
+  useEffect(() => {
+    fleeRef.current = flee
+  }, [flee])
+
+  // S6: cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (fleeTimeoutRef.current !== null) {
+        window.clearTimeout(fleeTimeoutRef.current)
+        fleeTimeoutRef.current = null
+      }
+    }
+  }, [])
+
+  // S6: klik menghindar — visual only, tidak ubah hitungan
+  const handleFlee = (e: ThreeEvent<PointerEvent>) => {
+    if (!progress.animationsEnabled) return
+    if (reducedRef.current) return
+    const curX = groupRef.current?.position.x ?? posRef.current[0]
+    const curY = groupRef.current?.position.y ?? posRef.current[1]
+    // throttle: abaikan jika flee masih aktif
+    if (Math.hypot(flee[0], flee[1]) > 0.05) return
+    const bounds = swimBounds ?? { minX: curX - 1, maxX: curX + 1, minY: curY - 1, maxY: curY + 1 }
+    const [tx, ty] = fleeTarget(curX, curY, e.point.x, e.point.y, 1.2, bounds)
+    // simpan sebagai offset dari base target agar swim tetap jalan
+    setFlee([tx - posRef.current[0], ty - posRef.current[1]])
+    try {
+      playPickFish()
+    } catch {
+      /* abaikan audio gagal */
+    }
+    if (fleeTimeoutRef.current !== null) window.clearTimeout(fleeTimeoutRef.current)
+    fleeTimeoutRef.current = window.setTimeout(() => {
+      fleeTimeoutRef.current = null
+      setFlee([0, 0])
+    }, 2500)
+    e.stopPropagation()
+  }
+
+  // S4/S7: floating wiggle + swim wander in bounds — skip when animations disabled or reduced-motion
   useFrame(({ clock }) => {
     if (!groupRef.current) return
     if (!progress.animationsEnabled) return
     const target = posRef.current
-    // keep x/z in sync with prop even if position changed
-    if (Math.abs(groupRef.current.position.x - target[0]) > 0.001) groupRef.current.position.x = target[0]
-    if (Math.abs(groupRef.current.position.z - target[2]) > 0.001) groupRef.current.position.z = target[2]
+    const hasSwim = !!swimBounds
+    const reduced = reducedRef.current
+    let baseX: number
+    let baseY: number
+    if (reduced) {
+      // S7: reduced-motion → hanya wiggle mini, skip wander/flee/flip
+      const t = clock.getElapsedTime() + wiggleOffset
+      baseX = target[0]
+      baseY = target[1] + Math.sin(t * 1.2) * 0.02
+      groupRef.current.position.x += (baseX - groupRef.current.position.x) * 0.08
+      groupRef.current.position.y += (baseY - groupRef.current.position.y) * 0.08
+      groupRef.current.position.z = target[2]
+      groupRef.current.rotation.z = Math.sin(t * 0.9) * 0.04
+      if (highlight) {
+        const s = 1 + Math.sin(t * 2.5) * 0.03
+        groupRef.current.scale.set(s * scale, s * scale, s * scale)
+      }
+      return
+    }
+    if (hasSwim) {
+      const t = clock.getElapsedTime() + wiggleOffset
+      const [wx, wy] = nextWanderPosition(target[0], target[1], t, swimSpeed, swimPhase, swimBounds)
+      baseX = wx
+      baseY = wy
+    } else {
+      const t = clock.getElapsedTime() + wiggleOffset
+      baseX = target[0]
+      baseY = target[1] + Math.sin(t * 1.2) * 0.06
+    }
+    const fx = fleeRef.current[0]
+    const fy = fleeRef.current[1]
+    const wantX = baseX + fx
+    const wantY = baseY + fy
+    const clamped = hasSwim ? clampToBounds(wantX, wantY, swimBounds) : ([wantX, wantY] as const)
+    // gerak halus: lerp 8%/frame agar tidak teleport
+    groupRef.current.position.x += (clamped[0] - groupRef.current.position.x) * 0.08
+    groupRef.current.position.y += (clamped[1] - groupRef.current.position.y) * 0.08
+    groupRef.current.position.z = target[2]
+    // flip arah berdasarkan velocity
+    const vx = clamped[0] - groupRef.current.position.x
+    const desiredY = vx < -0.002 ? Math.PI : 0
+    let dy = desiredY - groupRef.current.rotation.y
+    if (dy > Math.PI) dy -= Math.PI * 2
+    if (dy < -Math.PI) dy += Math.PI * 2
+    groupRef.current.rotation.y += dy * 0.1
     const t = clock.getElapsedTime() + wiggleOffset
-    groupRef.current.position.y = target[1] + Math.sin(t * 1.2) * 0.06
     groupRef.current.rotation.z = Math.sin(t * 0.9) * 0.08
     if (highlight) {
       const s = 1 + Math.sin(t * 2.5) * 0.06
@@ -73,7 +181,16 @@ export default function Fish3D({
       position={position}
       scale={scale}
       dispose={null}
+      onPointerDown={(e) => {
+        // S6: klik pada fish memicu flee; stopPropagation agar tidak tembus ke parent
+        handleFlee(e as unknown as ThreeEvent<PointerEvent>)
+      }}
     >
+      {/* Hit-area invisible sphere untuk memperluas area klik */}
+      <mesh visible={false} position={[0, 0, 0]}>
+        <sphereGeometry args={[0.55, 8, 8]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
       {/* Body */}
       <mesh geometry={bodyGeo} material={bodyMat} castShadow={false} receiveShadow={false} />
       {/* Tail */}

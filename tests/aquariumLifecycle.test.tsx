@@ -66,7 +66,9 @@ describe('Akuarium — lifecycle & kontrol (render)', () => {
     // heading spesifik — gagal sebelumnya karena getByText menemukan 2 node (header + subtitle)
     expect(await screen.findByRole('heading', { name: /Akuarium Ikan Ceria/i })).not.toBeNull()
     const canvasOrFallback = document.querySelector('canvas') ?? screen.queryByRole('alert')
-    expect(canvasOrFallback != null || screen.queryByRole('heading', { name: /Akuarium/i }) != null).toBe(true)
+    expect(
+      canvasOrFallback != null || screen.queryByRole('heading', { name: /Akuarium/i }) != null,
+    ).toBe(true)
   })
 
   it('NumericKeypad tersedia tanpa drag (a11y)', async () => {
@@ -105,5 +107,43 @@ describe('Akuarium — lifecycle & kontrol (render)', () => {
     // jsdom matchMedia default false — cek preferensi terbaca tanpa throw
     const m = window.matchMedia('(prefers-reduced-motion: reduce)')
     expect(typeof m.matches).toBe('boolean')
+  })
+
+  it('F5: matchMedia tersedia + reduced-motion tidak crash AquariumScreen render', async () => {
+    // Stub reduced-motion → true lalu pastikan render tetap lancar
+    const spy = vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => {
+      if (query.includes('prefers-reduced-motion')) {
+        return {
+          matches: true,
+          media: query,
+          onchange: null,
+          addListener() {},
+          removeListener() {},
+          addEventListener() {},
+          removeEventListener() {},
+          dispatchEvent() {
+            return false
+          },
+        }
+      }
+      return {
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener() {},
+        removeListener() {},
+        addEventListener() {},
+        removeEventListener() {},
+        dispatchEvent() {
+          return false
+        },
+      }
+    })
+    const AquariumScreen = (await import('../src/screens/AquariumScreen')).default
+    renderScreenWithProviders(<AquariumScreen levelId="akuarium-1" />)
+    await screen.findByRole('heading', { name: /Akuarium Ikan Ceria/i })
+    // F5: kanvas aria-hidden=true, NumericKeypad masih tersedia
+    expect(screen.queryByRole('alert')).not.toBeNull()
+    spy.mockRestore()
   })
 })
