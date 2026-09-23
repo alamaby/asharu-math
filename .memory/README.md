@@ -4,7 +4,7 @@ Last Updated: 2026-09-23 21:35:00
 Format Version: 1
 
 ## Current State
-- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.5.0` (feat: semua level terbuka tanpa gating, visual 3 status bintang per kartu).
+- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.6.0` (feat: mini game Petualangan Kereta Angka).
 - Sesi Belajar penjumlahan: input sekali per kolom — ketik jumlah di Kotak Hitung, jawaban + simpanan terisi otomatis (`carry-down` auto untuk kolom turunan carry; `carry-digit` dihapus).
 - Konten: K1 3 konsep (membilang/banding/nilai-tempat) + 4 kolom 1–2 digit; K2 11 bersusun + **4 cerita** (cerita-1..4) + Tantangan adaptif; 11 achievement (`bintang-kelas-1` mencakup 7 K1, `bintang-cerita` mencakup 4 cerita).
 - Rantai K2: `level-11 → cerita-1 → cerita-2 → cerita-3 → cerita-4 → tantangan`.
