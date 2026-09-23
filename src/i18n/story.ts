@@ -50,7 +50,9 @@ export function storyStem(
         r: Number(p.r ?? 0),
         s: Number(p.s ?? 0),
       }
-      return kind === 'size' ? t('story.stem-f2-transfer-size', base) : t('story.stem-f2-transfer-color', base)
+      return kind === 'size'
+        ? t('story.stem-f2-transfer-size', base)
+        : t('story.stem-f2-transfer-color', base)
     }
     case 'f3-chain':
       return t('story.stem-f3-chain', {

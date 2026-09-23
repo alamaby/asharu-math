@@ -97,7 +97,9 @@ export default function StoryLearnScreen({ levelId, problems: provided }: StoryL
       const newAchievementIds: string[] = []
       for (const r of finished.results) {
         newAchievementIds.push(
-          ...recordAnswer({ problem: r.part.math, wrongAttempts: r.wrongAttempts }).map((a) => a.id),
+          ...recordAnswer({ problem: r.part.math, wrongAttempts: r.wrongAttempts }).map(
+            (a) => a.id,
+          ),
         )
       }
       newAchievementIds.push(...completeLevel(levelId, stars).map((a) => a.id))
@@ -177,7 +179,10 @@ export default function StoryLearnScreen({ levelId, problems: provided }: StoryL
         attempts: 0,
         wrongInPart,
         interim: String(part.expectedAnswer),
-        feedback: { kind: 'info', text: t('concept.revealedFeedback', { answer: String(part.expectedAnswer) }) },
+        feedback: {
+          kind: 'info',
+          text: t('concept.revealedFeedback', { answer: String(part.expectedAnswer) }),
+        },
         locked: true,
       }))
       if (timerRef.current !== null) window.clearTimeout(timerRef.current)
@@ -217,8 +222,7 @@ export default function StoryLearnScreen({ levelId, problems: provided }: StoryL
     const remaining = state.queue.slice(state.index)
     const initialStats = {
       correctFirstTry: state.results.filter((r) => r.wrongAttempts === 0).length,
-      wrongAttempts:
-        state.results.reduce((sum, r) => sum + r.wrongAttempts, 0) + state.wrongInPart,
+      wrongAttempts: state.results.reduce((sum, r) => sum + r.wrongAttempts, 0) + state.wrongInPart,
       recovered: state.results.filter((r) => r.wrongAttempts > 0).length,
       totalDone: state.results.length,
     }

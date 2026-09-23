@@ -17,7 +17,8 @@ type AquariumScreenProps = {
 }
 
 export default function AquariumScreen({ levelId }: AquariumScreenProps) {
-  const { navigate, setLeaveGuard, confirmPendingNavigation, cancelPendingNavigation } = useNavigation()
+  const { navigate, setLeaveGuard, confirmPendingNavigation, cancelPendingNavigation } =
+    useNavigation()
   const { progress, recordAnswer, completeLevel, markLevelStarted, setPreferences } = useProgress()
   const { lang, t } = useI18n()
   const [problems, setProblems] = useState<MathProblem[]>(() => generateAquariumSession(levelId, 5))
@@ -72,7 +73,9 @@ export default function AquariumScreen({ levelId }: AquariumScreenProps) {
         const newAchievementIds: string[] = []
         for (const r of nextResults) {
           newAchievementIds.push(
-            ...recordAnswer({ problem: r.problem, wrongAttempts: r.wrongAttempts }).map((a) => a.id),
+            ...recordAnswer({ problem: r.problem, wrongAttempts: r.wrongAttempts }).map(
+              (a) => a.id,
+            ),
           )
         }
         newAchievementIds.push(...completeLevel(levelId, stars).map((a) => a.id))
@@ -84,7 +87,8 @@ export default function AquariumScreen({ levelId }: AquariumScreenProps) {
           recovered: nextResults.filter((r) => r.wrongAttempts > 0).length,
           stars,
           levelId,
-          settings: level && level.levelKind === 'column' ? (level.settings as GeneratorSettings) : null,
+          settings:
+            level && level.levelKind === 'column' ? (level.settings as GeneratorSettings) : null,
           nextLevelId: getNextLevelId(levelId),
           newAchievementIds: [...new Set(newAchievementIds)],
         }
@@ -122,7 +126,13 @@ export default function AquariumScreen({ levelId }: AquariumScreenProps) {
 
   return (
     <div className="space-y-4">
-      <CheerfulAquarium key={problem.id} problem={problem} currentIndex={index} total={problems.length} onComplete={handleComplete} />
+      <CheerfulAquarium
+        key={problem.id}
+        problem={problem}
+        currentIndex={index}
+        total={problems.length}
+        onComplete={handleComplete}
+      />
       <div className="flex justify-center">
         <button
           type="button"

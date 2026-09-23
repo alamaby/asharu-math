@@ -18,7 +18,9 @@ export default function StoryCard({ story, part }: Props) {
       <hr className="border-sky-100" />
       <p className="text-base font-black text-slate-800 md:text-lg">{promptText}</p>
       {part.totalParts > 1 && (
-        <p className="text-xs font-bold text-slate-400">{t('story.partOf', { current: part.partIndex + 1, total: part.totalParts })}</p>
+        <p className="text-xs font-bold text-slate-400">
+          {t('story.partOf', { current: part.partIndex + 1, total: part.totalParts })}
+        </p>
       )}
     </article>
   )

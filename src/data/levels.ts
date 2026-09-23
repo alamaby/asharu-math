@@ -571,49 +571,9 @@ export function getLevel(id: string): LevelDefinition | undefined {
   return LEVELS.find((level) => level.id === id)
 }
 
-/** ID level era sebelum Kelas 1 ada (level berantai lama level-1 → tantangan). */
-const LEGACY_LEVEL_IDS: readonly string[] = [
-  'level-1',
-  'level-2',
-  'level-3',
-  'level-4',
-  'level-5',
-  'level-6',
-  'level-7',
-  'level-8',
-  'level-9',
-  'level-10',
-  'level-11',
-  'tantangan',
-]
-
-/** Rantai Kelas 1 — dipakai untuk bypass migrasi veteran. */
-const K1_IDS: readonly string[] = [
-  'k1-membilang',
-  'k1-banding',
-  'k1-nilai-tempat',
-  'k1-tambah-1-digit',
-  'k1-kurang-1-digit',
-  'k1-campur-1-digit',
-  'k1-jembatan-2-digit',
-]
-
-export function isLevelUnlocked(levelId: string, completedLevelIds: readonly string[]): boolean {
-  const level = LEVELS.find((entry) => entry.id === levelId)
-  if (!level) return false
-  // Level yang sudah selesai selalu bisa diulang — jangan dikunci oleh requires baru.
-  if (completedLevelIds.includes(levelId)) return true
-  if (level.requires === null) return true
-  if (completedLevelIds.includes(level.requires)) return true
-  // Migrasi veteran: progres era lama dianggap telah melewati rantai Kelas 1.
-  // Ini unlock (bukan auto-complete) agar pengguna lama tidak terkunci di level-1
-  // maupun di seluruh Kelas 1; batasi bypass hanya pada prasyarat K1, bukan semua.
-  const isVeteran = completedLevelIds.some((id) => LEGACY_LEVEL_IDS.includes(id))
-  if (isVeteran) {
-    if (level.grade === 1) return true
-    if (level.requires !== null && K1_IDS.includes(level.requires)) return true
-  }
-  return false
+// Semua level terbuka by design (bebas pilih mana saja); requires hanya metadata urutan.
+export function isLevelUnlocked(levelId: string, _completedLevelIds: readonly string[]): boolean {
+  return LEVELS.some((entry) => entry.id === levelId)
 }
 
 export function getNextLevelId(levelId: string | null): string | null {

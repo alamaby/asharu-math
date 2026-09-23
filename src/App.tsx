@@ -47,7 +47,9 @@ function ScreenRouter() {
       return (
         <Suspense
           fallback={
-            <div className="py-10 text-center text-sm font-bold text-slate-400">Memuat akuarium…</div>
+            <div className="py-10 text-center text-sm font-bold text-slate-400">
+              Memuat akuarium…
+            </div>
           }
         >
           <AquariumScreen levelId={screen.levelId as AquariumLevelId} />

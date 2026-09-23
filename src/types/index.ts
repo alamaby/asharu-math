@@ -154,13 +154,7 @@ export interface ConceptSettings {
 }
 
 export type StoryFamily =
-  | 'f0-add'
-  | 'f0-sub'
-  | 'f1-diff'
-  | 'f2-transfer'
-  | 'f3-chain'
-  | 'f4-join3'
-  | 'f5-tiered'
+  'f0-add' | 'f0-sub' | 'f1-diff' | 'f2-transfer' | 'f3-chain' | 'f4-join3' | 'f5-tiered'
 
 export type StoryItem =
   | 'marbles'
@@ -213,7 +207,7 @@ export interface LevelDefinition {
   /** Nomor urut dalam jenjangnya (per-grade); null untuk level lintas-akhir seperti Tantangan */
   number: number | null
   grade: GradeLevel
-  /** Level yang harus selesai dulu agar level ini terbuka; null = selalu terbuka */
+  /** Metadata urutan belajar; TIDAK lagi mengunci (semua level terbuka by design). */
   requires: string | null
   /** Bentuk soal level ini: kolom bersusun vs konsep pilihan ganda */
   levelKind: LevelKind

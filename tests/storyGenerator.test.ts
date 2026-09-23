@@ -47,7 +47,14 @@ const presetCerita4 = {
 
 describe('storyGenerator deterministik', () => {
   it('F1 full: parts [33, 78] dengan op sesuai', () => {
-    const stem = buildF1DiffStory({ x: 45, y: 12, item: 'marbles', nameA: 'Siti', nameB: 'Budi', variant: 'full' })
+    const stem = buildF1DiffStory({
+      x: 45,
+      y: 12,
+      item: 'marbles',
+      nameA: 'Siti',
+      nameB: 'Budi',
+      variant: 'full',
+    })
     expect(stem.parts).toHaveLength(2)
     expect(stem.parts[0].operation).toBe('subtraction')
     expect(stem.parts[0].a).toBe(45)
@@ -60,7 +67,15 @@ describe('storyGenerator deterministik', () => {
   })
 
   it('F2: parts [8, 29, 31] dengan q implisit', () => {
-    const stem = buildF2TransferStory({ x: 36, p: 15, r: 7, s: 24, item: 'apples', nameA: 'Siti', nameB: 'Budi' })
+    const stem = buildF2TransferStory({
+      x: 36,
+      p: 15,
+      r: 7,
+      s: 24,
+      item: 'apples',
+      nameA: 'Siti',
+      nameB: 'Budi',
+    })
     expect(stem.parts).toHaveLength(3)
     expect(stem.parts[0].a).toBe(15)
     expect(stem.parts[0].b).toBe(7)
@@ -74,13 +89,21 @@ describe('storyGenerator deterministik', () => {
   })
 
   it('F2 throw ketika p+q !== x', () => {
-    expect(() =>
-      buildF2TransferStory({ x: 30, p: 15, q: 10, r: 5, s: 20 }),
-    ).toThrow('p+q harus sama dengan x')
+    expect(() => buildF2TransferStory({ x: 30, p: 15, q: 10, r: 5, s: 20 })).toThrow(
+      'p+q harus sama dengan x',
+    )
   })
 
   it('F3: parts [35, 27, 82] dengan total part terakhir {op:add,a:62,b:20}', () => {
-    const stem = buildF3ChainStory({ c: 20, n: 15, m: 8, item: 'books', nameA: 'Siti', nameB: 'Budi', nameC: 'Andi' })
+    const stem = buildF3ChainStory({
+      c: 20,
+      n: 15,
+      m: 8,
+      item: 'books',
+      nameA: 'Siti',
+      nameB: 'Budi',
+      nameC: 'Andi',
+    })
     expect(stem.parts).toHaveLength(3)
     expect(stem.parts[0].a).toBe(20)
     expect(stem.parts[0].b).toBe(15)

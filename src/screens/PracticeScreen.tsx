@@ -99,10 +99,18 @@ function startSession(
 }
 
 function familiesForPractice(digits: DigitCount, op: OperationChoice): readonly StoryFamily[] {
-  const f0: StoryFamily[] = op === 'addition' ? ['f0-add'] : op === 'subtraction' ? ['f0-sub'] : ['f0-add', 'f0-sub']
+  const f0: StoryFamily[] =
+    op === 'addition' ? ['f0-add'] : op === 'subtraction' ? ['f0-sub'] : ['f0-add', 'f0-sub']
   if (digits <= 1) return f0 as readonly StoryFamily[]
   if (digits === 2) return [...f0, 'f1-diff'] as readonly StoryFamily[]
-  return [...f0, 'f1-diff', 'f2-transfer', 'f3-chain', 'f4-join3', 'f5-tiered'] as readonly StoryFamily[]
+  return [
+    ...f0,
+    'f1-diff',
+    'f2-transfer',
+    'f3-chain',
+    'f4-join3',
+    'f5-tiered',
+  ] as readonly StoryFamily[]
 }
 
 function OptionGroup<T extends string | number>(props: {
@@ -146,7 +154,11 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
   const { t } = useI18n()
 
   const [phase, setPhase] = useState<'setup' | 'solving' | 'solving-story'>(
-    initialSettings?.presentation === 'story' ? 'solving-story' : initialSettings ? 'solving' : 'setup',
+    initialSettings?.presentation === 'story'
+      ? 'solving-story'
+      : initialSettings
+        ? 'solving'
+        : 'setup',
   )
   const [session, setSession] = useState<SessionState | null>(() =>
     initialSettings?.presentation !== 'story' && initialSettings
@@ -226,7 +238,13 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
         feedback: null,
         locked: false,
         results: [],
-        settings: { operation: formOperation, digitCount: formDigits, carryMode: formCarry, questionCount: formCount, presentation: 'story' as const },
+        settings: {
+          operation: formOperation,
+          digitCount: formDigits,
+          carryMode: formCarry,
+          questionCount: formCount,
+          presentation: 'story' as const,
+        },
         title: t('practice.sessionTitle'),
       })
       setPhase('solving-story')
@@ -474,7 +492,10 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
     if (answer === storyPart.expectedAnswer) {
       playCorrect()
       const feedback: Feedback = { kind: 'correct', text: t('concept.correctFeedback') }
-      const nextResults = [...snapshot.results, { part: storyPart, wrongAttempts: snapshot.wrongInPart }]
+      const nextResults = [
+        ...snapshot.results,
+        { part: storyPart, wrongAttempts: snapshot.wrongInPart },
+      ]
       updateStorySession({ feedback, locked: true })
       if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
       timeoutRef.current = window.setTimeout(() => {
@@ -502,7 +523,10 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
         attempts: 0,
         wrongInPart,
         interim: String(storyPart.expectedAnswer),
-        feedback: { kind: 'info', text: t('concept.revealedFeedback', { answer: String(storyPart.expectedAnswer) }) },
+        feedback: {
+          kind: 'info',
+          text: t('concept.revealedFeedback', { answer: String(storyPart.expectedAnswer) }),
+        },
         locked: true,
       })
       if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
@@ -540,7 +564,8 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
     const initialStats: SessionStats = {
       correctFirstTry: storySession!.results.filter((r) => r.wrongAttempts === 0).length,
       wrongAttempts:
-        storySession!.results.reduce((sum, r) => sum + r.wrongAttempts, 0) + storySession!.wrongInPart,
+        storySession!.results.reduce((sum, r) => sum + r.wrongAttempts, 0) +
+        storySession!.wrongInPart,
       recovered: storySession!.results.filter((r) => r.wrongAttempts > 0).length,
       totalDone: storySession!.results.length,
     }

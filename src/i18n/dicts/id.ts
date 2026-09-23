@@ -74,7 +74,7 @@ const id = {
 
   // Pilih level
   'levels.bubble':
-    'Pilih level ya! Selesaikan level berurutan untuk membuka level berikutnya. Kamu juga bisa mengulang level lama kapan saja.',
+    'Pilih level mana saja ya! Kamu bebas mencoba level apapun. Mengulang level lama kapan saja juga boleh.',
   'levels.grade1': 'Kelas 1 — Fondasi',
   'levels.grade2': 'Kelas 2 — Bersusun',
   'levelCard.numbered': (p: { number: number; name: string }) => `Level ${p.number}: ${p.name}`,
@@ -84,7 +84,8 @@ const id = {
   'levelCard.examplePrefix': 'Contoh:',
   'levelCard.questionSuffix': (p: { n: number }) => `${p.n} soal`,
   'levelCard.notFinished': 'Belum selesai',
-  'levelCard.lockedHint': 'Selesaikan level sebelumnya dulu ya',
+  'levelCard.neverTried': '✨ Belum dicoba',
+  'levelCard.perfect': '🏆 Sempurna!',
 
   // Pencapaian & bagikan
   'ach.bubble': (p: { count: number; total: number }) =>
@@ -134,7 +135,7 @@ const id = {
   'learn.preparingResult': 'Menyiapkan hasil latihan…',
   'learn.exitTitle': 'Keluar dari level?',
   'learn.exitDesc':
-    'Level ini belum selesai, jadi progresnya belum tersimpan. Yuk lanjut supaya levelnya terbuka!',
+    'Level ini belum selesai, jadi progresnya belum tersimpan. Yuk lanjut supaya bintangnya terkumpul!',
   'learn.exitConfirm': 'Ya, Keluar',
   'learn.exitCancel': 'Lanjut Belajar',
 

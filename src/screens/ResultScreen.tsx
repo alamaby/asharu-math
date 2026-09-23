@@ -2,7 +2,7 @@ import AchievementCard from '../components/achievement/AchievementCard'
 import { useI18n } from '../i18n/LanguageContext'
 import Mascot from '../components/layout/Mascot'
 import { getAchievement } from '../lib/achievements'
-import { getLevel, isLevelUnlocked } from '../data/levels'
+import { getLevel } from '../data/levels'
 import { useNavigation } from '../state/NavigationContext'
 import { useProgress } from '../state/ProgressContext'
 import type { SessionSummary } from '../types'
@@ -17,8 +17,7 @@ export default function ResultScreen({ summary }: ResultScreenProps) {
   const { progress } = useProgress()
   const { t } = useI18n()
 
-  const nextLevelAvailable =
-    summary.nextLevelId !== null && isLevelUnlocked(summary.nextLevelId, progress.completedLevelIds)
+  const nextLevelAvailable = summary.nextLevelId !== null
   const currentLevel = summary.levelId ? getLevel(summary.levelId) : undefined
   const nextLevel = summary.nextLevelId ? getLevel(summary.nextLevelId) : undefined
   const isConceptLevel = currentLevel?.levelKind === 'concept'

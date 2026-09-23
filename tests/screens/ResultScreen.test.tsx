@@ -60,8 +60,8 @@ describe('ResultScreen', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: /Ulangi Level Ini/ }))
     expect(screen.getByTestId('probe-screen').textContent).toBe('concept-learn')
-    // next terkunci untuk progres fresh (k1-banding belum dibuka) — tombol tidak render, itu benar
-    expect(screen.queryByRole('button', { name: /Level Berikutnya/ })).toBeNull()
+    // next selalu tampil karena semua level terbuka by design
+    expect(screen.getByRole('button', { name: /Level Berikutnya/ })).not.toBeNull()
     cleanup()
     u1()
     const { unmount: u2 } = renderScreenWithProviders(
@@ -72,15 +72,14 @@ describe('ResultScreen', () => {
         })}
       />,
     )
-    // k1-jembatan → level-1 terkunci untuk fresh progress (butuh 7 K1), jadi next tidak muncul by design
-    expect(screen.queryByRole('button', { name: /Level Berikutnya/ })).toBeNull()
+    // k1-jembatan → level-1 selalu tersedia now
+    expect(screen.getByRole('button', { name: /Level Berikutnya/ })).not.toBeNull()
     // concept selesai: settings null → tidak ada Latihan Lagi by design (di-overrides settings null)
     expect(screen.queryByRole('button', { name: /Latihan Lagi/ })).toBeNull()
     u2()
   })
 
-  it('tombol next tampil saat prasyarat terpenuhi', () => {
-    // seed progres agar next terbuka
+  it('tombol next tampil walau progres fresh maupun terisi', () => {
     const seed = defaultProgress()
     seed.completedLevelIds = ['k1-membilang']
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seed))
@@ -99,13 +98,21 @@ describe('ResultScreen', () => {
     seed.completedLevelIds = ['level-11', 'cerita-1']
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seed))
     const { unmount } = renderScreenWithProviders(
-      <ResultScreen
-        summary={makeSummary({ levelId: 'cerita-1', nextLevelId: 'cerita-2' })}
-      />,
+      <ResultScreen summary={makeSummary({ levelId: 'cerita-1', nextLevelId: 'cerita-2' })} />,
     )
     fireEvent.click(screen.getByRole('button', { name: /Ulangi Level Ini/ }))
     expect(screen.getByTestId('probe-screen').textContent).toBe('story-learn')
     cleanup()
+    unmount()
+    window.localStorage.clear()
+  })
+
+  it('next tampil juga saat fresh progress untuk story', () => {
+    window.localStorage.clear()
+    const { unmount } = renderScreenWithProviders(
+      <ResultScreen summary={makeSummary({ levelId: 'cerita-1', nextLevelId: 'cerita-2' })} />,
+    )
+    expect(screen.getByRole('button', { name: /Level Berikutnya/ })).not.toBeNull()
     unmount()
     window.localStorage.clear()
   })

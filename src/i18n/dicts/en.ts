@@ -75,7 +75,7 @@ const en: Dict = {
 
   // Level select
   'levels.bubble':
-    'Pick a level! Finish levels in order to unlock the next one. You can replay old levels anytime.',
+    'Pick any level! You are free to try any level. You can replay old levels anytime.',
   'levels.grade1': 'Grade 1 — Basics',
   'levels.grade2': 'Grade 2 — Columns',
   'levelCard.numbered': (p: { number: number; name: string }) => `Level ${p.number}: ${p.name}`,
@@ -85,7 +85,8 @@ const en: Dict = {
   'levelCard.examplePrefix': 'Example:',
   'levelCard.questionSuffix': (p: { n: number }) => `${p.n} questions`,
   'levelCard.notFinished': 'Not finished yet',
-  'levelCard.lockedHint': 'Finish the previous level first',
+  'levelCard.neverTried': '✨ Never tried',
+  'levelCard.perfect': '🏆 Perfect!',
 
   // Achievements & share
   'ach.bubble': (p: { count: number; total: number }) =>
@@ -135,7 +136,7 @@ const en: Dict = {
   'learn.preparingResult': 'Preparing your results…',
   'learn.exitTitle': 'Leave the level?',
   'learn.exitDesc':
-    "This level isn't finished yet, so it won't be saved. Keep going to unlock the next one!",
+    "This level isn't finished yet, so it won't be saved. Keep going to collect the stars!",
   'learn.exitConfirm': 'Yes, leave',
   'learn.exitCancel': 'Keep Learning',
 

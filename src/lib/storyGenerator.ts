@@ -454,7 +454,7 @@ export function buildF5TieredStory(args: {
     z = 20
   }
 
-  const final_ = (x - y) + z
+  const final_ = x - y + z
   void final_
 
   const stemParams = { nameA, nameB, item, x, y, z }
@@ -483,7 +483,13 @@ function pickFamily(
   if (operation === 'subtraction') return 'f0-sub'
   // mixed: pilih dari families
   if (remaining === 1) {
-    const singlePartFamilies: StoryFamily[] = ['f0-add', 'f0-sub', 'f1-diff', 'f3-chain', 'f4-join3']
+    const singlePartFamilies: StoryFamily[] = [
+      'f0-add',
+      'f0-sub',
+      'f1-diff',
+      'f3-chain',
+      'f4-join3',
+    ]
     const candidates = families.filter((f) => singlePartFamilies.includes(f))
     if (candidates.length > 0) return pick(candidates)
   }

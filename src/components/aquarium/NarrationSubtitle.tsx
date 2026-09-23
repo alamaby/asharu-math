@@ -8,7 +8,9 @@ export default function NarrationSubtitle({ text }: Props) {
       aria-live="polite"
     >
       <p className="text-sm font-bold leading-relaxed text-slate-700">{text}</p>
-      <p className="mt-1 text-[0.65rem] font-bold text-slate-400">Subtitle — tetap tampil tanpa suara</p>
+      <p className="mt-1 text-[0.65rem] font-bold text-slate-400">
+        Subtitle — tetap tampil tanpa suara
+      </p>
     </div>
   )
 }
