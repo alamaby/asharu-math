@@ -11,6 +11,7 @@ const BASS_FREQS = [130.81, 98, 110, 98]
 let musicTimer: number | null = null
 let chugTimer: number | null = null
 let musicStep = 0
+let musicLevel: 1 | 2 | 3 = 1
 let chugHigh = false
 let chugMs = 300
 let ctx: AudioContext | null = null
@@ -69,10 +70,14 @@ function musicTick(): void {
     if (!ensured) return
     const step = musicStep % MELODY_FREQS.length
     scheduleTone(ensured.ctx, ensured.master, MELODY_FREQS[step]!, 0.2, 'sine', 0.05)
-    if (step % 2 === 0) {
+    if (musicLevel >= 3) {
+      scheduleTone(ensured.ctx, ensured.master, MELODY_FREQS[step]! * 2, 0.2, 'sine', 0.03)
+    }
+    if (step % 2 === 0 || musicLevel >= 2) {
       const bass = BASS_FREQS[(step / 2) % BASS_FREQS.length]!
       scheduleTone(ensured.ctx, ensured.master, bass, 0.4, 'triangle', 0.06)
-    } else {
+    }
+    if (step % 2 === 1 || musicLevel >= 2) {
       scheduleTone(ensured.ctx, ensured.master, 6000, 0.03, 'square', 0.015)
     }
     musicStep += 1
@@ -124,6 +129,14 @@ export function setMusicDucked(d: boolean): void {
       // abaikan
     }
   }
+}
+
+export function setMusicIntensity(level: 1 | 2 | 3): void {
+  if (!Number.isFinite(level)) {
+    musicLevel = 1
+    return
+  }
+  musicLevel = level < 1 ? 1 : level > 3 ? 3 : level
 }
 
 export function isMusicPlaying(): boolean {

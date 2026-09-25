@@ -4,6 +4,7 @@ import {
   isMusicPlaying,
   setChugRate,
   setMusicDucked,
+  setMusicIntensity,
   startChug,
   startTrainMusic,
   stopAllTrainAudio,
@@ -37,5 +38,22 @@ describe('train music', () => {
       stopChug()
       stopAllTrainAudio()
     }).not.toThrow()
+  })
+
+  it('clamp level intensitas di luar rentang', () => {
+    expect(() => {
+      setMusicIntensity(0 as 1)
+      setMusicIntensity(99 as 3)
+      setMusicIntensity(NaN as 1)
+    }).not.toThrow()
+  })
+
+  it('start dengan level 3 lalu stop tetap bersih', () => {
+    expect(() => {
+      startTrainMusic()
+      setMusicIntensity(3)
+      stopTrainMusic()
+    }).not.toThrow()
+    expect(isMusicPlaying()).toBe(false)
   })
 })

@@ -37,6 +37,7 @@ import {
 import {
   setChugRate,
   setMusicDucked,
+  setMusicIntensity,
   startChug,
   startTrainMusic,
   stopAllTrainAudio,
@@ -117,6 +118,11 @@ export default function TrainScreen() {
 
   const question = questions[round] ?? null
   const starsSoFar = useMemo(() => sumTrainStars(attemptsLog), [attemptsLog])
+  useEffect(() => {
+    if (grade !== null && phase !== 'MENU') {
+      sceneRef.current?.setStationBoard(t('train.stationShort'), `★ ${starsSoFar}`)
+    }
+  }, [starsSoFar, grade, phase, t])
   const announceText = useMemo(() => {
     if (phase === 'MENU') return t('train.subtitle')
     if (!question) return ''
@@ -158,6 +164,7 @@ export default function TrainScreen() {
         startChug()
         setChugRate(reducedMotion ? 180 : 300)
       }
+      setMusicIntensity(1)
       later(800, () => {
         if (phaseRef.current === 'INTRO') setPhase('TRAIN_MOVING')
       })
@@ -221,6 +228,7 @@ export default function TrainScreen() {
         setShowHint(false)
         sceneRef.current?.reset()
         setCameraMode('follow')
+        setMusicIntensity(round + 1 < 2 ? 1 : round + 1 < 4 ? 2 : 3)
         setPhase('TRAIN_MOVING')
       } else {
         setPhase('SESSION_COMPLETE')
@@ -247,6 +255,7 @@ export default function TrainScreen() {
         setPhase('SWITCHING_TRACK')
         sceneRef.current?.setBranch(choiceIndex)
         sceneRef.current?.setSelectedGlow(choiceIndex)
+        sceneRef.current?.setSignal(choiceIndex, true)
         sceneRef.current?.waveDriver()
         if (!muted) playTrainSwitch()
         setCameraMode('follow')
@@ -262,6 +271,7 @@ export default function TrainScreen() {
         const nextAttempts = attempts + 1
         setAttempts(nextAttempts)
         setFeedback({ kind: 'wrong', text: t('train.retry') })
+        sceneRef.current?.setSignal(choiceIndex, false)
         if (nextAttempts >= 2) {
           if (!muted) playTrainHint()
           setShowHint(true)
@@ -420,7 +430,10 @@ export default function TrainScreen() {
         boardAnswers={question ? question.choices : null}
         stationLabel={t('train.stationShort')}
       />
-      <TrainCelebration show={celebrate} />
+      <TrainCelebration
+        show={celebrate}
+        tone={grade === 2 ? 'farm' : grade === 3 ? 'dusk' : 'flowers'}
+      />
       {(phase === 'WAITING_FOR_ANSWER' ||
         phase === 'SHOWING_HINT' ||
         phase === 'CHECKING_ANSWER' ||

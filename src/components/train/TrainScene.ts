@@ -1,9 +1,10 @@
 /**
  * Scene kereta low-poly — Three.js murni (tanpa fiber).
- * Budget mesh ≤78: env 19 + rel 30 (4 tube + 23 bantalan + 3 papan) + kereta 11
+ * Budget mesh ≤82: env 19 + rel 30 (4 tube + 23 bantalan + 3 papan) + kereta 11
  * (loko 3 + roda 4 + gerbong 1 + roda gerbong 2 + lampu 1) + asap 3 sprite
- * + fase2 15 (driver 3 + tiang 1 + kain 1 + penumpang 2 + bunga 2 + kupu 2 + sapi 2 + lentera 2).
- * Total 78. Geometri bawaan saja; tanpa shadow, fisika, post-processing, shader.
+ * + fase2 15 (driver 3 + tiang 1 + kain 1 + penumpang 2 + bunga 2 + kupu 2 + sapi 2 + lentera 2)
+ * + rambu 4 (tiang 1 + bola 3). Total 82.
+ * Geometri bawaan saja; tanpa shadow, fisika, post-processing, shader.
  * Teks WebGL bukan antarmuka — jawaban hanya di DOM (papan 3D cermin saja).
  */
 import * as THREE from 'three'
@@ -107,16 +108,19 @@ export class TrainScene {
   private boardCanvases: HTMLCanvasElement[] = []
   private boardTextures: THREE.CanvasTexture[] = []
   private driverArm: THREE.Mesh | null = null
+  private driverHead: THREE.Mesh | null = null
   private waveT = 99
   private passengers: THREE.Mesh[] = []
   private hopT = 99
   private flag: THREE.Mesh | null = null
+  private cowHead: THREE.Mesh | null = null
   private butterflies: THREE.Mesh[] = []
   private butterflyBase: [number, number, number][] = []
   private flowersGroup = new THREE.Group()
   private farmGroup = new THREE.Group()
   private duskGroup = new THREE.Group()
   private lanternMats: THREE.MeshLambertMaterial[] = []
+  private signalMats: THREE.MeshLambertMaterial[] = []
   private groundMat: THREE.MeshLambertMaterial | null = null
   private hillMat: THREE.MeshLambertMaterial | null = null
   private signCanvas: HTMLCanvasElement | null = null
@@ -199,6 +203,7 @@ export class TrainScene {
     this.stationFired = false
     this.placeTrainOnCurve(this.mainCurve, 0)
     this.setSelectedGlow(null)
+    this.setSignal(null, true)
     this.setCameraMode('fixed')
   }
 
@@ -235,6 +240,24 @@ export class TrainScene {
         m.emissiveIntensity = 0
       }
     }
+  }
+
+  setSignal(active: BranchIndex | null, ok: boolean): void {
+    for (let i = 0; i < this.signalMats.length; i++) {
+      const m = this.signalMats[i]!
+      if (active === i) {
+        m.emissive.set(ok ? '#22c55e' : '#facc15')
+        m.emissiveIntensity = 1.2
+      } else {
+        m.emissive.set('#000000')
+        m.emissiveIntensity = 0
+      }
+    }
+  }
+
+  setStationBoard(label: string, sub: string): void {
+    this.drawSign(label, sub)
+    if (this.signTexture) this.signTexture.needsUpdate = true
   }
 
   applyTheme(grade: TrainGrade, stationLabel: string): void {
@@ -307,8 +330,9 @@ export class TrainScene {
       }
     }
     if (this.hopT < 1) {
-      for (const p of this.passengers) {
-        p.position.y = 0.8 + Math.abs(Math.sin(this.elapsed * 10)) * 0.18
+      for (let pi = 0; pi < this.passengers.length; pi++) {
+        this.passengers[pi]!.position.y =
+          0.8 + Math.abs(Math.sin(this.elapsed * 10 + pi * 1.5)) * 0.18
       }
       this.hopT += dtc
     } else {
@@ -318,6 +342,12 @@ export class TrainScene {
     }
     if (this.flag && !this.rm) {
       this.flag.rotation.y = Math.sin(this.elapsed * 3) * 0.35
+    }
+    if (this.cowHead && !this.rm) {
+      this.cowHead.rotation.x = Math.sin(this.elapsed * 0.8) * 0.15
+    }
+    if (this.driverHead) {
+      this.driverHead.rotation.y = this.phase === 'branch' ? this.selected * 0.4 - 0.4 : 0
     }
     if (!this.rm) {
       for (let i = 0; i < this.butterflies.length; i++) {
@@ -503,6 +533,24 @@ export class TrainScene {
       this.scene.add(p)
     }
 
+    // Rambu sinyal ×4: tiang + 3 bola (0=kiri/atas, 1=tengah, 2=kanan/bawah)
+    const signalPole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.06, 2.4, 8),
+      this.lambert('#94a3b8'),
+    )
+    signalPole.position.set(2.5, 1.2, -4)
+    this.scene.add(signalPole)
+    const signalGeo = new THREE.SphereGeometry(0.16, 8, 6)
+    for (let i = 0; i < 3; i++) {
+      const mat = this.lambert('#475569')
+      mat.emissive.set('#000000')
+      mat.emissiveIntensity = 0
+      const lamp = new THREE.Mesh(signalGeo, mat)
+      lamp.position.set(2.5, 2.5 - i * 0.45, -4)
+      this.signalMats.push(mat)
+      this.scene.add(lamp)
+    }
+
     // Dekor tematik: bunga + kupu (K1)
     const petalColors = ['#f472b6', '#facc15']
     const flowerSpots: [number, number][] = [
@@ -539,6 +587,7 @@ export class TrainScene {
     cowBody.position.set(7, 0.55, -4)
     const cowHead = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), this.lambert('#8a5a3b'))
     cowHead.position.set(7.7, 0.75, -4)
+    this.cowHead = cowHead
     this.farmGroup.add(cowBody, cowHead)
     this.scene.add(this.farmGroup)
 
@@ -582,7 +631,7 @@ export class TrainScene {
     ctx.fillText(text, 64, 34)
   }
 
-  private drawSign(label: string): void {
+  private drawSign(label: string, sub?: string): void {
     const canvas = this.signCanvas
     if (!canvas) return
     const ctx = canvas.getContext('2d')
@@ -595,6 +644,10 @@ export class TrainScene {
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(label, 128, 42)
+    if (sub) {
+      ctx.font = 'bold 28px Nunito, sans-serif'
+      ctx.fillText(sub, 128, 68)
+    }
   }
 
   private buildTracks(): void {
@@ -696,6 +749,7 @@ export class TrainScene {
     // Masinis Asya
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 8), this.lambert('#ffd9b3'))
     head.position.set(0, 1.95, -0.3)
+    this.driverHead = head
     const hat = new THREE.Mesh(
       new THREE.CylinderGeometry(0.3, 0.3, 0.18, 10),
       this.lambert('#2563eb'),

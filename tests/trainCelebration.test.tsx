@@ -14,4 +14,11 @@ describe('train celebration', () => {
     expect(wrap?.getAttribute('aria-hidden')).toBe('true')
     expect(container.querySelectorAll('.train-confetti span')).toHaveLength(24)
   })
+
+  it('tone farm tetap 24 span', () => {
+    const { container } = render(<TrainCelebration show tone="farm" />)
+    const wrap = container.querySelector('.train-confetti')
+    expect(wrap?.getAttribute('aria-hidden')).toBe('true')
+    expect(container.querySelectorAll('.train-confetti span')).toHaveLength(24)
+  })
 })
