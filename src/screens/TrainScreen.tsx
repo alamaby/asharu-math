@@ -19,10 +19,14 @@ import {
 import { starsForTrainAttempt, sumTrainStars } from '../lib/trainStars'
 import { resumeTrain, type TrainState } from '../lib/trainStateMachine'
 import {
+  clearTrainSession,
   defaultTrainProgress,
   loadTrainProgress,
+  loadTrainSession,
   recordTrainSession,
   saveTrainProgress,
+  saveTrainSession,
+  type TrainSessionSnapshot,
 } from '../lib/trainStorage'
 import {
   playTrainCelebrate,
@@ -32,7 +36,10 @@ import {
   playTrainSwitch,
   playTrainWhistle,
   playTrainWrong,
+  repeatTrainNarration,
+  speakTrain,
   stopTrainAudio,
+  stopTrainSpeech,
 } from '../lib/trainSound'
 import {
   setChugRate,
@@ -44,6 +51,7 @@ import {
   stopChug,
   stopTrainMusic,
 } from '../lib/trainMusic'
+import { speakablePrompt } from '../lib/trainNarration'
 import type { SessionSummary } from '../types'
 
 const TOTAL_QUESTIONS = 5
@@ -52,7 +60,7 @@ export default function TrainScreen() {
   const { navigate, setLeaveGuard, confirmPendingNavigation, cancelPendingNavigation } =
     useNavigation()
   const { progress, setPreferences } = useProgress()
-  const { t } = useI18n()
+  const { lang, t } = useI18n()
 
   const [phase, setPhase] = useState<TrainState>('LOADING')
   const [grade, setGrade] = useState<TrainGrade | null>(null)
@@ -68,6 +76,8 @@ export default function TrainScreen() {
   const [pausedFrom, setPausedFrom] = useState<TrainState | null>(null)
   const [muted, setMuted] = useState(() => !loadTrainProgress().soundEnabled)
   const [musicOn, setMusicOn] = useState(() => loadTrainProgress().musicEnabled ?? true)
+  const [voiceOn, setVoiceOn] = useState(() => loadTrainProgress().voiceEnabled ?? true)
+  const [resumable, setResumable] = useState<TrainSessionSnapshot | null>(() => loadTrainSession())
   const [celebrate, setCelebrate] = useState(false)
   const [cameraMode, setCameraMode] = useState<TrainCameraMode>('fixed')
   const [best, setBest] = useState<Record<string, number>>(
@@ -105,6 +115,13 @@ export default function TrainScreen() {
     [reducedMotion],
   )
 
+  const narrate = useCallback(
+    (text: string) => {
+      speakTrain(text, voiceOn)
+    },
+    [voiceOn],
+  )
+
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setPhase('MENU')
@@ -112,6 +129,7 @@ export default function TrainScreen() {
       clearTimers()
       stopTrainAudio()
       stopAllTrainAudio()
+      stopTrainSpeech()
     }
   }, [clearTimers])
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -147,7 +165,8 @@ export default function TrainScreen() {
       clearTimers()
       finishedRef.current = false
       setGrade(g)
-      setQuestions(generateTrainSession(g, TOTAL_QUESTIONS))
+      const qs = generateTrainSession(g, TOTAL_QUESTIONS)
+      setQuestions(qs)
       setRound(0)
       setAttempts(0)
       setAttemptsLog([])
@@ -165,12 +184,47 @@ export default function TrainScreen() {
         setChugRate(reducedMotion ? 180 : 300)
       }
       setMusicIntensity(1)
+      saveTrainSession(
+        { version: 1, grade: g, questions: qs, round: 0, attemptsLog: [], savedAt: Date.now() },
+        undefined,
+      )
+      setResumable(null)
       later(800, () => {
         if (phaseRef.current === 'INTRO') setPhase('TRAIN_MOVING')
       })
     },
     [clearTimers, later, muted, musicOn, reducedMotion],
   )
+
+  const handleResumeSession = useCallback(() => {
+    if (!resumable) return
+    if (!muted) playTrainClick()
+    clearTimers()
+    finishedRef.current = false
+    setGrade(resumable.grade)
+    setQuestions(resumable.questions)
+    setRound(resumable.round)
+    setAttempts(0)
+    setAttemptsLog(resumable.attemptsLog)
+    setFeedback(null)
+    setShowHint(false)
+    setPausedFrom(null)
+    setCelebrate(false)
+    sceneRef.current?.reset()
+    setCameraMode('follow')
+    setPhase('INTRO')
+    if (!muted) playTrainWhistle()
+    if (musicOn) {
+      startTrainMusic()
+      startChug()
+      setChugRate(reducedMotion ? 180 : 300)
+    }
+    setMusicIntensity(resumable.round < 2 ? 1 : resumable.round < 4 ? 2 : 3)
+    setResumable(null)
+    later(800, () => {
+      if (phaseRef.current === 'INTRO') setPhase('TRAIN_MOVING')
+    })
+  }, [clearTimers, later, muted, musicOn, reducedMotion, resumable])
 
   const finishSession = useCallback(
     (log: number[], g: TrainGrade) => {
@@ -180,6 +234,7 @@ export default function TrainScreen() {
       if (!muted) playTrainCelebrate()
       stopAllTrainAudio()
       setMusicDucked(false)
+      clearTrainSession(undefined)
       const prev = loadTrainProgress()
       const next = recordTrainSession(prev, g, stars)
       saveTrainProgress(next, undefined)
@@ -208,8 +263,14 @@ export default function TrainScreen() {
     setCameraMode('junction')
     later(400, () => {
       if (phaseRef.current === 'APPROACHING_JUNCTION') setPhase('WAITING_FOR_ANSWER')
+      const q = questions[round]
+      if (q) {
+        narrate(
+          `${t('train.questionOf', { n: round + 1, total: TOTAL_QUESTIONS })}. ${speakablePrompt(q, lang)}.`,
+        )
+      }
     })
-  }, [later])
+  }, [lang, later, narrate, questions, round, t])
 
   const handleReachStation = useCallback(() => {
     if (phaseRef.current !== 'TRAVELLING_TO_STATION') return
@@ -229,13 +290,26 @@ export default function TrainScreen() {
         sceneRef.current?.reset()
         setCameraMode('follow')
         setMusicIntensity(round + 1 < 2 ? 1 : round + 1 < 4 ? 2 : 3)
+        if (grade) {
+          saveTrainSession(
+            {
+              version: 1,
+              grade,
+              questions,
+              round: round + 1,
+              attemptsLog: log,
+              savedAt: Date.now(),
+            },
+            undefined,
+          )
+        }
         setPhase('TRAIN_MOVING')
       } else {
         setPhase('SESSION_COMPLETE')
         finishSession(log, g)
       }
     })
-  }, [attemptsLog, finishSession, grade, later, muted, round])
+  }, [attemptsLog, finishSession, grade, later, muted, questions, round])
 
   const handleAnswer = useCallback(
     (choiceIndex: 0 | 1 | 2) => {
@@ -261,6 +335,7 @@ export default function TrainScreen() {
         setCameraMode('follow')
         setMusicDucked(true)
         setCelebrate(true)
+        later(300, () => narrate(t('train.correct')))
         later(600, () => setMusicDucked(false))
         later(1200, () => setCelebrate(false))
         later(500, () => {
@@ -272,9 +347,14 @@ export default function TrainScreen() {
         setAttempts(nextAttempts)
         setFeedback({ kind: 'wrong', text: t('train.retry') })
         sceneRef.current?.setSignal(choiceIndex, false)
+        later(300, () => narrate(t('train.retry')))
         if (nextAttempts >= 2) {
           if (!muted) playTrainHint()
           setShowHint(true)
+          later(900, () => {
+            const q = questions[round]
+            if (q) narrate(`${t('train.hintTitle')}. ${q.hintText}`)
+          })
           setPhase('SHOWING_HINT')
           later(800, () => {
             if (phaseRef.current === 'SHOWING_HINT') setPhase('WAITING_FOR_ANSWER')
@@ -286,7 +366,7 @@ export default function TrainScreen() {
         }
       }
     },
-    [attempts, attemptsLog, later, muted, questions, round, t],
+    [attempts, attemptsLog, later, muted, narrate, questions, round, t],
   )
 
   const handlePause = useCallback(() => {
@@ -300,6 +380,7 @@ export default function TrainScreen() {
       setPhase('PAUSED')
       sceneRef.current?.setPaused(true)
       stopChug()
+      stopTrainSpeech()
     }
   }, [])
 
@@ -343,6 +424,17 @@ export default function TrainScreen() {
     }
   }, [musicOn])
 
+  const handleToggleVoice = useCallback(() => {
+    const next = !voiceOn
+    setVoiceOn(next)
+    saveTrainProgress({ ...loadTrainProgress(), voiceEnabled: next }, undefined)
+    if (!next) stopTrainSpeech()
+  }, [voiceOn])
+
+  const handleRepeatNarration = useCallback(() => {
+    repeatTrainNarration(voiceOn)
+  }, [voiceOn])
+
   const handleQuit = useCallback(() => {
     setExitOpen(true)
   }, [])
@@ -362,6 +454,10 @@ export default function TrainScreen() {
         handleToggleMusic()
         return
       }
+      if (e.key === 'r' || e.key === 'R') {
+        handleRepeatNarration()
+        return
+      }
       if (phaseRef.current === 'PAUSED' || phaseRef.current === 'MENU') return
       if (e.key === '1' || e.key === '2' || e.key === '3') {
         const idx = (Number(e.key) - 1) as 0 | 1 | 2
@@ -370,7 +466,14 @@ export default function TrainScreen() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [exitOpen, handleAnswer, handlePause, handleToggleMute, handleToggleMusic])
+  }, [
+    exitOpen,
+    handleAnswer,
+    handlePause,
+    handleRepeatNarration,
+    handleToggleMute,
+    handleToggleMusic,
+  ])
 
   if (phase === 'LOADING') {
     return (
@@ -384,7 +487,16 @@ export default function TrainScreen() {
   if (phase === 'MENU' || grade === null) {
     return (
       <div className="space-y-4">
-        <TrainMenu onStart={handleStart} bestStarsByGrade={best} />
+        <TrainMenu
+          onStart={handleStart}
+          bestStarsByGrade={best}
+          resumeInfo={
+            resumable
+              ? { grade: resumable.grade, round: resumable.round, total: TOTAL_QUESTIONS }
+              : null
+          }
+          onResume={handleResumeSession}
+        />
         <p className="sr-only" aria-live="polite">
           {announceText}
         </p>
@@ -414,8 +526,11 @@ export default function TrainScreen() {
         muted={muted}
         paused={paused}
         musicOn={musicOn}
+        voiceOn={voiceOn}
         onToggleMute={handleToggleMute}
         onToggleMusic={handleToggleMusic}
+        onToggleVoice={handleToggleVoice}
+        onRepeatNarration={handleRepeatNarration}
         onPause={handlePause}
         onQuit={handleQuit}
       />
@@ -491,7 +606,9 @@ export default function TrainScreen() {
           finishedRef.current = true
           setLeaveGuard(null)
           stopAllTrainAudio()
+          stopTrainSpeech()
           setMusicDucked(false)
+          clearTrainSession(undefined)
           void defaultTrainProgress
           confirmPendingNavigation()
         }}

@@ -4,12 +4,25 @@ import type { TrainGrade } from '../../lib/trainQuestionGenerator'
 export interface TrainMenuProps {
   onStart: (grade: TrainGrade) => void
   bestStarsByGrade: Record<string, number>
+  resumeInfo?: { grade: TrainGrade; round: number; total: number } | null
+  onResume?: () => void
 }
 
 const GRADES: TrainGrade[] = [1, 2, 3]
 
-export default function TrainMenu({ onStart, bestStarsByGrade }: TrainMenuProps) {
+export default function TrainMenu({
+  onStart,
+  bestStarsByGrade,
+  resumeInfo,
+  onResume,
+}: TrainMenuProps) {
   const { t } = useI18n()
+  const resumeGradeLabel =
+    resumeInfo?.grade === 1
+      ? t('train.grade1')
+      : resumeInfo?.grade === 2
+        ? t('train.grade2')
+        : t('train.grade3')
   return (
     <div className="space-y-2">
       <div className="rounded-3xl border-2 border-amber-200 bg-white p-4 text-center shadow-sm">
@@ -19,6 +32,22 @@ export default function TrainMenu({ onStart, bestStarsByGrade }: TrainMenuProps)
           {t('train.selectGrade')}
         </p>
       </div>
+      {resumeInfo && onResume && (
+        <div className="space-y-1">
+          <button
+            type="button"
+            onClick={onResume}
+            className="min-h-14 w-full rounded-2xl border-b-4 border-emerald-600 bg-emerald-500 px-4 py-3 text-left text-base font-black text-white hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300"
+          >
+            {t('train.resumeSession', {
+              gradeLabel: resumeGradeLabel,
+              n: resumeInfo.round + 1,
+              total: resumeInfo.total,
+            })}
+          </button>
+          <p className="text-center text-xs font-bold text-slate-400">{t('train.startNewHint')}</p>
+        </div>
+      )}
       {GRADES.map((g) => {
         const best = bestStarsByGrade[String(g)] ?? 0
         const gradeLabel =

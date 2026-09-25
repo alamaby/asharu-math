@@ -84,4 +84,21 @@ describe('train storage', () => {
     expect(validated?.musicEnabled).toBe(true)
     expect(validateTrainProgress({ ...defaultTrainProgress(), musicEnabled: 'ya' })).toBeNull()
   })
+
+  it('voice default true dan roundtrip', () => {
+    expect(defaultTrainProgress().voiceEnabled).toBe(true)
+    const s = memoryStorage()
+    const off = { ...defaultTrainProgress(), voiceEnabled: false as boolean }
+    expect(saveTrainProgress(off, s)).toBe(true)
+    expect(loadTrainProgress(s).voiceEnabled).toBe(false)
+  })
+
+  it('backward compatible tanpa voiceEnabled', () => {
+    const legacy = { ...defaultTrainProgress() }
+    delete legacy.voiceEnabled
+    const validated = validateTrainProgress(legacy)
+    expect(validated).not.toBeNull()
+    expect(validated?.voiceEnabled).toBe(true)
+    expect(validateTrainProgress({ ...defaultTrainProgress(), voiceEnabled: 'ya' })).toBeNull()
+  })
 })

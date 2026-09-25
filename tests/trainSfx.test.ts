@@ -8,7 +8,10 @@ import {
   playTrainSwitch,
   playTrainWhistle,
   playTrainWrong,
+  repeatTrainNarration,
+  speakTrain,
   stopTrainAudio,
+  stopTrainSpeech,
 } from '../src/lib/trainSound'
 
 describe('train SFX identitas', () => {
@@ -32,6 +35,16 @@ describe('train SFX identitas', () => {
     expect(() => {
       playTrainStar(0 as 1)
       playTrainStar(99 as 3)
+    }).not.toThrow()
+  })
+
+  it('narasi tidak melempar tanpa speechSynthesis', () => {
+    expect(() => {
+      speakTrain('halo', true)
+      speakTrain('halo', false)
+      repeatTrainNarration(true)
+      stopTrainSpeech()
+      stopTrainAudio()
     }).not.toThrow()
   })
 })

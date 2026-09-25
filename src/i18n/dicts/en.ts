@@ -521,19 +521,25 @@ const en: Dict = {
   'train.mute': 'Turn sound off',
   'train.paused': 'Paused',
   'train.questionOf': (p: { n: number; total: number }) => `Question ${p.n} of ${p.total}`,
+  'train.repeatNarration': 'Repeat narration',
   'train.quit': 'Exit',
   'train.restart': 'Restart',
   'train.resume': 'Resume',
+  'train.resumeSession': (p: { gradeLabel: string; n: number; total: number }) =>
+    `▶ Continue journey (${p.gradeLabel}, question ${p.n}/${p.total})`,
   'train.retry': 'Almost there, try again.',
   'train.selectGrade': 'Choose grade',
   'train.sessionDone': 'Journey complete!',
   'train.start': '🚂 All aboard!',
   'train.starsAria': (p: { stars: number }) => `Stars: ${p.stars}`,
+  'train.startNewHint': 'Starting a new grade will clear the saved session.',
   'train.station': 'Station 🎉',
   'train.stationShort': 'STATION',
   'train.subtitle': 'Help the train reach the station!',
   'train.title': 'Number Train Adventure',
   'train.unmute': 'Turn sound on',
+  'train.voiceMute': 'Turn narration off',
+  'train.voiceUnmute': 'Turn narration on',
 }
 
 export default en

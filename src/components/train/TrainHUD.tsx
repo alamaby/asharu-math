@@ -7,8 +7,11 @@ export interface TrainHUDProps {
   muted: boolean
   paused: boolean
   musicOn: boolean
+  voiceOn: boolean
   onToggleMute: () => void
   onToggleMusic: () => void
+  onToggleVoice: () => void
+  onRepeatNarration: () => void
   onPause: () => void
   onQuit: () => void
 }
@@ -20,8 +23,11 @@ export default function TrainHUD({
   muted,
   paused,
   musicOn,
+  voiceOn,
   onToggleMute,
   onToggleMusic,
+  onToggleVoice,
+  onRepeatNarration,
   onPause,
   onQuit,
 }: TrainHUDProps) {
@@ -55,6 +61,22 @@ export default function TrainHUD({
           className="min-h-11 rounded-2xl border-2 border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
         >
           {musicOn ? '🎵' : '🚫🎵'}
+        </button>
+        <button
+          type="button"
+          onClick={onToggleVoice}
+          aria-label={voiceOn ? t('train.voiceMute') : t('train.voiceUnmute')}
+          className="min-h-11 rounded-2xl border-2 border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
+        >
+          {voiceOn ? '🗣️' : '🚫🗣️'}
+        </button>
+        <button
+          type="button"
+          onClick={onRepeatNarration}
+          aria-label={t('train.repeatNarration')}
+          className="min-h-11 rounded-2xl border-2 border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
+        >
+          🔁
         </button>
         <button
           type="button"

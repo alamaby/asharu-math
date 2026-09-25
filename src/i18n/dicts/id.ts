@@ -522,19 +522,25 @@ const id = {
   'train.mute': 'Matikan suara',
   'train.paused': 'Jeda',
   'train.questionOf': (p: { n: number; total: number }) => `Soal ${p.n} dari ${p.total}`,
+  'train.repeatNarration': 'Ulangi narasi',
   'train.quit': 'Keluar',
   'train.restart': 'Mulai lagi',
   'train.resume': 'Lanjutkan',
+  'train.resumeSession': (p: { gradeLabel: string; n: number; total: number }) =>
+    `▶ Lanjutkan perjalanan (${p.gradeLabel}, soal ${p.n}/${p.total})`,
   'train.retry': 'Hampir benar, coba lagi.',
   'train.selectGrade': 'Pilih kelas',
   'train.sessionDone': 'Perjalanan selesai!',
   'train.start': '🚂 Berangkat!',
   'train.starsAria': (p: { stars: number }) => `Bintang: ${p.stars}`,
+  'train.startNewHint': 'Mulai kelas baru akan menghapus sesi tersimpan.',
   'train.station': 'Stasiun 🎉',
   'train.stationShort': 'STASIUN',
   'train.subtitle': 'Bantu kereta sampai ke stasiun!',
   'train.title': 'Petualangan Kereta Angka',
   'train.unmute': 'Nyalakan suara',
+  'train.voiceMute': 'Matikan narasi suara',
+  'train.voiceUnmute': 'Nyalakan narasi suara',
 }
 
 export default id
