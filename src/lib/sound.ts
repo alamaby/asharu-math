@@ -71,3 +71,13 @@ export function playCelebrate(): void {
   tone(783.99, 0.24, 0.12)
   tone(1046.5, 0.36, 0.24)
 }
+
+export function playTone(
+  freq: number,
+  startDelay: number,
+  duration: number,
+  type: ToneType = 'sine',
+  volume = 0.12,
+): void {
+  tone(freq, startDelay, duration, type, volume)
+}

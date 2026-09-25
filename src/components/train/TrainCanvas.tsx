@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { TrainScene } from './TrainScene'
-import type { BranchIndex } from './TrainScene'
+import type { BranchIndex, TrainCameraMode } from './TrainScene'
+import type { TrainGrade } from '../../lib/trainQuestionGenerator'
 import TrainFallback2D from './TrainFallback2D'
 
 export interface TrainCanvasProps {
@@ -10,6 +11,10 @@ export interface TrainCanvasProps {
   onReachStation: () => void
   sceneRef: React.MutableRefObject<TrainScene | null>
   onReady?: (scene: TrainScene) => void
+  themeGrade: TrainGrade | null
+  cameraMode: TrainCameraMode
+  boardAnswers: [string, string, string] | null
+  stationLabel: string
 }
 
 export function hasTrainWebGL(): boolean {
@@ -34,6 +39,10 @@ export default function TrainCanvas({
   onReachStation,
   sceneRef,
   onReady,
+  themeGrade,
+  cameraMode,
+  boardAnswers,
+  stationLabel,
 }: TrainCanvasProps) {
   const webGL = useMemo(() => hasTrainWebGL(), [])
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -55,6 +64,22 @@ export default function TrainCanvas({
   }, [reducedMotion, sceneRef])
 
   useEffect(() => {
+    if (sceneRef.current && themeGrade !== null) {
+      sceneRef.current.applyTheme(themeGrade, stationLabel)
+    }
+  }, [themeGrade, stationLabel, sceneRef])
+
+  useEffect(() => {
+    sceneRef.current?.setCameraMode(cameraMode)
+  }, [cameraMode, sceneRef])
+
+  useEffect(() => {
+    if (sceneRef.current && boardAnswers) {
+      sceneRef.current.setAnswers(boardAnswers)
+    }
+  }, [boardAnswers, sceneRef])
+
+  useEffect(() => {
     if (!webGL) return
     const canvas = canvasRef.current
     const wrap = wrapRef.current
@@ -70,6 +95,9 @@ export default function TrainCanvas({
     }
     sceneRef.current = scene
     scene.setPaused(pausedRef.current)
+    if (themeGrade !== null) scene.applyTheme(themeGrade, stationLabel)
+    scene.setCameraMode(cameraMode)
+    if (boardAnswers) scene.setAnswers(boardAnswers)
     cbRef.current.onReady?.(scene)
     const captured = scene
 

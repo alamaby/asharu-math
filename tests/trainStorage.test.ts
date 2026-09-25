@@ -67,4 +67,21 @@ describe('train storage', () => {
     expect(loadTrainProgress(null).sessionsCompleted).toBe(0)
     expect(saveTrainProgress(defaultTrainProgress(), null)).toBe(false)
   })
+
+  it('musik default true dan roundtrip', () => {
+    expect(defaultTrainProgress().musicEnabled).toBe(true)
+    const s = memoryStorage()
+    const off = { ...defaultTrainProgress(), musicEnabled: false as boolean }
+    expect(saveTrainProgress(off, s)).toBe(true)
+    expect(loadTrainProgress(s).musicEnabled).toBe(false)
+  })
+
+  it('backward compatible tanpa musicEnabled', () => {
+    const legacy = { ...defaultTrainProgress() }
+    delete legacy.musicEnabled
+    const validated = validateTrainProgress(legacy)
+    expect(validated).not.toBeNull()
+    expect(validated?.musicEnabled).toBe(true)
+    expect(validateTrainProgress({ ...defaultTrainProgress(), musicEnabled: 'ya' })).toBeNull()
+  })
 })

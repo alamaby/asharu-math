@@ -6,7 +6,9 @@ export interface TrainHUDProps {
   stars: number
   muted: boolean
   paused: boolean
+  musicOn: boolean
   onToggleMute: () => void
+  onToggleMusic: () => void
   onPause: () => void
   onQuit: () => void
 }
@@ -17,7 +19,9 @@ export default function TrainHUD({
   stars,
   muted,
   paused,
+  musicOn,
   onToggleMute,
+  onToggleMusic,
   onPause,
   onQuit,
 }: TrainHUDProps) {
@@ -43,6 +47,14 @@ export default function TrainHUD({
           className="min-h-11 rounded-2xl border-2 border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
         >
           {muted ? '🔇' : '🔊'}
+        </button>
+        <button
+          type="button"
+          onClick={onToggleMusic}
+          aria-label={musicOn ? t('train.musicMute') : t('train.musicUnmute')}
+          className="min-h-11 rounded-2xl border-2 border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
+        >
+          {musicOn ? '🎵' : '🚫🎵'}
         </button>
         <button
           type="button"

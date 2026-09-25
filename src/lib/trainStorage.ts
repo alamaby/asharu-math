@@ -10,6 +10,7 @@ export interface TrainProgress {
   sessionsCompleted: number
   lastGrade: 1 | 2 | 3 | null
   soundEnabled: boolean
+  musicEnabled?: boolean
 }
 
 export function defaultTrainProgress(): TrainProgress {
@@ -19,6 +20,7 @@ export function defaultTrainProgress(): TrainProgress {
     sessionsCompleted: 0,
     lastGrade: null,
     soundEnabled: true,
+    musicEnabled: true,
   }
 }
 
@@ -50,6 +52,7 @@ export function validateTrainProgress(value: unknown): TrainProgress | null {
     return null
   }
   if (typeof value.soundEnabled !== 'boolean') return null
+  if (value.musicEnabled !== undefined && typeof value.musicEnabled !== 'boolean') return null
   const cleaned: Record<string, number> = {}
   for (const [k, v] of Object.entries(value.bestStarsByGrade)) {
     if ((k === '1' || k === '2' || k === '3') && typeof v === 'number') cleaned[k] = v
@@ -60,6 +63,7 @@ export function validateTrainProgress(value: unknown): TrainProgress | null {
     sessionsCompleted: value.sessionsCompleted as number,
     lastGrade: value.lastGrade as 1 | 2 | 3 | null,
     soundEnabled: value.soundEnabled as boolean,
+    musicEnabled: (value.musicEnabled as boolean | undefined) ?? true,
   }
 }
 
