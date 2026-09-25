@@ -2,6 +2,7 @@
  * Progres kereta — key terpisah agar tidak migrasi UserProgress.
  */
 import type { TrainQuestion } from './trainQuestionGenerator'
+import { isValidTrainVariant, type TrainVariant } from './trainVariants'
 
 export const TRAIN_STORAGE_KEY = 'asharu-train:v1'
 export const TRAIN_SESSION_KEY = 'asharu-train-session:v1'
@@ -24,6 +25,7 @@ export interface TrainSessionSnapshot {
   round: number
   attemptsLog: number[]
   savedAt: number
+  variant?: TrainVariant
 }
 
 export function defaultTrainProgress(): TrainProgress {
@@ -181,6 +183,7 @@ export function isValidTrainSession(value: unknown): value is TrainSessionSnapsh
     return false
   }
   if (typeof value.savedAt !== 'number' || !Number.isFinite(value.savedAt)) return false
+  if (value.variant !== undefined && !isValidTrainVariant(value.variant)) return false
   return true
 }
 

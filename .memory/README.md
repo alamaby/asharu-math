@@ -1,20 +1,21 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-09-25 17:15:00
+Last Updated: 2026-09-25 20:40:00
 Format Version: 1
 
 ## Current State
-- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.8.0` (feat: narasi suara kereta + lanjutkan sesi setelah refresh).
+- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.9.0` (feat: variant kereta acak + drag kamera + detail instanced + maneuver belok).
 - Sesi Belajar penjumlahan: input sekali per kolom — ketik jumlah di Kotak Hitung, jawaban + simpanan terisi otomatis (`carry-down` auto untuk kolom turunan carry; `carry-digit` dihapus).
 - Konten: K1 3 konsep (membilang/banding/nilai-tempat) + 4 kolom 1–2 digit; K2 11 bersusun + **4 cerita** (cerita-1..4) + Tantangan adaptif; 11 achievement (`bintang-kelas-1` mencakup 7 K1, `bintang-cerita` mencakup 4 cerita).
 - Rantai K2: `level-11 → cerita-1 → cerita-2 → cerita-3 → cerita-4 → tantangan`.
 - Akuarium/Kebun: papan bersusun unifikasi (`StackedPlaceValueBoard` grid N-kolom, wrapper 2-digit); 4 level 3-digit baru (`kebun-5/6`, `akuarium-5/6`, number 20–23, rantai `akuarium-4→kebun-5→kebun-6→akuarium-5→akuarium-6`); visual ratusan ungu (peti 📦/overlay); input S→P→R; Periksa tidak pernah diam (blokir intro + info).
 - Soal cerita: 6 famili variasi (F0-F5), multi-part, jawab ketik angka + bantuan bersusun. Mode Cerita tersedia di Latihan.
-- Kualitas: ESLint 9 + Prettier aktif; **389 test / 54 file (389 lulus)**; CI GitHub Actions Node 20 & 22.
+- Kualitas: ESLint 9 + Prettier aktif; **400 test / 56 file (400 lulus)**; CI GitHub Actions Node 20 & 22.
 - Kereta Angka: screen `train` (Three murni, storage `asharu-train:v1`) — pilih K1–3, 5 soal/sesi, 3 cabang, bintang 3/2/1, hint setelah 2 salah; entry tombol 🚂 di Home.
 - Kereta visual-audio Fase 1+2: roda/asap/awan/daun/lampu, papan 3D berangka + glow, masinis Asya + penumpang + bendera + hewan, 3 tema per kelas, 4 mode kamera, peluit/wesel/bintang bertingkat, musik + chug prosedural (`trainMusic.ts`), confetti DOM, toggle musik terpisah (`musicEnabled`); tanpa TTS.
 - Kereta Fase 3: musik adaptif per ronde (`setMusicIntensity` 1–3, tempo tetap), rambu sinyal junction (hijau/kuning netral) + papan stasiun 2 baris, hop penumpang bergantian + sapi mengangguk + masinis menoleh, confetti per tema; budget mesh 82.
 - Kereta Fase 4: narasi TTS browser (`speakTrain` voice id-ID, soal/feedback/hint, tombol 🔁 repeat, toggle 🗣️ `voiceEnabled`), resume sesi per-ronde (`asharu-train-session:v1`, TTL 14 hari, attempts reset, tombol "Lanjutkan perjalanan" di menu); tanpa file audio.
+- Kereta Fase 5: variant kereta acak (`pickTrainVariant`, 3 bentuk loko × 5 warna, gerbong boxcar/tanker/flatbed, tersimpan di snapshot), drag kamera yaw ±60° + auto-return, detail lingkungan via `InstancedMesh` (pinus/batu/pagar/semak/burung/bunga/padi/lumbung/domba/kunang-kunang/jendela), maneuver belok 350ms mundur + 250ms jeda + lean (`trainManeuver.ts`).
 - PWA aktif: installable (tombol di HomeScreen), offline via service worker auto-update, petunjuk iOS A2HS.
 - i18n: dua bahasa ID(default)/EN switch instan; concept + story i18n render-time; Home/Result routing per-grade & per-levelKind.
 - AdSense + legal: AdSlot TFAT=1 child; zona bebas iklan Learn/Practice/Concept; Privacy/Terms bilingual (pemilik Alam Aby Bashit, alam.aby.b@gmail.com); ads.txt `pub-4082765898994990` live.
@@ -43,6 +44,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-09-25 20:40:00 — Kereta Fase 5 (variant acak, drag kamera, detail instanced, maneuver belok)](2026-09-25/204000-kereta-fase-5-variant-drag-detail.md)
 - [2026-09-25 17:15:00 — Kereta Fase 4 (TTS narasi + resume sesi)](2026-09-25/171500-kereta-fase-4-tts-resume.md)
 - [2026-09-25 16:00:00 — Kereta Fase 3 (musik adaptif, rambu, animasi, verifikasi)](2026-09-25/160000-kereta-fase-3.md)
 - [2026-09-25 15:00:00 — Kereta visual-audio Fase 1+2](2026-09-25/150000-kereta-visual-audio-fase-1-2.md)

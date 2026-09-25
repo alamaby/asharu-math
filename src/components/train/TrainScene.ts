@@ -9,6 +9,8 @@
  */
 import * as THREE from 'three'
 import type { TrainGrade } from '../../lib/trainQuestionGenerator'
+import { isValidTrainVariant, type LocoShape, type TrainVariant } from '../../lib/trainVariants'
+import { MANEUVER_TOTAL_MS, computeManeuver } from '../../lib/trainManeuver'
 
 export type BranchIndex = 0 | 1 | 2
 
@@ -129,6 +131,19 @@ export class TrainScene {
   private camPos = new THREE.Vector3(0, 7, 10)
   private camLook = new THREE.Vector3(0, 0, -4)
   private camSmooth = new THREE.Vector3(0, 0, -4)
+  private locoParts: THREE.Object3D[] = []
+  private wagonParts: THREE.Object3D[] = []
+  private locoShape: LocoShape = 'classic'
+  private detailGroup = new THREE.Group()
+  private birds: THREE.InstancedMesh | null = null
+  private fireflyMats: THREE.MeshLambertMaterial[] = []
+  private birdDummy = new THREE.Object3D()
+  private maneuverActive = false
+  private maneuverStart = -1
+  private canvasEl: HTMLCanvasElement | null = null
+  private yawOffset = 0
+  private dragging = false
+  private dragLastX = 0
 
   constructor(canvas: HTMLCanvasElement, cb: TrainSceneCallbacks = {}) {
     try {
@@ -177,8 +192,15 @@ export class TrainScene {
     this.buildTracks()
     this.buildTrain()
     this.buildSmoke()
+    this.buildInstancedDetail()
     this.placeTrainOnCurve(this.mainCurve, 0)
     this.applyTheme(1, 'STASIUN')
+
+    this.canvasEl = canvas
+    canvas.addEventListener('pointerdown', this.onPointerDown)
+    canvas.addEventListener('pointermove', this.onPointerMove)
+    window.addEventListener('pointerup', this.onPointerUp)
+    window.addEventListener('pointercancel', this.onPointerUp)
   }
 
   get trainT(): number {
@@ -191,9 +213,16 @@ export class TrainScene {
 
   setBranch(i: BranchIndex): void {
     this.selected = i
-    this.phase = 'branch'
-    this.t = 0
     this.stationFired = false
+    if (this.rm) {
+      this.phase = 'branch'
+      this.t = 0
+      return
+    }
+    this.maneuverActive = true
+    this.maneuverStart = this.elapsed
+    this.phase = 'main'
+    this.t = 1
   }
 
   reset(): void {
@@ -201,6 +230,9 @@ export class TrainScene {
     this.t = 0
     this.junctionFired = false
     this.stationFired = false
+    this.maneuverActive = false
+    this.maneuverStart = -1
+    this.trainGroup.rotation.z = 0
     this.placeTrainOnCurve(this.mainCurve, 0)
     this.setSelectedGlow(null)
     this.setSignal(null, true)
@@ -260,6 +292,14 @@ export class TrainScene {
     if (this.signTexture) this.signTexture.needsUpdate = true
   }
 
+  applyTrainVariant(variant: TrainVariant): void {
+    if (this.disposed) return
+    if (!isValidTrainVariant(variant)) return
+    this.locoShape = variant.loco
+    this.buildLoco(variant.loco, variant.locoColor)
+    this.buildWagons(variant.wagons)
+  }
+
   applyTheme(grade: TrainGrade, stationLabel: string): void {
     const g = grade === 1 || grade === 2 || grade === 3 ? grade : 1
     const theme = TRAIN_THEMES[g]!
@@ -292,6 +332,21 @@ export class TrainScene {
     if (!Number.isFinite(dt) || dt <= 0) return
     const dtc = Math.min(dt, 0.05)
     this.elapsed += dtc
+    const spin = dtc * (this.rm ? 4 : 8)
+    for (const w of this.wheels) w.rotation.x += spin
+    if (this.maneuverActive) {
+      const elapsedMs = (this.elapsed - this.maneuverStart) * 1000
+      const m = computeManeuver(elapsedMs)
+      this.placeTrainOnCurve(this.mainCurve, m.t)
+      if (elapsedMs >= MANEUVER_TOTAL_MS) {
+        this.maneuverActive = false
+        this.phase = 'branch'
+        this.t = 0
+      }
+      this.updateSmoke(dtc)
+      this.updateCamera(dtc)
+      return
+    }
     const step = dtc * this.speed
     if (this.phase === 'main') {
       this.t = Math.min(1, this.t + step)
@@ -303,6 +358,12 @@ export class TrainScene {
     } else {
       this.t = Math.min(1, this.t + step)
       this.placeTrainOnCurve(this.branchCurves[this.selected], this.t)
+      // Lean kecil ke arah belokan (hanya di awal cabang)
+      if (this.t < 0.3) {
+        this.trainGroup.rotation.z = (this.selected - 1) * 0.08 * (1 - this.t / 0.3)
+      } else if (this.trainGroup.rotation.z !== 0) {
+        this.trainGroup.rotation.z = 0
+      }
       if (this.t >= 1 && !this.stationFired) {
         this.stationFired = true
         this.cb.onReachStation?.()
@@ -311,8 +372,6 @@ export class TrainScene {
     if (!this.rm) {
       this.trainGroup.position.y += Math.sin(this.elapsed * 10) * 0.02
     }
-    const spin = dtc * (this.rm ? 4 : 8)
-    for (const w of this.wheels) w.rotation.x += spin
     this.updateSmoke(dtc)
     for (const c of this.clouds) {
       c.position.x += dtc * 0.3
@@ -357,6 +416,24 @@ export class TrainScene {
         b.position.y = base[1] + Math.sin(this.elapsed * 2 + i) * 0.3
         b.rotation.y = Math.sin(this.elapsed * 8 + i) * 0.6
       }
+      if (this.birds) {
+        for (let i = 0; i < 3; i++) {
+          this.birdDummy.position.set(
+            -4 + i * 4 + Math.sin(this.elapsed * 0.4 + i) * 2.5,
+            6 + Math.sin(this.elapsed * 0.8 + i * 1.3) * 0.5,
+            -6 + Math.cos(this.elapsed * 0.4 + i) * 2,
+          )
+          this.birdDummy.rotation.set(0, this.elapsed * 0.6 + i, Math.PI / 2)
+          this.birdDummy.scale.setScalar(1)
+          this.birdDummy.updateMatrix()
+          this.birds.setMatrixAt(i, this.birdDummy.matrix)
+        }
+        this.birds.instanceMatrix.needsUpdate = true
+      }
+      for (let i = 0; i < this.fireflyMats.length; i++) {
+        this.fireflyMats[i]!.emissiveIntensity =
+          0.6 + 0.6 * Math.abs(Math.sin(this.elapsed * 3 + i))
+      }
     }
     this.updateCamera(dtc)
   }
@@ -376,6 +453,14 @@ export class TrainScene {
   dispose(): void {
     if (this.disposed) return
     this.disposed = true
+    this.disposeParts(this.locoParts)
+    this.disposeParts(this.wagonParts)
+    if (this.canvasEl) {
+      this.canvasEl.removeEventListener('pointerdown', this.onPointerDown)
+      this.canvasEl.removeEventListener('pointermove', this.onPointerMove)
+    }
+    window.removeEventListener('pointerup', this.onPointerUp)
+    window.removeEventListener('pointercancel', this.onPointerUp)
     const geos = new Set<THREE.BufferGeometry>()
     const mats = new Set<THREE.Material>()
     this.scene.traverse((obj) => {
@@ -407,6 +492,79 @@ export class TrainScene {
 
   private lambert(color: string): THREE.MeshLambertMaterial {
     return new THREE.MeshLambertMaterial({ color })
+  }
+
+  private disposeParts(parts: THREE.Object3D[]): void {
+    for (const part of parts) {
+      const mesh = part as THREE.Mesh
+      if (mesh && (mesh as THREE.Mesh).isMesh) {
+        mesh.geometry?.dispose()
+        const m = mesh.material
+        if (Array.isArray(m)) {
+          for (const mm of m) mm.dispose()
+        } else if (m) {
+          m.dispose()
+        }
+      }
+      this.trainGroup.remove(part)
+    }
+    parts.length = 0
+  }
+
+  private buildLoco(shape: LocoShape, color: string): void {
+    this.disposeParts(this.locoParts)
+    const bodyMat = this.lambert(color)
+    const cabinMat = this.lambert('#3b82f6')
+    const darkMat = this.lambert('#1f2937')
+    if (shape === 'classic') {
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 2.0), bodyMat)
+      body.position.set(0, 0.7, 0.4)
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.7, 0.8), cabinMat)
+      cabin.position.set(0, 1.4, -0.3)
+      const chimney = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.6, 10), darkMat)
+      chimney.position.set(0, 1.35, 1.1)
+      this.locoParts.push(body, cabin, chimney)
+    } else if (shape === 'diesel') {
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 2.2), bodyMat)
+      body.position.set(0, 0.75, 0.4)
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.6, 0.7), cabinMat)
+      cabin.position.set(0, 1.45, -0.4)
+      this.locoParts.push(body, cabin)
+    } else {
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.7, 1.5), bodyMat)
+      body.position.set(0, 0.65, 0.4)
+      const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.2, 12), bodyMat)
+      tank.rotation.z = Math.PI / 2
+      tank.position.set(0, 1.35, 0.2)
+      this.locoParts.push(body, tank)
+    }
+    this.trainGroup.add(...this.locoParts)
+  }
+
+  private buildWagons(wagons: { kind: string; color: string }[]): void {
+    this.disposeParts(this.wagonParts)
+    for (let i = 0; i < wagons.length; i++) {
+      const w = wagons[i]!
+      const mat = this.lambert(w.color)
+      const z = -2.0 - i * 1.9
+      if (w.kind === 'tanker') {
+        const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.4, 12), mat)
+        tank.rotation.z = Math.PI / 2
+        tank.position.set(0, 0.65, z)
+        this.wagonParts.push(tank)
+      } else if (w.kind === 'flatbed') {
+        const bed = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.25, 1.6), mat)
+        bed.position.set(0, 0.5, z)
+        const cargo = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.3, 0.9), this.lambert('#8a5a3b'))
+        cargo.position.set(0, 0.78, z)
+        this.wagonParts.push(bed, cargo)
+      } else {
+        const box = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.7, 1.6), mat)
+        box.position.set(0, 0.65, z)
+        this.wagonParts.push(box)
+      }
+    }
+    this.trainGroup.add(...this.wagonParts)
   }
 
   private buildEnvironment(): void {
@@ -704,6 +862,7 @@ export class TrainScene {
     )
     chimney.position.set(0, 1.35, 1.1)
     this.trainGroup.add(body, cabin, chimney)
+    this.locoParts.push(body, cabin, chimney)
 
     const wheelGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.2, 12)
     const wheelMat = this.lambert('#1f2937')
@@ -725,6 +884,7 @@ export class TrainScene {
     const wagon = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.7, 1.6), this.lambert('#f5b942'))
     wagon.position.set(0, 0.65, -2.0)
     this.trainGroup.add(wagon)
+    this.wagonParts.push(wagon)
     const wagonWheels: [number, number, number][] = [
       [-0.6, 0.28, -1.6],
       [0.6, 0.28, -1.6],
@@ -790,9 +950,183 @@ export class TrainScene {
     }
   }
 
+  private addInstanced(
+    geo: THREE.BufferGeometry,
+    mat: THREE.Material,
+    transforms: { pos: [number, number, number]; rotY?: number; scale?: number }[],
+  ): THREE.InstancedMesh {
+    const mesh = new THREE.InstancedMesh(geo, mat, transforms.length)
+    const dummy = new THREE.Object3D()
+    for (let i = 0; i < transforms.length; i++) {
+      const tr = transforms[i]!
+      dummy.position.set(tr.pos[0], tr.pos[1], tr.pos[2])
+      dummy.rotation.set(0, tr.rotY ?? 0, 0)
+      dummy.scale.setScalar(tr.scale ?? 1)
+      dummy.updateMatrix()
+      mesh.setMatrixAt(i, dummy.matrix)
+    }
+    mesh.instanceMatrix.needsUpdate = true
+    this.detailGroup.add(mesh)
+    return mesh
+  }
+
+  private buildInstancedDetail(): void {
+    // Pohon pinus ×6 (daun + batang)
+    const pineSpots: [number, number][] = [
+      [-13, 2],
+      [13, 0],
+      [-12, -6],
+      [12, -8],
+      [-11, 10],
+      [11, 12],
+    ]
+    this.addInstanced(
+      new THREE.ConeGeometry(0.7, 1.6, 6),
+      this.lambert('#2f8f4a'),
+      pineSpots.map(([x, z]) => ({ pos: [x, 1.3, z] as [number, number, number] })),
+    )
+    this.addInstanced(
+      new THREE.CylinderGeometry(0.1, 0.14, 0.5, 6),
+      this.lambert('#8a5a3b'),
+      pineSpots.map(([x, z]) => ({ pos: [x, 0.25, z] as [number, number, number] })),
+    )
+    // Pohon bulat ×4 (daun + batang)
+    const roundSpots: [number, number][] = [
+      [-6, 12],
+      [6, 14],
+      [-14, -12],
+      [14, -14],
+    ]
+    this.addInstanced(
+      new THREE.SphereGeometry(0.75, 8, 6),
+      this.lambert('#4caf50'),
+      roundSpots.map(([x, z]) => ({ pos: [x, 1.35, z] as [number, number, number] })),
+    )
+    this.addInstanced(
+      new THREE.CylinderGeometry(0.1, 0.14, 0.6, 6),
+      this.lambert('#8a5a3b'),
+      roundSpots.map(([x, z]) => ({ pos: [x, 0.3, z] as [number, number, number] })),
+    )
+    // Batu ×6
+    const rockSpots: [number, number, number][] = [
+      [-7, 0.2, 2],
+      [7, 0.2, 6],
+      [-5, 0.2, -10],
+      [8, 0.2, -12],
+      [-10, 0.2, 14],
+      [10, 0.2, 16],
+    ]
+    this.addInstanced(
+      new THREE.DodecahedronGeometry(0.3, 0),
+      this.lambert('#94a3b8'),
+      rockSpots.map(([x, y, z], i) => ({
+        pos: [x, y, z] as [number, number, number],
+        rotY: i * 0.7,
+        scale: 0.7 + (i % 3) * 0.3,
+      })),
+    )
+    // Pagar rel ×8
+    const fence: { pos: [number, number, number] }[] = []
+    for (let i = 0; i < 8; i++) {
+      const z = 2 + i * 1.8
+      fence.push({ pos: [-2.2, 0.25, z] })
+      fence.push({ pos: [2.2, 0.25, z] })
+    }
+    this.addInstanced(new THREE.BoxGeometry(0.12, 0.5, 0.12), this.lambert('#a16207'), fence)
+    // Semak ×4
+    const bushSpots: [number, number][] = [
+      [-4, -2],
+      [4, -4],
+      [-6, 8],
+      [6, 10],
+    ]
+    this.addInstanced(
+      new THREE.SphereGeometry(0.4, 6, 4),
+      this.lambert('#5a9e4f'),
+      bushSpots.map(([x, z]) => ({ pos: [x, 0.3, z] as [number, number, number] })),
+    )
+    // Burung ×3 (orbit dianimasikan di update)
+    this.birds = this.addInstanced(new THREE.ConeGeometry(0.18, 0.4, 4), this.lambert('#334155'), [
+      { pos: [-4, 6, -6], rotY: 0 },
+      { pos: [0, 6.5, -8], rotY: 0 },
+      { pos: [4, 6.2, -5], rotY: 0 },
+    ])
+    this.scene.add(this.detailGroup)
+
+    // Dekor tematik tambahan
+    // K1: rumpun bunga instanced
+    const flowerRng: [number, number][] = [
+      [5, 3],
+      [-6, 5],
+      [3, 9],
+      [-7, 11],
+      [6, 13],
+      [-4, 14],
+    ]
+    this.addInstanced(
+      new THREE.SphereGeometry(0.14, 6, 5),
+      this.lambert('#f472b6'),
+      flowerRng.map(([x, z]) => ({ pos: [x, 0.2, z] as [number, number, number] })),
+    )
+    // K2: petak padi + lumbung + domba
+    const padiRows: { pos: [number, number, number] }[] = []
+    for (let i = 0; i < 12; i++) {
+      const x = -9 + (i % 4) * 1.4
+      const z = -18 + Math.floor(i / 4) * 1.4
+      padiRows.push({ pos: [x, 0.15, z] })
+    }
+    this.addInstanced(new THREE.BoxGeometry(0.9, 0.25, 0.9), this.lambert('#c2d94f'), padiRows)
+    const barnBody = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.0, 1.2), this.lambert('#b45309'))
+    barnBody.position.set(-12, 0.5, -16)
+    const barnRoof = new THREE.Mesh(
+      new THREE.CylinderGeometry(0, 0.9, 0.6, 4),
+      this.lambert('#7f1d1d'),
+    )
+    barnRoof.position.set(-12, 1.3, -16)
+    barnRoof.rotation.y = Math.PI / 4
+    this.farmGroup.add(barnBody, barnRoof)
+    const sheepSpots: [number, number][] = [
+      [9, -14],
+      [10.5, -15],
+    ]
+    for (const [x, z] of sheepSpots) {
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), this.lambert('#f1f5f9'))
+      body.position.set(x, 0.4, z)
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 5), this.lambert('#475569'))
+      head.position.set(x + 0.35, 0.5, z)
+      this.farmGroup.add(body, head)
+    }
+    // K3: kunang-kunang (sprite) + jendela menyala
+    if (typeof document !== 'undefined') {
+      const fireflyGeo = new THREE.SphereGeometry(0.08, 5, 4)
+      const fireflyMat = this.lambert('#fde68a')
+      fireflyMat.emissive.set('#fde68a')
+      fireflyMat.emissiveIntensity = 1.2
+      this.fireflyMats.push(fireflyMat)
+      const fireflies: { pos: [number, number, number] }[] = []
+      for (let i = 0; i < 6; i++) {
+        const x = -8 + i * 3.2
+        const z = -10 - (i % 3) * 2
+        fireflies.push({ pos: [x, 1.2 + (i % 2) * 0.6, z] })
+      }
+      this.addInstanced(fireflyGeo, fireflyMat, fireflies)
+    }
+    const windowMat = this.lambert('#fde68a')
+    windowMat.emissive.set('#fde68a')
+    windowMat.emissiveIntensity = 0.9
+    for (const [hx, hz] of [
+      [-11, -2],
+      [11, -3],
+    ] as [number, number][]) {
+      const win = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.3), windowMat)
+      win.position.set(hx, 0.9, hz + 0.95)
+      this.duskGroup.add(win)
+    }
+  }
+
   private updateSmoke(dt: number): void {
     if (this.smokes.length === 0) return
-    if (this.rm) {
+    if (this.locoShape !== 'classic' || this.rm) {
       for (const s of this.smokes) {
         ;(s.material as THREE.SpriteMaterial).opacity = 0
       }
@@ -827,6 +1161,23 @@ export class TrainScene {
       this.camPos.set(0, 7, 10)
       this.camLook.set(0, 0, -4)
     }
+    // Auto-return yaw saat kereta bergerak (opsi B)
+    if (!this.dragging && this.yawOffset !== 0) {
+      const moving = this.maneuverActive || this.t > 0
+      if (moving) {
+        this.yawOffset *= Math.max(0, 1 - dt * 2)
+        if (Math.abs(this.yawOffset) < 0.001) this.yawOffset = 0
+      }
+    }
+    // Terapkan yaw offset (orbit di sekitar titik pandang)
+    if (this.yawOffset !== 0) {
+      const pivot = this.camLook
+      const dx = this.camPos.x - pivot.x
+      const dz = this.camPos.z - pivot.z
+      const cos = Math.cos(this.yawOffset)
+      const sin = Math.sin(this.yawOffset)
+      this.camPos.set(pivot.x + dx * cos - dz * sin, this.camPos.y, pivot.z + dx * sin + dz * cos)
+    }
     if (this.rm) {
       this.camera.position.copy(this.camPos)
       this.camSmooth.copy(this.camLook)
@@ -837,6 +1188,29 @@ export class TrainScene {
       this.camSmooth.lerp(this.camLook, k)
       this.camera.lookAt(this.camSmooth)
     }
+  }
+
+  private onPointerDown = (e: PointerEvent): void => {
+    this.dragging = true
+    this.dragLastX = e.clientX
+    try {
+      this.canvasEl?.setPointerCapture?.(e.pointerId)
+    } catch {
+      // abaikan
+    }
+  }
+
+  private onPointerMove = (e: PointerEvent): void => {
+    if (!this.dragging) return
+    const dx = e.clientX - this.dragLastX
+    this.dragLastX = e.clientX
+    const next = this.yawOffset + dx * 0.005
+    const limit = Math.PI / 3
+    this.yawOffset = Math.min(limit, Math.max(-limit, next))
+  }
+
+  private onPointerUp = (): void => {
+    this.dragging = false
   }
 
   private placeTrainOnCurve(curve: THREE.Curve<THREE.Vector3>, t: number): void {

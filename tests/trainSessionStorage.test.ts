@@ -9,6 +9,7 @@ import {
   saveTrainSession,
   type TrainSessionSnapshot,
 } from '../src/lib/trainStorage'
+import type { TrainVariant } from '../src/lib/trainVariants'
 
 function memoryStorage(): Storage {
   const store = new Map<string, string>()
@@ -90,5 +91,20 @@ describe('train session snapshot', () => {
     saveTrainSession(validSnapshot(), s)
     clearTrainSession(s)
     expect(loadTrainSession(s)).toBeNull()
+  })
+
+  it('snapshot lama tanpa variant tetap valid', () => {
+    const snap = validSnapshot()
+    delete snap.variant
+    expect(isValidTrainSession(snap)).toBe(true)
+  })
+
+  it('variant rusak ditolak', () => {
+    const bad = validSnapshot({
+      variant: { loco: 'x', locoColor: 'red', wagons: [] } as unknown as TrainVariant,
+    })
+    expect(isValidTrainSession(bad)).toBe(false)
+    const nul = validSnapshot({ variant: null as unknown as TrainVariant })
+    expect(isValidTrainSession(nul)).toBe(false)
   })
 })

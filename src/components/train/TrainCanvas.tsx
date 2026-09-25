@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { TrainScene } from './TrainScene'
 import type { BranchIndex, TrainCameraMode } from './TrainScene'
 import type { TrainGrade } from '../../lib/trainQuestionGenerator'
+import type { TrainVariant } from '../../lib/trainVariants'
 import TrainFallback2D from './TrainFallback2D'
 
 export interface TrainCanvasProps {
@@ -15,6 +16,7 @@ export interface TrainCanvasProps {
   cameraMode: TrainCameraMode
   boardAnswers: [string, string, string] | null
   stationLabel: string
+  trainVariant: TrainVariant | null
 }
 
 export function hasTrainWebGL(): boolean {
@@ -43,6 +45,7 @@ export default function TrainCanvas({
   cameraMode,
   boardAnswers,
   stationLabel,
+  trainVariant,
 }: TrainCanvasProps) {
   const webGL = useMemo(() => hasTrainWebGL(), [])
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -80,6 +83,12 @@ export default function TrainCanvas({
   }, [boardAnswers, sceneRef])
 
   useEffect(() => {
+    if (sceneRef.current && trainVariant) {
+      sceneRef.current.applyTrainVariant(trainVariant)
+    }
+  }, [trainVariant, sceneRef])
+
+  useEffect(() => {
     if (!webGL) return
     const canvas = canvasRef.current
     const wrap = wrapRef.current
@@ -98,6 +107,7 @@ export default function TrainCanvas({
     if (themeGrade !== null) scene.applyTheme(themeGrade, stationLabel)
     scene.setCameraMode(cameraMode)
     if (boardAnswers) scene.setAnswers(boardAnswers)
+    if (trainVariant) scene.applyTrainVariant(trainVariant)
     cbRef.current.onReady?.(scene)
     const captured = scene
 
@@ -163,7 +173,7 @@ export default function TrainCanvas({
       style={{ height: 'min(58vw, 320px)', minHeight: 220 }}
       aria-hidden="true"
     >
-      <canvas ref={canvasRef} className="block h-full w-full" />
+      <canvas ref={canvasRef} className="block h-full w-full" style={{ touchAction: 'none' }} />
     </div>
   )
 }

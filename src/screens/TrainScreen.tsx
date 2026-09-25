@@ -52,6 +52,7 @@ import {
   stopTrainMusic,
 } from '../lib/trainMusic'
 import { speakablePrompt } from '../lib/trainNarration'
+import { pickTrainVariant, type TrainVariant } from '../lib/trainVariants'
 import type { SessionSummary } from '../types'
 
 const TOTAL_QUESTIONS = 5
@@ -78,6 +79,7 @@ export default function TrainScreen() {
   const [musicOn, setMusicOn] = useState(() => loadTrainProgress().musicEnabled ?? true)
   const [voiceOn, setVoiceOn] = useState(() => loadTrainProgress().voiceEnabled ?? true)
   const [resumable, setResumable] = useState<TrainSessionSnapshot | null>(() => loadTrainSession())
+  const [variant, setVariant] = useState<TrainVariant | null>(null)
   const [celebrate, setCelebrate] = useState(false)
   const [cameraMode, setCameraMode] = useState<TrainCameraMode>('fixed')
   const [best, setBest] = useState<Record<string, number>>(
@@ -184,8 +186,18 @@ export default function TrainScreen() {
         setChugRate(reducedMotion ? 180 : 300)
       }
       setMusicIntensity(1)
+      const v = pickTrainVariant()
+      setVariant(v)
       saveTrainSession(
-        { version: 1, grade: g, questions: qs, round: 0, attemptsLog: [], savedAt: Date.now() },
+        {
+          version: 1,
+          grade: g,
+          questions: qs,
+          round: 0,
+          attemptsLog: [],
+          savedAt: Date.now(),
+          variant: v,
+        },
         undefined,
       )
       setResumable(null)
@@ -220,6 +232,7 @@ export default function TrainScreen() {
       setChugRate(reducedMotion ? 180 : 300)
     }
     setMusicIntensity(resumable.round < 2 ? 1 : resumable.round < 4 ? 2 : 3)
+    setVariant(resumable.variant ?? pickTrainVariant())
     setResumable(null)
     later(800, () => {
       if (phaseRef.current === 'INTRO') setPhase('TRAIN_MOVING')
@@ -299,6 +312,7 @@ export default function TrainScreen() {
               round: round + 1,
               attemptsLog: log,
               savedAt: Date.now(),
+              variant: variant ?? undefined,
             },
             undefined,
           )
@@ -309,7 +323,7 @@ export default function TrainScreen() {
         finishSession(log, g)
       }
     })
-  }, [attemptsLog, finishSession, grade, later, muted, questions, round])
+  }, [attemptsLog, finishSession, grade, later, muted, questions, round, variant])
 
   const handleAnswer = useCallback(
     (choiceIndex: 0 | 1 | 2) => {
@@ -338,7 +352,7 @@ export default function TrainScreen() {
         later(300, () => narrate(t('train.correct')))
         later(600, () => setMusicDucked(false))
         later(1200, () => setCelebrate(false))
-        later(500, () => {
+        later(900, () => {
           if (phaseRef.current === 'SWITCHING_TRACK') setPhase('TRAVELLING_TO_STATION')
         })
       } else {
@@ -544,6 +558,7 @@ export default function TrainScreen() {
         cameraMode={cameraMode}
         boardAnswers={question ? question.choices : null}
         stationLabel={t('train.stationShort')}
+        trainVariant={variant}
       />
       <TrainCelebration
         show={celebrate}
