@@ -295,9 +295,16 @@ export class TrainScene {
   applyTrainVariant(variant: TrainVariant): void {
     if (this.disposed) return
     if (!isValidTrainVariant(variant)) return
+    // Bangun dulu, buang yang lama belakangan: jika konstruksi gagal,
+    // part lama tetap terpasang sehingga kereta tidak pernah tanpa badan.
+    const freshLoco = this.makeLocoParts(variant.loco, variant.locoColor)
+    const freshWagons = this.makeWagonParts(variant.wagons)
+    this.trainGroup.add(...freshLoco, ...freshWagons)
+    this.disposeParts(this.locoParts)
+    this.disposeParts(this.wagonParts)
+    this.locoParts = freshLoco
+    this.wagonParts = freshWagons
     this.locoShape = variant.loco
-    this.buildLoco(variant.loco, variant.locoColor)
-    this.buildWagons(variant.wagons)
   }
 
   applyTheme(grade: TrainGrade, stationLabel: string): void {
@@ -511,8 +518,8 @@ export class TrainScene {
     parts.length = 0
   }
 
-  private buildLoco(shape: LocoShape, color: string): void {
-    this.disposeParts(this.locoParts)
+  private makeLocoParts(shape: LocoShape, color: string): THREE.Object3D[] {
+    const parts: THREE.Object3D[] = []
     const bodyMat = this.lambert(color)
     const cabinMat = this.lambert('#3b82f6')
     const darkMat = this.lambert('#1f2937')
@@ -523,26 +530,26 @@ export class TrainScene {
       cabin.position.set(0, 1.4, -0.3)
       const chimney = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.6, 10), darkMat)
       chimney.position.set(0, 1.35, 1.1)
-      this.locoParts.push(body, cabin, chimney)
+      parts.push(body, cabin, chimney)
     } else if (shape === 'diesel') {
       const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 2.2), bodyMat)
       body.position.set(0, 0.75, 0.4)
       const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.6, 0.7), cabinMat)
       cabin.position.set(0, 1.45, -0.4)
-      this.locoParts.push(body, cabin)
+      parts.push(body, cabin)
     } else {
       const body = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.7, 1.5), bodyMat)
       body.position.set(0, 0.65, 0.4)
       const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.2, 12), bodyMat)
       tank.rotation.z = Math.PI / 2
       tank.position.set(0, 1.35, 0.2)
-      this.locoParts.push(body, tank)
+      parts.push(body, tank)
     }
-    this.trainGroup.add(...this.locoParts)
+    return parts
   }
 
-  private buildWagons(wagons: { kind: string; color: string }[]): void {
-    this.disposeParts(this.wagonParts)
+  private makeWagonParts(wagons: { kind: string; color: string }[]): THREE.Object3D[] {
+    const parts: THREE.Object3D[] = []
     for (let i = 0; i < wagons.length; i++) {
       const w = wagons[i]!
       const mat = this.lambert(w.color)
@@ -551,20 +558,20 @@ export class TrainScene {
         const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.4, 12), mat)
         tank.rotation.z = Math.PI / 2
         tank.position.set(0, 0.65, z)
-        this.wagonParts.push(tank)
+        parts.push(tank)
       } else if (w.kind === 'flatbed') {
         const bed = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.25, 1.6), mat)
         bed.position.set(0, 0.5, z)
         const cargo = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.3, 0.9), this.lambert('#8a5a3b'))
         cargo.position.set(0, 0.78, z)
-        this.wagonParts.push(bed, cargo)
+        parts.push(bed, cargo)
       } else {
         const box = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.7, 1.6), mat)
         box.position.set(0, 0.65, z)
-        this.wagonParts.push(box)
+        parts.push(box)
       }
     }
-    this.trainGroup.add(...this.wagonParts)
+    return parts
   }
 
   private buildEnvironment(): void {
