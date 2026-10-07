@@ -56,6 +56,13 @@ Menambah detail visual objek 3D di game Petualangan Kereta Angka agar lebih hidu
 - [x] Sapi: tanduk + telinga kecil (+4 mesh, farmGroup K2).
 - [x] Review akhir budget mesh/draw call + update komentar header (±125 mesh, ±16 instanced).
 
+### Fase 6 — Articulasi gerbong (selesai, permintaan user)
+- [x] Gerbong dipindah dari anak trainGroup menjadi unit pivot terpisah (anak scene): `buildWagonUnits(wagons)` menggantikan `makeWagonParts`; tiap unit berisi bodi + 2 roda sendiri + coupling belakang (kecuali gerbong terakhir).
+- [x] Placement berbasis jarak tempuh gabungan (`placeUnitOnJourney(s)` + `placeAllUnits(locoS)`): loko di s, gerbong i di s−(2.0+i·1.9); s<0 diekstrapolasi lurus ke belakang titik awal; jalur = main lalu cabang terpilih (branch t=0 ≡ main t=1, kontinuitas terjaga).
+- [x] Lean banking diterapkan per unit (rotateZ — aman dari cabang Euler x=−π).
+- [x] Roda gerbong berputar via `unit.userData.wheels`.
+- [x] Verifikasi visual: loko membelok ke cabang kiri sementara gerbong masih lurus di jalur utama — dua unit terlihat terpisah dengan sudut berbeda (screenshot).
+
 ## Risks
 
 - Tambah mesh menaikkan draw call; target tetap ≤ ±105 — diukur ulang tiap fase (review browser bila perlu).
@@ -69,6 +76,7 @@ Menambah detail visual objek 3D di game Petualangan Kereta Angka agar lebih hidu
 - 2026-10-07 14:25:00 — Plan dibuat; Fase 1 & 2 mulai diimplementasi.
 - 2026-10-07 14:50:00 — Fase 1 & 2 SELESAI + diverifikasi: 410 test hijau (4 test baru `tests/trainSceneDetail.test.ts` + selector lean test diperbarui per radius), lint/build/format hijau, visual poke-frame browser (torso & detail masinis dari belakang, rel melengkung, papan mengikuti kurva, alur ronde normal sampai ronde 3). Commit `feat: detail visual kereta - batang roda, cowcatcher, kupu flapping, karakter` (v1.11.0).
 - 2026-10-07 15:20:00 — Fase 3, 4, 5 SELESAI + diverifikasi: 410 test hijau, lint/build/format hijau, visual browser (pinus bertumpuk, kanopi cluster, pagar berpengikat, rumah berpintu + atap overhang, kanopi/bangku/jam stasiun, penumpang berkepala bermata, kereta tiba cabang kanan). Keputusan: jendela instanced berbingkai dihentikan (sudah ada jendela emissive dusk — hindari dobel); goyangan kanopi instanced sengaja statis. Commit `feat: detail lingkungan kereta - vegetasi, stasiun, awan, sapi` (v1.12.0). SEMUA FASE SELESAI.
+- 2026-10-07 16:05:00 — Fase 6 (permintaan user): articulasi gerbong — gerbong jadi unit pivot terpisah dengan placement berbasis jarak tempuh (`placeUnitOnJourney`/`placeAllUnits`), lean banking per unit, roda gerbong berputar via `userData.wheels`, coupling dirombak per-unit. Diverifikasi visual: loko membelok duluan, gerbong menyusul di jalur utama dengan sudut berbeda. Commit `feat: articulasi gerbong - loko dan gerbong pivot terpisah saat belok` (v1.13.0).
 
 ## Notes
 

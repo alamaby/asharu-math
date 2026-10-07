@@ -28,7 +28,9 @@ function makeScene(): TrainScene {
 
 function countPart(scene: TrainScene, part: string): number {
   let n = 0
-  scene.trainGroup.traverse((o) => {
+  // Gerbong kini unit terpisah (anak scene) — traverse dari scene, bukan trainGroup
+  const root = scene.trainGroup.parent ?? scene.trainGroup
+  root!.traverse((o) => {
     if (o.userData?.part === part) n += 1
   })
   return n

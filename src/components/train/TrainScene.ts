@@ -150,7 +150,7 @@ export class TrainScene {
   private camLook = new THREE.Vector3(0, 0, -4)
   private camSmooth = new THREE.Vector3(0, 0, -4)
   private locoParts: THREE.Object3D[] = []
-  private wagonParts: THREE.Object3D[] = []
+  private wagonUnits: THREE.Group[] = []
   private rods: THREE.Mesh[] = []
   private locoShape: LocoShape = 'classic'
   private detailGroup = new THREE.Group()
@@ -212,7 +212,7 @@ export class TrainScene {
     this.buildTrain()
     this.buildSmoke()
     this.buildInstancedDetail()
-    this.placeTrainOnCurve(this.mainCurve, 0)
+    this.placeAllUnits(0)
     this.applyTheme(1, 'STASIUN')
 
     this.canvasEl = canvas
@@ -251,7 +251,7 @@ export class TrainScene {
     this.stationFired = false
     this.maneuverActive = false
     this.maneuverStart = -1
-    this.placeTrainOnCurve(this.mainCurve, 0)
+    this.placeAllUnits(0)
     this.setSelectedGlow(null)
     this.setSignal(null, true)
     this.setCameraMode('fixed')
@@ -316,12 +316,10 @@ export class TrainScene {
     // Bangun dulu, buang yang lama belakangan: jika konstruksi gagal,
     // part lama tetap terpasang sehingga kereta tidak pernah tanpa badan.
     const freshLoco = this.makeLocoParts(variant.loco, variant.locoColor)
-    const freshWagons = this.makeWagonParts(variant.wagons)
-    this.trainGroup.add(...freshLoco, ...freshWagons)
+    this.trainGroup.add(...freshLoco)
     this.disposeParts(this.locoParts)
-    this.disposeParts(this.wagonParts)
     this.locoParts = freshLoco
-    this.wagonParts = freshWagons
+    this.buildWagonUnits(variant.wagons)
     this.locoShape = variant.loco
   }
 
@@ -360,6 +358,9 @@ export class TrainScene {
     const wheelRate = this.rm ? 4 : 8
     const spin = dtc * wheelRate
     for (const w of this.wheels) w.rotation.x += spin
+    for (const unit of this.wagonUnits) {
+      for (const w of (unit.userData.wheels as THREE.Mesh[]) ?? []) w.rotation.x += spin
+    }
     // Batang roda naik-turun mengikuti putaran; kiri dan kanan berlawanan fase
     for (const rod of this.rods) {
       rod.position.y = 0.28 + 0.1 * Math.sin(this.elapsed * wheelRate) * rod.userData.side
@@ -367,7 +368,7 @@ export class TrainScene {
     if (this.maneuverActive) {
       const elapsedMs = (this.elapsed - this.maneuverStart) * 1000
       const m = computeManeuver(elapsedMs)
-      this.placeTrainOnCurve(this.mainCurve, m.t)
+      this.placeAllUnits(m.t * this.mainCurve.getLength())
       if (elapsedMs >= MANEUVER_TOTAL_MS) {
         this.maneuverActive = false
         this.phase = 'branch'
@@ -380,19 +381,16 @@ export class TrainScene {
     const step = dtc * this.speed
     if (this.phase === 'main') {
       this.t = Math.min(1, this.t + step)
-      this.placeTrainOnCurve(this.mainCurve, this.t)
+      this.placeAllUnits(this.t * this.mainCurve.getLength())
       if (this.t >= 1 && !this.junctionFired) {
         this.junctionFired = true
         this.cb.onReachJunction?.()
       }
     } else {
       this.t = Math.min(1, this.t + step)
-      this.placeTrainOnCurve(this.branchCurves[this.selected], this.t)
-      // Lean kecil ke arah belokan (hanya di awal cabang). Wajib rotateZ, bukan
-      // tulis Euler: heading kereta selalu yaw>90° (model depan +Z, jalur −Z),
-      // Euler-nya tersimpan di cabang x=−π, dan penulisan rotation.z akan
-      // merekomposisi quaternion menjadi terjungkir (bodi terkubur di tanah).
-      this.trainGroup.rotateZ(this.t < 0.3 ? (this.selected - 1) * 0.08 * (1 - this.t / 0.3) : 0)
+      this.placeAllUnits(
+        this.mainCurve.getLength() + this.t * this.branchCurves[this.selected].getLength(),
+      )
       if (this.t >= 1 && !this.stationFired) {
         this.stationFired = true
         this.cb.onReachStation?.()
@@ -488,7 +486,6 @@ export class TrainScene {
     if (this.disposed) return
     this.disposed = true
     this.disposeParts(this.locoParts)
-    this.disposeParts(this.wagonParts)
     if (this.canvasEl) {
       this.canvasEl.removeEventListener('pointerdown', this.onPointerDown)
       this.canvasEl.removeEventListener('pointermove', this.onPointerMove)
@@ -602,41 +599,72 @@ export class TrainScene {
     return parts
   }
 
-  private makeWagonParts(wagons: { kind: string; color: string }[]): THREE.Object3D[] {
-    const parts: THREE.Object3D[] = []
+  /**
+   * Bangun ulang unit gerbong sebagai pivot terpisah (anak scene). Tiap unit
+   * ditempatkan mengikuti rel pada jarak tetap di belakang lokomotif, sehingga
+   * belokan terlihat articulated. Pola atomic: bangun baru dulu, buang lama.
+   */
+  private buildWagonUnits(wagons: { kind: string; color: string }[]): void {
+    const darkMat = this.lambert('#1f2937')
+    const wheelGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.2, 12)
+    const wheelMat = this.lambert('#1f2937')
+    const units: THREE.Group[] = []
     for (let i = 0; i < wagons.length; i++) {
       const w = wagons[i]!
+      const unit = new THREE.Group()
       const mat = this.lambert(w.color)
-      const z = -2.0 - i * 1.9
       if (w.kind === 'tanker') {
         const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.4, 12), mat)
         tank.rotation.z = Math.PI / 2
-        tank.position.set(0, 0.65, z)
-        parts.push(tank)
+        tank.position.set(0, 0.65, 0)
+        unit.add(tank)
       } else if (w.kind === 'flatbed') {
         const bed = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.25, 1.6), mat)
-        bed.position.set(0, 0.5, z)
+        bed.position.set(0, 0.5, 0)
         const cargo = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.3, 0.9), this.lambert('#8a5a3b'))
-        cargo.position.set(0, 0.78, z)
-        parts.push(bed, cargo)
+        cargo.position.set(0, 0.78, 0)
+        unit.add(bed, cargo)
       } else {
         const box = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.7, 1.6), mat)
-        box.position.set(0, 0.65, z)
-        parts.push(box)
+        box.position.set(0, 0.65, 0)
+        unit.add(box)
       }
+      const wheels: THREE.Mesh[] = []
+      for (const side of [-1, 1] as const) {
+        const wheel = new THREE.Mesh(wheelGeo, wheelMat)
+        wheel.rotation.z = Math.PI / 2
+        wheel.position.set(0.6 * side, 0.28, 0.4)
+        wheels.push(wheel)
+        unit.add(wheel)
+      }
+      unit.userData.wheels = wheels
+      // Coupling belakang hanya jika ada gerbong lagi di belakangnya
+      if (i < wagons.length - 1) {
+        const coupling = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.5), darkMat)
+        coupling.position.set(0, 0.42, -0.95)
+        coupling.userData.part = 'coupling'
+        unit.add(coupling)
+      }
+      this.scene.add(unit)
+      units.push(unit)
     }
-    // Coupling: loko↔gerbong pertama, lalu antar gerbong
-    const darkMat = this.lambert('#1f2937')
-    for (let i = 0; i < wagons.length; i++) {
-      const coupling = new THREE.Mesh(
-        new THREE.BoxGeometry(0.07, 0.07, i === 0 ? 0.7 : 0.5),
-        darkMat,
-      )
-      coupling.position.set(0, 0.42, i === 0 ? -0.9 : -2.0 - (i - 1) * 1.9 - 0.95)
-      coupling.userData.part = 'coupling'
-      parts.push(coupling)
+    // Buang unit lama setelah yang baru terpasang
+    for (const old of this.wagonUnits) {
+      old.traverse((o) => {
+        const mesh = o as THREE.Mesh
+        if (mesh.isMesh) {
+          mesh.geometry?.dispose()
+          const m = mesh.material
+          if (Array.isArray(m)) {
+            for (const mm of m) mm.dispose()
+          } else if (m) {
+            m.dispose()
+          }
+        }
+      })
+      this.scene.remove(old)
     }
-    return parts
+    this.wagonUnits = units
   }
 
   private buildEnvironment(): void {
@@ -1051,22 +1079,15 @@ export class TrainScene {
       this.trainGroup.add(wheel)
     }
 
-    // Gerbong ×1
-    const wagon = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.7, 1.6), this.lambert('#f5b942'))
-    wagon.position.set(0, 0.65, -2.0)
-    this.trainGroup.add(wagon)
-    this.wagonParts.push(wagon)
-    const wagonWheels: [number, number, number][] = [
-      [-0.6, 0.28, -1.6],
-      [0.6, 0.28, -1.6],
-    ]
-    for (const [x, y, z] of wagonWheels) {
-      const wheel = new THREE.Mesh(wheelGeo, wheelMat)
-      wheel.rotation.z = Math.PI / 2
-      wheel.position.set(x, y, z)
-      this.wheels.push(wheel)
-      this.trainGroup.add(wheel)
-    }
+    // Gerbong: unit pivot terpisah (anak scene, bukan trainGroup) agar tiap
+    // gerbong mengikuti rel dengan orientasi sendiri — terlihat articulated
+    // saat belok, bukan satu blok kaku
+    this.buildWagonUnits([{ kind: 'boxcar', color: '#f5b942' }])
+    // Coupling depan: loko ↔ gerbong pertama (anak loko)
+    const coupling = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.7), this.lambert('#1f2937'))
+    coupling.position.set(0, 0.42, -0.9)
+    coupling.userData.part = 'coupling'
+    this.trainGroup.add(coupling)
 
     // Lampu depan
     const headlight = new THREE.Mesh(
@@ -1456,12 +1477,55 @@ export class TrainScene {
     this.dragging = false
   }
 
-  private placeTrainOnCurve(curve: THREE.Curve<THREE.Vector3>, t: number): void {
-    const pos = curve.getPointAt(Math.min(1, Math.max(0, t)))
-    const tan = curve.getTangentAt(Math.min(1, Math.max(0, t)))
+  /**
+   * Tempatkan satu unit kereta pada jarak tempuh s sepanjang rute gabungan
+   * (jalur utama lalu cabang terpilih). Mengembalikan tangent di posisi itu.
+   * s < 0 diekstrapolasi lurus ke belakang titik awal (posisi kereta saat start).
+   */
+  private placeUnitOnJourney(s: number, obj: THREE.Object3D): THREE.Vector3 {
+    const main = this.mainCurve
+    const branch = this.branchCurves[this.selected]
+    const lMain = main.getLength()
+    const lBranch = branch.getLength()
+    const pos = new THREE.Vector3()
+    const tan = new THREE.Vector3()
+    if (s >= lMain) {
+      const u = Math.min(1, (s - lMain) / lBranch)
+      pos.copy(branch.getPointAt(u))
+      tan.copy(branch.getTangentAt(u))
+    } else if (s >= 0) {
+      pos.copy(main.getPointAt(s / lMain))
+      tan.copy(main.getTangentAt(s / lMain))
+    } else {
+      pos.copy(main.getPointAt(0))
+      tan.copy(main.getTangentAt(0))
+      pos.sub(tan.clone().multiplyScalar(-s))
+    }
+    obj.position.set(pos.x, pos.y + 0.1, pos.z)
+    obj.lookAt(pos.x + tan.x, pos.y + 0.1, pos.z + tan.z)
+    return tan
+  }
+
+  /**
+   * Tempatkan loko + semua unit gerbong pada jarak masing-masing. Gerbong
+   * tertinggal di belakang loko dengan jarak tetap dan mengikuti rel dengan
+   * orientasi sendiri — belokan terlihat articulated, bukan satu blok kaku.
+   */
+  private placeAllUnits(locoS: number): void {
+    const tan = this.placeUnitOnJourney(locoS, this.trainGroup)
     this.lastDir.copy(tan)
-    this.trainGroup.position.set(pos.x, pos.y + 0.1, pos.z)
-    const ahead = new THREE.Vector3(pos.x + tan.x, pos.y + 0.1, pos.z + tan.z)
-    this.trainGroup.lookAt(ahead)
+    // Lean kecil hanya di awal cabang. Wajib rotateZ, bukan tulis Euler:
+    // heading kereta selalu yaw>90° (model depan +Z, jalur −Z), Euler-nya
+    // tersimpan di cabang x=−π, dan penulisan rotation.z akan merekomposisi
+    // quaternion menjadi terjungkir (bodi terkubur di tanah).
+    const lean =
+      this.phase === 'branch' && this.t < 0.3 ? (this.selected - 1) * 0.08 * (1 - this.t / 0.3) : 0
+    this.trainGroup.rotateZ(lean)
+    let back = 2.0
+    for (const unit of this.wagonUnits) {
+      this.placeUnitOnJourney(locoS - back, unit)
+      unit.rotateZ(lean)
+      back += 1.9
+    }
   }
 }
