@@ -1,10 +1,11 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-10-07 14:12:00
+Last Updated: 2026-10-07 14:52:00
 Format Version: 1
 
 ## Current State
-- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.10.0` (feat: ancang-ancang belok kereta terlihat).
+- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.11.0` (feat: detail visual kereta fase 1–2).
+- Kereta detail visual Fase 1–2 (v1.11.0): batang roda beranimasi, cowcatcher, coupling, jendela kabin, dome uap, kupu-kupu bersayap flapping, masinis bertorso+mata+brim, penumpang berkepala+mata. Plan 5 fase: `plans/2026-10-07-kereta-detail-visual.md`; Fase 3 (vegetasi), 4 (bangunan/stasiun), 5 (bonus lingkungan) menunggu tinjauan user. Entri: `2026-10-07/145000-kereta-detail-visual-fase-1-2.md`.
 - Sesi Belajar penjumlahan: input sekali per kolom — ketik jumlah di Kotak Hitung, jawaban + simpanan terisi otomatis (`carry-down` auto untuk kolom turunan carry; `carry-digit` dihapus).
 - Konten: K1 3 konsep (membilang/banding/nilai-tempat) + 4 kolom 1–2 digit; K2 11 bersusun + **4 cerita** (cerita-1..4) + Tantangan adaptif; 11 achievement (`bintang-kelas-1` mencakup 7 K1, `bintang-cerita` mencakup 4 cerita).
 - Rantai K2: `level-11 → cerita-1 → cerita-2 → cerita-3 → cerita-4 → tantangan`.
@@ -46,6 +47,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-10-07 14:50:00 — Detail visual objek 3D kereta Fase 1–2 (v1.11.0)](2026-10-07/145000-kereta-detail-visual-fase-1-2.md)
 - [2026-10-07 14:10:24 — Ancang-ancang maneuver terlihat (kamera stabil, maju teranimasi, rel melengkung) v1.10.0](2026-10-07/141024-kereta-ancang-ancang-mulus.md)
 - [2026-10-07 13:03:51 — Akar masalah bodi kereta hilang saat belok (fix diterapkan v1.9.2)](2026-10-07/130351-akar-masalah-bodi-kereta-hilang.md)
 - [2026-09-26 09:55:00 — Bugfix kereta: mute header & jawaban ganda](2026-09-26/095500-bugfix-kereta-mute-jawaban-ganda.md)

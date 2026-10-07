@@ -1,9 +1,9 @@
 /**
  * Scene kereta low-poly — Three.js murni (tanpa fiber).
- * Budget mesh ≤82: env 19 + rel 30 (4 tube + 23 bantalan + 3 papan) + kereta 11
- * (loko 3 + roda 4 + gerbong 1 + roda gerbong 2 + lampu 1) + asap 3 sprite
- * + fase2 15 (driver 3 + tiang 1 + kain 1 + penumpang 2 + bunga 2 + kupu 2 + sapi 2 + lentera 2)
- * + rambu 4 (tiang 1 + bola 3). Total 82.
+ * Budget mesh ±104: env 19 + rel 30 (4 tube + 23 bantalan + 3 papan) + kereta 21
+ * (loko 8 + roda 4 + rod 2 + gerbong 1-2 + roda gerbong 2 + coupling 1-2 + lampu 1)
+ * + asap 3 sprite + fase2 28 (driver 8 + penumpang 8 + bunga 2 + kupu 6 + sapi 2
+ * + lentera 2) + rambu 4 (tiang 1 + bola 3). Detail visual v1.11.
  * Geometri bawaan saja; tanpa shadow, fisika, post-processing, shader.
  * Teks WebGL bukan antarmuka — jawaban hanya di DOM (papan 3D cermin saja).
  */
@@ -133,7 +133,7 @@ export class TrainScene {
   private hopT = 99
   private flag: THREE.Mesh | null = null
   private cowHead: THREE.Mesh | null = null
-  private butterflies: THREE.Mesh[] = []
+  private butterflies: THREE.Group[] = []
   private butterflyBase: [number, number, number][] = []
   private flowersGroup = new THREE.Group()
   private farmGroup = new THREE.Group()
@@ -150,6 +150,7 @@ export class TrainScene {
   private camSmooth = new THREE.Vector3(0, 0, -4)
   private locoParts: THREE.Object3D[] = []
   private wagonParts: THREE.Object3D[] = []
+  private rods: THREE.Mesh[] = []
   private locoShape: LocoShape = 'classic'
   private detailGroup = new THREE.Group()
   private birds: THREE.InstancedMesh | null = null
@@ -355,8 +356,13 @@ export class TrainScene {
     if (!Number.isFinite(dt) || dt <= 0) return
     const dtc = Math.min(dt, 0.05)
     this.elapsed += dtc
-    const spin = dtc * (this.rm ? 4 : 8)
+    const wheelRate = this.rm ? 4 : 8
+    const spin = dtc * wheelRate
     for (const w of this.wheels) w.rotation.x += spin
+    // Batang roda naik-turun mengikuti putaran; kiri dan kanan berlawanan fase
+    for (const rod of this.rods) {
+      rod.position.y = 0.28 + 0.1 * Math.sin(this.elapsed * wheelRate) * rod.userData.side
+    }
     if (this.maneuverActive) {
       const elapsedMs = (this.elapsed - this.maneuverStart) * 1000
       const m = computeManeuver(elapsedMs)
@@ -437,6 +443,11 @@ export class TrainScene {
         b.position.x = base[0] + Math.sin(this.elapsed + i) * 0.8
         b.position.y = base[1] + Math.sin(this.elapsed * 2 + i) * 0.3
         b.rotation.y = Math.sin(this.elapsed * 8 + i) * 0.6
+        // Kepakan: sayap kanan dan kiri berayun berlawanan di hinge badan
+        const flap = Math.sin(this.elapsed * 12 + i * 2) * 0.7
+        const wings = b.userData.wings as THREE.Mesh[]
+        wings[0]!.rotation.z = flap
+        wings[1]!.rotation.z = -flap
       }
       if (this.birds) {
         for (let i = 0; i < 3; i++) {
@@ -545,13 +556,22 @@ export class TrainScene {
       cabin.position.set(0, 1.4, -0.3)
       const chimney = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.6, 10), darkMat)
       chimney.position.set(0, 1.35, 1.1)
-      parts.push(body, cabin, chimney)
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), this.lambert('#fcd34d'))
+      dome.position.set(0, 1.16, 0.55)
+      dome.userData.part = 'dome'
+      const window = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.32), this.lambert('#bae6fd'))
+      window.position.set(0, 1.48, 0.11)
+      window.userData.part = 'cabin-window'
+      parts.push(body, cabin, chimney, dome, window)
     } else if (shape === 'diesel') {
       const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 2.2), bodyMat)
       body.position.set(0, 0.75, 0.4)
       const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.6, 0.7), cabinMat)
       cabin.position.set(0, 1.45, -0.4)
-      parts.push(body, cabin)
+      const window = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.3), this.lambert('#bae6fd'))
+      window.position.set(0, 1.5, -0.04)
+      window.userData.part = 'cabin-window'
+      parts.push(body, cabin, window)
     } else {
       const body = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.7, 1.5), bodyMat)
       body.position.set(0, 0.65, 0.4)
@@ -560,6 +580,24 @@ export class TrainScene {
       tank.position.set(0, 1.35, 0.2)
       parts.push(body, tank)
     }
+    // Cowcatcher: pelat miring di depan loko, posisi z mengikuti panjang bodi
+    const cowZ = shape === 'diesel' ? 1.65 : shape === 'tank' ? 1.3 : 1.55
+    const cowcatcher = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.55, 0.1), darkMat)
+    cowcatcher.position.set(0, 0.33, cowZ)
+    cowcatcher.rotation.x = 0.8
+    cowcatcher.userData.part = 'cowcatcher'
+    parts.push(cowcatcher)
+    // Batang roda kiri/kanan (classic & tank) — bob vertikal mengikuti putaran roda
+    if (shape !== 'diesel') {
+      for (const side of [-1, 1] as const) {
+        const rod = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.07, 1.5), darkMat)
+        rod.position.set(0.78 * side, 0.28, 0.3)
+        rod.userData.part = 'rod'
+        rod.userData.side = side
+        parts.push(rod)
+      }
+    }
+    this.rods = parts.filter((p) => p.userData.part === 'rod') as THREE.Mesh[]
     return parts
   }
 
@@ -585,6 +623,17 @@ export class TrainScene {
         box.position.set(0, 0.65, z)
         parts.push(box)
       }
+    }
+    // Coupling: loko↔gerbong pertama, lalu antar gerbong
+    const darkMat = this.lambert('#1f2937')
+    for (let i = 0; i < wagons.length; i++) {
+      const coupling = new THREE.Mesh(
+        new THREE.BoxGeometry(0.07, 0.07, i === 0 ? 0.7 : 0.5),
+        darkMat,
+      )
+      coupling.position.set(0, 0.42, i === 0 ? -0.9 : -2.0 - (i - 1) * 1.9 - 0.95)
+      coupling.userData.part = 'coupling'
+      parts.push(coupling)
     }
     return parts
   }
@@ -700,15 +749,26 @@ export class TrainScene {
     this.flag = cloth
     this.scene.add(pole, cloth)
 
-    // Penumpang ×2 menunggu di stasiun
+    // Penumpang ×2 menunggu di stasiun — kepala + mata sebagai anak capsule
+    // agar ikut animasi lompat; wajah menghadap rel datang (+z)
     const passengerColors = ['#38bdf8', '#fb7185']
     const passengerX = [-1.5, -0.5]
+    const eyeGeo = new THREE.SphereGeometry(0.035, 6, 5)
+    const eyeMat = this.lambert('#0f172a')
     for (let i = 0; i < 2; i++) {
       const p = new THREE.Mesh(
         new THREE.CapsuleGeometry(0.25, 0.6, 4, 8),
         this.lambert(passengerColors[i]!),
       )
       p.position.set(passengerX[i]!, 0.8, -15)
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 8, 6), this.lambert('#ffd9b3'))
+      head.position.set(0, 0.68, 0)
+      for (const side of [-1, 1] as const) {
+        const eye = new THREE.Mesh(eyeGeo, eyeMat)
+        eye.position.set(0.06 * side, 0.03, 0.15)
+        head.add(eye)
+      }
+      p.add(head)
       this.passengers.push(p)
       this.scene.add(p)
     }
@@ -751,14 +811,28 @@ export class TrainScene {
       [-4, 2.2, 7],
     ]
     for (const [x, y, z] of butterflySpots) {
-      const wing = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.3, 0.2),
-        new THREE.MeshLambertMaterial({ color: '#c084fc', side: THREE.DoubleSide }),
+      // Grup kupu: tubuh + 2 sayap dengan hinge di badan (flap rotation.z)
+      const butterfly = new THREE.Group()
+      butterfly.position.set(x, y, z)
+      const body = new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.03, 0.1, 3, 6),
+        this.lambert('#5b21b6'),
       )
-      wing.position.set(x, y, z)
-      this.butterflies.push(wing)
+      body.rotation.x = Math.PI / 2
+      const wingMat = new THREE.MeshLambertMaterial({ color: '#c084fc', side: THREE.DoubleSide })
+      const wingGeoR = new THREE.PlaneGeometry(0.17, 0.22)
+      wingGeoR.rotateX(-Math.PI / 2)
+      wingGeoR.translate(0.09, 0, 0)
+      const wingGeoL = new THREE.PlaneGeometry(0.17, 0.22)
+      wingGeoL.rotateX(-Math.PI / 2)
+      wingGeoL.translate(-0.09, 0, 0)
+      const wingR = new THREE.Mesh(wingGeoR, wingMat)
+      const wingL = new THREE.Mesh(wingGeoL, wingMat)
+      butterfly.add(body, wingR, wingL)
+      butterfly.userData.wings = [wingR, wingL]
+      this.butterflies.push(butterfly)
       this.butterflyBase.push([x, y, z])
-      this.flowersGroup.add(wing)
+      this.flowersGroup.add(butterfly)
     }
     this.scene.add(this.flowersGroup)
 
@@ -876,17 +950,11 @@ export class TrainScene {
   }
 
   private buildTrain(): void {
-    const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 2.0), this.lambert('#e05555'))
-    body.position.set(0, 0.7, 0.4)
-    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.7, 0.8), this.lambert('#3b82f6'))
-    cabin.position.set(0, 1.4, -0.3)
-    const chimney = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.16, 0.2, 0.6, 10),
-      this.lambert('#1f2937'),
-    )
-    chimney.position.set(0, 1.35, 1.1)
-    this.trainGroup.add(body, cabin, chimney)
-    this.locoParts.push(body, cabin, chimney)
+    // Kereta default = variant classic; detail (dome, jendela, cowcatcher, rod)
+    // dibangun lewat makeLocoParts agar identik dengan hasil ganti variant.
+    const loco = this.makeLocoParts('classic', '#e05555')
+    this.trainGroup.add(...loco)
+    this.locoParts.push(...loco)
 
     const wheelGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.2, 12)
     const wheelMat = this.lambert('#1f2937')
@@ -930,8 +998,15 @@ export class TrainScene {
     headlight.rotation.x = -Math.PI / 2
     this.trainGroup.add(headlight)
 
-    // Masinis Asya
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 8), this.lambert('#ffd9b3'))
+    // Masinis Asya — torso, kepala bermata, topi berbrim, dua tangan
+    const skinMat = this.lambert('#ffd9b3')
+    const torso = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.15, 0.22, 4, 8),
+      this.lambert('#2563eb'),
+    )
+    torso.position.set(0, 1.6, -0.3)
+    torso.userData.part = 'driver-torso'
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 8), skinMat)
     head.position.set(0, 1.95, -0.3)
     this.driverHead = head
     const hat = new THREE.Mesh(
@@ -939,10 +1014,28 @@ export class TrainScene {
       this.lambert('#2563eb'),
     )
     hat.position.set(0, 2.2, -0.3)
+    const brim = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.44, 0.44, 0.04, 12),
+      this.lambert('#1d4ed8'),
+    )
+    brim.position.set(0, 2.12, -0.3)
+    brim.userData.part = 'driver-brim'
     const arm = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.6), this.lambert('#e05555'))
     arm.position.set(0.55, 1.8, -0.3)
+    arm.userData.part = 'driver-arm'
     this.driverArm = arm
-    this.trainGroup.add(head, hat, arm)
+    const arm2 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.6), this.lambert('#e05555'))
+    arm2.position.set(-0.55, 1.8, -0.3)
+    arm2.userData.part = 'driver-arm'
+    const eyeGeo = new THREE.SphereGeometry(0.035, 6, 5)
+    const eyeMat = this.lambert('#0f172a')
+    for (const side of [-1, 1] as const) {
+      const eye = new THREE.Mesh(eyeGeo, eyeMat)
+      eye.position.set(0.09 * side, 2.0, -0.05)
+      eye.userData.part = 'driver-eye'
+      head.add(eye)
+    }
+    this.trainGroup.add(torso, head, hat, brim, arm, arm2)
     this.scene.add(this.trainGroup)
   }
 

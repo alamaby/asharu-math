@@ -27,9 +27,17 @@ import { TrainScene } from '../src/components/train/TrainScene'
 // Lean kini wajib lewat rotateZ (post-multiply quaternion).
 
 function pumpBranchAndTrackHeadY(scene: TrainScene, frames: number): number {
-  const head = scene.trainGroup.children.find(
+  // Pilih kepala masinis: sphere dengan radius terbesar di trainGroup
+  // (trainGroup kini juga berisi dome 0.16 dan mata 0.035)
+  const spheres = scene.trainGroup.children.filter(
     (o) => (o as THREE.Mesh).geometry?.type === 'SphereGeometry',
+  ) as THREE.Mesh[]
+  spheres.sort(
+    (a, b) =>
+      (b.geometry as THREE.SphereGeometry).parameters.radius -
+      (a.geometry as THREE.SphereGeometry).parameters.radius,
   )
+  const head = spheres[0]
   expect(head).toBeDefined()
   const world = new THREE.Vector3()
   let minHeadY = Number.POSITIVE_INFINITY
