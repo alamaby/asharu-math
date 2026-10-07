@@ -85,3 +85,4 @@ Menambah detail visual objek 3D di game Petualangan Kereta Angka agar lebih hidu
 - Budget mesh setelah Fase 2: ±104 mesh + instanced, ±105 draw call (update komentar header `TrainScene.ts`).
 - Konstanta animasi rod memakai `rate = rm ? 4 : 8` agar konsisten dengan laju roda di reduced-motion.
 - Versi: setiap fase yang mengubah tampilan = bump minor (1.10.0 → 1.11.0 untuk Fase 1–2).
+- 2026-10-07 16:30:00 — Penyesuaian umpan balik user: batang roda terlalu tebal dan geraknya tak terlihat (tertutup rangka bogie + satu warna dengan roda). Fix: rod dipipihkan (0.05×0.07 → 0.04×0.06), warna baja terang `#cbd5e1` (kontras vs roda/rangka gelap), digeser ke luar rangka bogie (x ±0.78 → ±0.86), radius crank 0.1 → 0.14. Commit `fix: batang roda lebih tipis kontras dan gerak crank lebih lebar` (v1.14.1).

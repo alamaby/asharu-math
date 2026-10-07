@@ -360,11 +360,12 @@ export class TrainScene {
     for (const unit of this.wagonUnits) {
       for (const w of (unit.userData.wheels as THREE.Mesh[]) ?? []) w.rotation.x += spin
     }
-    // Batang roda mengikuti pin crank (gerak melingkar penuh); kiri/kanan 180°
+    // Batang roda mengikuti pin crank (gerak melingkar penuh, radius 0.14 agar
+    // jelas terlihat); kiri dan kanan 180° berlawanan fase
     for (const rod of this.rods) {
       const side = rod.userData.side as number
-      rod.position.y = 0.28 + 0.1 * Math.cos(this.elapsed * wheelRate) * side
-      rod.position.z = 0.3 + 0.1 * Math.sin(this.elapsed * wheelRate) * side
+      rod.position.y = 0.28 + 0.14 * Math.cos(this.elapsed * wheelRate) * side
+      rod.position.z = 0.3 + 0.14 * Math.sin(this.elapsed * wheelRate) * side
     }
     if (this.maneuverActive) {
       const elapsedMs = (this.elapsed - this.maneuverStart) * 1000
@@ -623,11 +624,13 @@ export class TrainScene {
       frame.userData.part = 'bogie'
       parts.push(frame)
     }
-    // Batang roda kiri/kanan (classic & tank) — bob vertikal mengikuti putaran roda
+    // Batang roda kiri/kanan (classic & tank): tipis, warna baja terang, dan
+    // dipasang DI LUAR rangka bogie (x ±0.86 > ±0.78) agar gerak crank terlihat
+    // kontras — sebelumnya satu warna dengan roda/rangka dan tertutup rangka
     if (shape !== 'diesel') {
       for (const side of [-1, 1] as const) {
-        const rod = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.07, 1.5), darkMat)
-        rod.position.set(0.78 * side, 0.28, 0.3)
+        const rod = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 1.55), this.lambert('#cbd5e1'))
+        rod.position.set(0.86 * side, 0.28, 0.3)
         rod.userData.part = 'rod'
         rod.userData.side = side
         parts.push(rod)

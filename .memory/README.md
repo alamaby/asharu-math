@@ -4,7 +4,7 @@ Last Updated: 2026-10-07 16:22:00
 Format Version: 1
 
 ## Current State
-- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.14.0` (feat: detailing kereta paket A–D).
+- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.14.1` (fix: batang roda kontras + crank lebih lebar).
 - Kereta detail visual Fase 1–2 (v1.11.0): batang roda beranimasi, cowcatcher, coupling, jendela kabin, dome uap, kupu-kupu bersayap flapping, masinis bertorso+mata+brim, penumpang berkepala+mata. Entri: `2026-10-07/145000-kereta-detail-visual-fase-1-2.md`.
 - Kereta detail visual Fase 3–5 (v1.12.0): pinus bertumpuk + kanopi cluster + setColorAt + apel, rumah berpintu/cerobong/atap overhang, kanopi+bangku+jam stasiun, awan klaster, pagar berpengikat, sapi bertanduk. Keputusan: jendela instanced dihentikan (dobel dengan emissive dusk). **Semua 5 fase selesai** — plan: `plans/2026-10-07-kereta-detail-visual.md`. Entri: `2026-10-07/152000-kereta-detail-visual-fase-3-5.md`.
 - Kereta articulasi gerbong (v1.13.0): gerbong jadi unit pivot terpisah (anak scene) dengan placement berbasis jarak tempuh (`placeUnitOnJourney`/`placeAllUnits`); belokan terlihat articulated — loko membelok duluan, gerbong menyusul. Entri: `2026-10-07/160500-kereta-artikulasi-gerbong.md`.
