@@ -4,14 +4,15 @@ Last Updated: 2026-10-07 14:52:00
 Format Version: 1
 
 ## Current State
-- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.11.0` (feat: detail visual kereta fase 1–2).
-- Kereta detail visual Fase 1–2 (v1.11.0): batang roda beranimasi, cowcatcher, coupling, jendela kabin, dome uap, kupu-kupu bersayap flapping, masinis bertorso+mata+brim, penumpang berkepala+mata. Plan 5 fase: `plans/2026-10-07-kereta-detail-visual.md`; Fase 3 (vegetasi), 4 (bangunan/stasiun), 5 (bonus lingkungan) menunggu tinjauan user. Entri: `2026-10-07/145000-kereta-detail-visual-fase-1-2.md`.
+- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.12.0` (feat: detail lingkungan kereta fase 3–5).
+- Kereta detail visual Fase 1–2 (v1.11.0): batang roda beranimasi, cowcatcher, coupling, jendela kabin, dome uap, kupu-kupu bersayap flapping, masinis bertorso+mata+brim, penumpang berkepala+mata. Entri: `2026-10-07/145000-kereta-detail-visual-fase-1-2.md`.
+- Kereta detail visual Fase 3–5 (v1.12.0): pinus bertumpuk + kanopi cluster + setColorAt + apel, rumah berpintu/cerobong/atap overhang, kanopi+bangku+jam stasiun, awan klaster, pagar berpengikat, sapi bertanduk. Keputusan: jendela instanced dihentikan (dobel dengan emissive dusk). **Semua 5 fase selesai** — plan: `plans/2026-10-07-kereta-detail-visual.md`. Entri: `2026-10-07/152000-kereta-detail-visual-fase-3-5.md`.
 - Sesi Belajar penjumlahan: input sekali per kolom — ketik jumlah di Kotak Hitung, jawaban + simpanan terisi otomatis (`carry-down` auto untuk kolom turunan carry; `carry-digit` dihapus).
 - Konten: K1 3 konsep (membilang/banding/nilai-tempat) + 4 kolom 1–2 digit; K2 11 bersusun + **4 cerita** (cerita-1..4) + Tantangan adaptif; 11 achievement (`bintang-kelas-1` mencakup 7 K1, `bintang-cerita` mencakup 4 cerita).
 - Rantai K2: `level-11 → cerita-1 → cerita-2 → cerita-3 → cerita-4 → tantangan`.
 - Akuarium/Kebun: papan bersusun unifikasi (`StackedPlaceValueBoard` grid N-kolom, wrapper 2-digit); 4 level 3-digit baru (`kebun-5/6`, `akuarium-5/6`, number 20–23, rantai `akuarium-4→kebun-5→kebun-6→akuarium-5→akuarium-6`); visual ratusan ungu (peti 📦/overlay); input S→P→R; Periksa tidak pernah diam (blokir intro + info).
 - Soal cerita: 6 famili variasi (F0-F5), multi-part, jawab ketik angka + bantuan bersusun. Mode Cerita tersedia di Latihan.
-- Kualitas: ESLint 9 + Prettier aktif; **403 test / 57 file (403 lulus)**; CI GitHub Actions Node 20 & 22.
+- Kualitas: ESLint 9 + Prettier aktif; **410 test / 58 file (410 lulus)**; CI GitHub Actions Node 20 & 22.
 - Kereta Angka: screen `train` (Three murni, storage `asharu-train:v1`) — pilih K1–3, 5 soal/sesi, 3 cabang, bintang 3/2/1, hint setelah 2 salah; entry tombol 🚂 di Home.
 - Kereta visual-audio Fase 1+2: roda/asap/awan/daun/lampu, papan 3D berangka + glow, masinis Asya + penumpang + bendera + hewan, 3 tema per kelas, 4 mode kamera, peluit/wesel/bintang bertingkat, musik + chug prosedural (`trainMusic.ts`), confetti DOM, toggle musik terpisah (`musicEnabled`); tanpa TTS.
 - Kereta Fase 3: musik adaptif per ronde (`setMusicIntensity` 1–3, tempo tetap), rambu sinyal junction (hijau/kuning netral) + papan stasiun 2 baris, hop penumpang bergantian + sapi mengangguk + masinis menoleh, confetti per tema; budget mesh 82.
@@ -47,6 +48,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-10-07 15:20:00 — Detail visual objek 3D kereta Fase 3–5 selesai (v1.12.0)](2026-10-07/152000-kereta-detail-visual-fase-3-5.md)
 - [2026-10-07 14:50:00 — Detail visual objek 3D kereta Fase 1–2 (v1.11.0)](2026-10-07/145000-kereta-detail-visual-fase-1-2.md)
 - [2026-10-07 14:10:24 — Ancang-ancang maneuver terlihat (kamera stabil, maju teranimasi, rel melengkung) v1.10.0](2026-10-07/141024-kereta-ancang-ancang-mulus.md)
 - [2026-10-07 13:03:51 — Akar masalah bodi kereta hilang saat belok (fix diterapkan v1.9.2)](2026-10-07/130351-akar-masalah-bodi-kereta-hilang.md)

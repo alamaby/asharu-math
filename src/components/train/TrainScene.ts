@@ -1,9 +1,10 @@
 /**
  * Scene kereta low-poly — Three.js murni (tanpa fiber).
- * Budget mesh ±104: env 19 + rel 30 (4 tube + 23 bantalan + 3 papan) + kereta 21
- * (loko 8 + roda 4 + rod 2 + gerbong 1-2 + roda gerbong 2 + coupling 1-2 + lampu 1)
- * + asap 3 sprite + fase2 28 (driver 8 + penumpang 8 + bunga 2 + kupu 6 + sapi 2
- * + lentera 2) + rambu 4 (tiang 1 + bola 3). Detail visual v1.11.
+ * Budget mesh ±125: env 35 (tanah/bukit/pohon 11 + rumah 8 + awan 6 + stasiun 16)
+ * + rel 30 (4 tube + 23 bantalan + 3 papan) + kereta 21 (loko 8 + roda 4 + rod 2
+ * + gerbong 1-2 + roda gerbong 2 + coupling 1-2 + lampu 1) + asap 3 sprite
+ * + fase2 28 (driver 8 + penumpang 8 + bunga 2 + kupu 6 + sapi 2 + lentera 2)
+ * + rambu 4 + sapi detail 4. Ditambah ±16 InstancedMesh (pohon/pagar/burung/dll).
  * Geometri bawaan saja; tanpa shadow, fisika, post-processing, shader.
  * Teks WebGL bukan antarmuka — jawaban hanya di DOM (papan 3D cermin saja).
  */
@@ -121,7 +122,7 @@ export class TrainScene {
   private smokes: THREE.Sprite[] = []
   private smokeTex: THREE.CanvasTexture | null = null
   private smokeAges: number[] = []
-  private clouds: THREE.Mesh[] = []
+  private clouds: THREE.Group[] = []
   private leaves: THREE.Mesh[] = []
   private branchMats: THREE.MeshLambertMaterial[] = []
   private boardCanvases: HTMLCanvasElement[] = []
@@ -684,9 +685,11 @@ export class TrainScene {
       this.scene.add(trunk, leaf)
     }
 
-    // Rumah ×2 (box + atap)
+    // Rumah ×2 (box + atap overhang + pintu + cerobong)
     const houseMat = this.lambert('#f5e6c8')
     const roofMat = this.lambert('#d95f5f')
+    const doorMat = this.lambert('#8a5a3b')
+    const chimneyMat = this.lambert('#94a3b8')
     const houseSpots: [number, number][] = [
       [-11, -2],
       [11, -3],
@@ -694,23 +697,40 @@ export class TrainScene {
     for (const [x, z] of houseSpots) {
       const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.4, 1.8), houseMat)
       body.position.set(x, 0.7, z)
-      const roof = new THREE.Mesh(new THREE.CylinderGeometry(0, 1.6, 1.1, 4), roofMat)
+      // Atap lebih lebar dari badan (overhang)
+      const roof = new THREE.Mesh(new THREE.CylinderGeometry(0, 1.7, 1.1, 4), roofMat)
       roof.position.set(x, 1.95, z)
       roof.rotation.y = Math.PI / 4
-      this.scene.add(body, roof)
+      const door = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 0.06), doorMat)
+      door.position.set(x + 0.5, 0.4, z + 0.93)
+      const chimney = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.55, 8), chimneyMat)
+      chimney.position.set(x - 0.55, 2.2, z - 0.35)
+      this.scene.add(body, roof, door, chimney)
     }
 
-    // Awan ×2 (satu mesh pipih tiap awan agar hemat)
+    // Awan ×2 (klaster 3 sphere per awan)
     const cloudGeo = new THREE.SphereGeometry(1, 8, 6)
     const cloudMat = this.lambert('#ffffff')
     const cloudSpots: [number, number, number][] = [
       [-5, 8, -12],
       [6, 9, -10],
     ]
+    const cloudPuffs: [number, number, number, number][] = [
+      [-0.95, -0.05, 0.05, 0.85],
+      [0.9, 0.05, -0.1, 0.6],
+    ]
     for (const [x, y, z] of cloudSpots) {
-      const cloud = new THREE.Mesh(cloudGeo, cloudMat)
+      const cloud = new THREE.Group()
       cloud.position.set(x, y, z)
-      cloud.scale.set(1.8, 0.7, 1)
+      const main = new THREE.Mesh(cloudGeo, cloudMat)
+      main.scale.set(1.8, 0.7, 1)
+      cloud.add(main)
+      for (const [ox, oy, oz, s] of cloudPuffs) {
+        const puff = new THREE.Mesh(cloudGeo, cloudMat)
+        puff.position.set(ox, oy, oz)
+        puff.scale.set(0.9 * s, 0.55 * s, 0.8 * s)
+        cloud.add(puff)
+      }
       this.clouds.push(cloud)
       this.scene.add(cloud)
     }
@@ -736,6 +756,53 @@ export class TrainScene {
       sign.position.set(0, 1.8, -16)
       this.scene.add(sign)
     }
+
+    // Kanopi stasiun: 4 tiang + atap, di sisi belakang peron
+    const postMat = this.lambert('#94a3b8')
+    const canopyRoof = new THREE.Mesh(
+      new THREE.BoxGeometry(4.2, 0.12, 2.0),
+      this.lambert('#d95f5f'),
+    )
+    canopyRoof.position.set(0, 2.05, -17)
+    this.scene.add(canopyRoof)
+    for (const [px, pz] of [
+      [-1.7, -16.2],
+      [1.7, -16.2],
+      [-1.7, -17.8],
+      [1.7, -17.8],
+    ] as [number, number][]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.6, 8), postMat)
+      post.position.set(px, 1.2, pz)
+      this.scene.add(post)
+    }
+
+    // Bangku ×2 (dudukan + sandaran), menghadap rel
+    const benchMat = this.lambert('#8a5a3b')
+    for (const bx of [-2.6, 2.6]) {
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.1, 0.35), benchMat)
+      seat.position.set(bx, 0.55, -16.6)
+      const back = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 0.07), benchMat)
+      back.position.set(bx, 0.75, -16.8)
+      this.scene.add(seat, back)
+    }
+
+    // Jam stasiun: piringan + 2 jarum di sisi papan nama
+    const clockDisc = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.26, 0.26, 0.05, 16),
+      this.lambert('#ffffff'),
+    )
+    clockDisc.rotation.x = Math.PI / 2
+    clockDisc.position.set(1.15, 1.85, -15.86)
+    this.scene.add(clockDisc)
+    const handMat = this.lambert('#0f172a')
+    const hourHand = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.14, 0.02), handMat)
+    hourHand.position.set(1.15, 1.87, -15.82)
+    hourHand.rotation.z = -Math.PI / 5
+    this.scene.add(hourHand)
+    const minuteHand = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.2, 0.02), handMat)
+    minuteHand.position.set(1.15, 1.9, -15.81)
+    minuteHand.rotation.z = Math.PI / 3
+    this.scene.add(minuteHand)
 
     // Tiang bendera + kain
     const pole = new THREE.Mesh(
@@ -836,11 +903,23 @@ export class TrainScene {
     }
     this.scene.add(this.flowersGroup)
 
-    // Dekor tematik: sapi (K2)
+    // Dekor tematik: sapi (K2) — dengan tanduk + telinga
     const cowBody = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.7), this.lambert('#f8fafc'))
     cowBody.position.set(7, 0.55, -4)
     const cowHead = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), this.lambert('#8a5a3b'))
     cowHead.position.set(7.7, 0.75, -4)
+    const hornGeo = new THREE.ConeGeometry(0.045, 0.16, 6)
+    const hornMat = this.lambert('#e2e8f0')
+    for (const side of [-1, 1] as const) {
+      const horn = new THREE.Mesh(hornGeo, hornMat)
+      horn.position.set(7.7, 1.02, -4 + 0.14 * side)
+      horn.rotation.x = 0.5 * side
+      this.farmGroup.add(horn)
+      const ear = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 5), this.lambert('#8a5a3b'))
+      ear.scale.set(1, 0.6, 1)
+      ear.position.set(7.62, 0.92, -4 + 0.24 * side)
+      this.farmGroup.add(ear)
+    }
     this.cowHead = cowHead
     this.farmGroup.add(cowBody, cowHead)
     this.scene.add(this.farmGroup)
@@ -1088,7 +1167,8 @@ export class TrainScene {
   }
 
   private buildInstancedDetail(): void {
-    // Pohon pinus ×6 (daun + batang)
+    const tint = new THREE.Color()
+    // Pohon pinus ×6 (daun 2 lapis bertumpuk + batang), warna sedikit bervariasi
     const pineSpots: [number, number][] = [
       [-13, 2],
       [13, 0],
@@ -1097,32 +1177,66 @@ export class TrainScene {
       [-11, 10],
       [11, 12],
     ]
-    this.addInstanced(
+    const pineLower = this.addInstanced(
       new THREE.ConeGeometry(0.7, 1.6, 6),
       this.lambert('#2f8f4a'),
       pineSpots.map(([x, z]) => ({ pos: [x, 1.3, z] as [number, number, number] })),
+    )
+    this.addInstanced(
+      new THREE.ConeGeometry(0.48, 1.1, 6),
+      this.lambert('#2f8f4a'),
+      pineSpots.map(([x, z]) => ({ pos: [x, 2.05, z] as [number, number, number] })),
     )
     this.addInstanced(
       new THREE.CylinderGeometry(0.1, 0.14, 0.5, 6),
       this.lambert('#8a5a3b'),
       pineSpots.map(([x, z]) => ({ pos: [x, 0.25, z] as [number, number, number] })),
     )
-    // Pohon bulat ×4 (daun + batang)
+    for (let i = 0; i < pineSpots.length; i++) {
+      pineLower.setColorAt(i, tint.set('#2f8f4a').offsetHSL(0, 0, (i % 3) * 0.05 - 0.05))
+    }
+    if (pineLower.instanceColor) pineLower.instanceColor.needsUpdate = true
+    // Pohon bulat ×4 (kanopi 2 sphere + batang), warna sedikit bervariasi
     const roundSpots: [number, number][] = [
       [-6, 12],
       [6, 14],
       [-14, -12],
       [14, -14],
     ]
-    this.addInstanced(
+    const canopy = this.addInstanced(
       new THREE.SphereGeometry(0.75, 8, 6),
       this.lambert('#4caf50'),
       roundSpots.map(([x, z]) => ({ pos: [x, 1.35, z] as [number, number, number] })),
     )
     this.addInstanced(
+      new THREE.SphereGeometry(0.5, 8, 6),
+      this.lambert('#4caf50'),
+      roundSpots.map(([x, z], i) => ({
+        pos: [x + (i % 2 === 0 ? 0.35 : -0.35), 1.8, z + 0.15] as [number, number, number],
+      })),
+    )
+    this.addInstanced(
       new THREE.CylinderGeometry(0.1, 0.14, 0.6, 6),
       this.lambert('#8a5a3b'),
       roundSpots.map(([x, z]) => ({ pos: [x, 0.3, z] as [number, number, number] })),
+    )
+    for (let i = 0; i < roundSpots.length; i++) {
+      canopy.setColorAt(i, tint.set('#4caf50').offsetHSL(0.01, 0, (i % 3) * 0.045 - 0.045))
+    }
+    if (canopy.instanceColor) canopy.instanceColor.needsUpdate = true
+    // Apel merah ×12 (3 per pohon bulat) di permukaan kanopi
+    const appleSpots: [number, number, number][] = []
+    for (const [x, z] of roundSpots) {
+      appleSpots.push(
+        [x + 0.55, 1.65, z + 0.2],
+        [x - 0.45, 1.5, z + 0.35],
+        [x + 0.1, 1.95, z - 0.3],
+      )
+    }
+    this.addInstanced(
+      new THREE.SphereGeometry(0.07, 6, 5),
+      this.lambert('#dc2626'),
+      appleSpots.map(([x, y, z]) => ({ pos: [x, y, z] as [number, number, number] })),
     )
     // Batu ×6
     const rockSpots: [number, number, number][] = [
@@ -1142,7 +1256,7 @@ export class TrainScene {
         scale: 0.7 + (i % 3) * 0.3,
       })),
     )
-    // Pagar rel ×8
+    // Pagar rel ×8 (tiang) + rel horizontal pengikat ×4 (2 sisi × 2 tinggi)
     const fence: { pos: [number, number, number] }[] = []
     for (let i = 0; i < 8; i++) {
       const z = 2 + i * 1.8
@@ -1150,6 +1264,13 @@ export class TrainScene {
       fence.push({ pos: [2.2, 0.25, z] })
     }
     this.addInstanced(new THREE.BoxGeometry(0.12, 0.5, 0.12), this.lambert('#a16207'), fence)
+    const fenceRails: { pos: [number, number, number] }[] = []
+    for (const side of [-2.2, 2.2] as const) {
+      for (const y of [0.42, 0.22]) {
+        fenceRails.push({ pos: [side, y, 8.3] })
+      }
+    }
+    this.addInstanced(new THREE.BoxGeometry(0.06, 0.05, 12.8), this.lambert('#a16207'), fenceRails)
     // Semak ×4
     const bushSpots: [number, number][] = [
       [-4, -2],
