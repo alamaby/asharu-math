@@ -1,10 +1,10 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-09-26 09:55:00
+Last Updated: 2026-10-07 13:05:00
 Format Version: 1
 
 ## Current State
-- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.9.1` (fix: sinkron mute global kereta + cegah jawaban ganda).
+- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.9.2` (fix: kereta terjungkir saat lean belok).
 - Sesi Belajar penjumlahan: input sekali per kolom — ketik jumlah di Kotak Hitung, jawaban + simpanan terisi otomatis (`carry-down` auto untuk kolom turunan carry; `carry-digit` dihapus).
 - Konten: K1 3 konsep (membilang/banding/nilai-tempat) + 4 kolom 1–2 digit; K2 11 bersusun + **4 cerita** (cerita-1..4) + Tantangan adaptif; 11 achievement (`bintang-kelas-1` mencakup 7 K1, `bintang-cerita` mencakup 4 cerita).
 - Rantai K2: `level-11 → cerita-1 → cerita-2 → cerita-3 → cerita-4 → tantangan`.
@@ -22,6 +22,7 @@ Format Version: 1
 - Unlock: semua level selalu terbuka by design; `requires` hanya metadata urutan untuk `getNextLevelId`; `isLevelUnlocked` no-op dokumentatif.
 - LevelCard visual 3 status: belum dicoba (violet-50/border-violet-200/chip✨Belum dicoba), 1–2 bintang (white/border-sky-200), sempurna (amber-50/border-amber-400/bintang text-base/chip🏆Sempurna!).
 - Test stabilitas: flake `PracticeScreenStory.test.tsx` diperbaiki (deterministik per seed via `getAllByText`).
+- **Bodi kereta hilang saat belok DIPERBAIKI (2026-10-07, v1.9.2)**: tulisan lean `trainGroup.rotation.z` merekomposisi quaternion lewat Euler cabang x=−π (representasi three.js untuk yaw≈180° model berdepan +Z) → kereta terjungkir di cabang, bodi terkubur di bawah ground, hanya roda tampak. Kini lean lewat `trainGroup.rotateZ(lean)`; regresi `tests/trainSceneLean.test.ts` (3 test, dibuktikan gagal pada kode lama). Detail: `2026-10-07/130351-akar-masalah-bodi-kereta-hilang.md`.
 
 ## Active Decisions
 - Susunan angka soal: operand disimpan sebagai string asli tanpa `reverse()`; perhitungan carry/borrow kanan-ke-kiri terpisah dari jalur tampilan (aturan kritis, jangan dilanggar).
@@ -44,6 +45,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-10-07 13:03:51 — Akar masalah bodi kereta hilang saat belok (fix diterapkan v1.9.2)](2026-10-07/130351-akar-masalah-bodi-kereta-hilang.md)
 - [2026-09-26 09:55:00 — Bugfix kereta: mute header & jawaban ganda](2026-09-26/095500-bugfix-kereta-mute-jawaban-ganda.md)
 - [2026-09-25 20:40:00 — Kereta Fase 5 (variant acak, drag kamera, detail instanced, maneuver belok)](2026-09-25/204000-kereta-fase-5-variant-drag-detail.md)
 - [2026-09-25 17:15:00 — Kereta Fase 4 (TTS narasi + resume sesi)](2026-09-25/171500-kereta-fase-4-tts-resume.md)

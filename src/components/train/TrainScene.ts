@@ -232,7 +232,6 @@ export class TrainScene {
     this.stationFired = false
     this.maneuverActive = false
     this.maneuverStart = -1
-    this.trainGroup.rotation.z = 0
     this.placeTrainOnCurve(this.mainCurve, 0)
     this.setSelectedGlow(null)
     this.setSignal(null, true)
@@ -365,12 +364,11 @@ export class TrainScene {
     } else {
       this.t = Math.min(1, this.t + step)
       this.placeTrainOnCurve(this.branchCurves[this.selected], this.t)
-      // Lean kecil ke arah belokan (hanya di awal cabang)
-      if (this.t < 0.3) {
-        this.trainGroup.rotation.z = (this.selected - 1) * 0.08 * (1 - this.t / 0.3)
-      } else if (this.trainGroup.rotation.z !== 0) {
-        this.trainGroup.rotation.z = 0
-      }
+      // Lean kecil ke arah belokan (hanya di awal cabang). Wajib rotateZ, bukan
+      // tulis Euler: heading kereta selalu yaw>90° (model depan +Z, jalur −Z),
+      // Euler-nya tersimpan di cabang x=−π, dan penulisan rotation.z akan
+      // merekomposisi quaternion menjadi terjungkir (bodi terkubur di tanah).
+      this.trainGroup.rotateZ(this.t < 0.3 ? (this.selected - 1) * 0.08 * (1 - this.t / 0.3) : 0)
       if (this.t >= 1 && !this.stationFired) {
         this.stationFired = true
         this.cb.onReachStation?.()
