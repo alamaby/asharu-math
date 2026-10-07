@@ -121,7 +121,6 @@ export class TrainScene {
   private wheels: THREE.Mesh[] = []
   private smokes: THREE.Sprite[] = []
   private smokeTex: THREE.CanvasTexture | null = null
-  private smokeAges: number[] = []
   private clouds: THREE.Group[] = []
   private leaves: THREE.Mesh[] = []
   private branchMats: THREE.MeshLambertMaterial[] = []
@@ -361,9 +360,11 @@ export class TrainScene {
     for (const unit of this.wagonUnits) {
       for (const w of (unit.userData.wheels as THREE.Mesh[]) ?? []) w.rotation.x += spin
     }
-    // Batang roda naik-turun mengikuti putaran; kiri dan kanan berlawanan fase
+    // Batang roda mengikuti pin crank (gerak melingkar penuh); kiri/kanan 180°
     for (const rod of this.rods) {
-      rod.position.y = 0.28 + 0.1 * Math.sin(this.elapsed * wheelRate) * rod.userData.side
+      const side = rod.userData.side as number
+      rod.position.y = 0.28 + 0.1 * Math.cos(this.elapsed * wheelRate) * side
+      rod.position.z = 0.3 + 0.1 * Math.sin(this.elapsed * wheelRate) * side
     }
     if (this.maneuverActive) {
       const elapsedMs = (this.elapsed - this.maneuverStart) * 1000
@@ -374,7 +375,7 @@ export class TrainScene {
         this.phase = 'branch'
         this.t = 0
       }
-      this.updateSmoke(dtc)
+      this.updateSmoke()
       this.updateCamera(dtc)
       return
     }
@@ -399,7 +400,7 @@ export class TrainScene {
     if (!this.rm) {
       this.trainGroup.position.y += Math.sin(this.elapsed * 10) * 0.02
     }
-    this.updateSmoke(dtc)
+    this.updateSmoke()
     for (const c of this.clouds) {
       c.position.x += dtc * 0.3
       if (c.position.x > 16) c.position.x = -16
@@ -525,6 +526,10 @@ export class TrainScene {
     return new THREE.MeshLambertMaterial({ color })
   }
 
+  private phong(color: string): THREE.MeshPhongMaterial {
+    return new THREE.MeshPhongMaterial({ color, shininess: 35, specular: '#555555' })
+  }
+
   private disposeParts(parts: THREE.Object3D[]): void {
     for (const part of parts) {
       const mesh = part as THREE.Mesh
@@ -544,7 +549,7 @@ export class TrainScene {
 
   private makeLocoParts(shape: LocoShape, color: string): THREE.Object3D[] {
     const parts: THREE.Object3D[] = []
-    const bodyMat = this.lambert(color)
+    const bodyMat = this.phong(color)
     const cabinMat = this.lambert('#3b82f6')
     const darkMat = this.lambert('#1f2937')
     if (shape === 'classic') {
@@ -560,7 +565,33 @@ export class TrainScene {
       const window = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.32), this.lambert('#bae6fd'))
       window.position.set(0, 1.48, 0.11)
       window.userData.part = 'cabin-window'
-      parts.push(body, cabin, chimney, dome, window)
+      // Smokebox: silinder gelap di ujung depan boiler + pintu bulat
+      const smokebox = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.5, 12), darkMat)
+      smokebox.rotation.x = Math.PI / 2
+      smokebox.position.set(0, 0.7, 1.4)
+      smokebox.userData.part = 'smokebox'
+      const smokeboxDoor = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.18, 0.05, 12),
+        this.lambert('#374151'),
+      )
+      smokeboxDoor.rotation.x = Math.PI / 2
+      smokeboxDoor.position.set(0, 0.7, 1.66)
+      smokeboxDoor.userData.part = 'smokebox-door'
+      // Whistle kuning di atas boiler
+      const whistle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.05, 0.14, 8),
+        this.lambert('#fbbf24'),
+      )
+      whistle.position.set(0, 1.22, 0.85)
+      whistle.userData.part = 'whistle'
+      parts.push(body, cabin, chimney, dome, window, smokebox, smokeboxDoor, whistle)
+      // Handrail di kedua sisi boiler
+      for (const side of [-1, 1] as const) {
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 1.7), darkMat)
+        rail.position.set(0.62 * side, 0.98, 0.4)
+        rail.userData.part = 'handrail'
+        parts.push(rail)
+      }
     } else if (shape === 'diesel') {
       const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 2.2), bodyMat)
       body.position.set(0, 0.75, 0.4)
@@ -585,6 +616,13 @@ export class TrainScene {
     cowcatcher.rotation.x = 0.8
     cowcatcher.userData.part = 'cowcatcher'
     parts.push(cowcatcher)
+    // Bogie: rangka sisi di luar roda (2 roda loko di z 1.0 dan -0.4)
+    for (const side of [-1, 1] as const) {
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.3, 1.7), darkMat)
+      frame.position.set(0.74 * side, 0.28, 0.3)
+      frame.userData.part = 'bogie'
+      parts.push(frame)
+    }
     // Batang roda kiri/kanan (classic & tank) — bob vertikal mengikuti putaran roda
     if (shape !== 'diesel') {
       for (const side of [-1, 1] as const) {
@@ -618,16 +656,85 @@ export class TrainScene {
         tank.rotation.z = Math.PI / 2
         tank.position.set(0, 0.65, 0)
         unit.add(tank)
+        // Ring pengikat tengah + manhole di atas tangki
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.035, 6, 16), darkMat)
+        ring.rotation.y = Math.PI / 2
+        ring.position.set(0, 0.65, 0)
+        ring.userData.part = 'tanker-ring'
+        const manhole = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.09, 0.09, 0.09, 10),
+          this.lambert('#64748b'),
+        )
+        manhole.position.set(0, 1.1, 0)
+        manhole.userData.part = 'manhole'
+        unit.add(ring, manhole)
       } else if (w.kind === 'flatbed') {
         const bed = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.25, 1.6), mat)
         bed.position.set(0, 0.5, 0)
         const cargo = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.3, 0.9), this.lambert('#8a5a3b'))
         cargo.position.set(0, 0.78, 0)
         unit.add(bed, cargo)
+        // Pasak di 4 sudut bak
+        for (const [sx, sz] of [
+          [-0.5, -0.7],
+          [0.5, -0.7],
+          [-0.5, 0.7],
+          [0.5, 0.7],
+        ] as [number, number][]) {
+          const stake = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.34, 6), darkMat)
+          stake.position.set(sx, 0.72, sz)
+          stake.userData.part = 'stake'
+          unit.add(stake)
+        }
       } else {
         const box = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.7, 1.6), mat)
         box.position.set(0, 0.65, 0)
         unit.add(box)
+        // Panel papan kayu bernomor unit di kedua sisi (canvas texture)
+        const decalCanvas = document.createElement('canvas')
+        decalCanvas.width = 128
+        decalCanvas.height = 64
+        const dctx = decalCanvas.getContext('2d')
+        if (dctx) {
+          dctx.fillStyle = w.color
+          dctx.fillRect(0, 0, 128, 64)
+          dctx.strokeStyle = 'rgba(0,0,0,0.25)'
+          dctx.lineWidth = 2
+          for (const py of [16, 32, 48]) {
+            dctx.beginPath()
+            dctx.moveTo(0, py)
+            dctx.lineTo(128, py)
+            dctx.stroke()
+          }
+          dctx.fillStyle = '#0f172a'
+          dctx.font = 'bold 34px Nunito, sans-serif'
+          dctx.textAlign = 'center'
+          dctx.textBaseline = 'middle'
+          dctx.fillText(String(i + 1), 64, 32)
+        }
+        const decalTex = new THREE.CanvasTexture(decalCanvas)
+        const decalMat = new THREE.MeshLambertMaterial({
+          map: decalTex,
+          transparent: true,
+          opacity: 0.85,
+        })
+        const decalGeo = new THREE.PlaneGeometry(1.4, 0.55)
+        const decalR = new THREE.Mesh(decalGeo, decalMat)
+        decalR.rotation.y = Math.PI / 2
+        decalR.position.set(0.556, 0.65, 0)
+        decalR.userData.part = 'wagon-decal'
+        const decalL = new THREE.Mesh(decalGeo, decalMat)
+        decalL.rotation.y = -Math.PI / 2
+        decalL.position.set(-0.556, 0.65, 0)
+        decalL.userData.part = 'wagon-decal'
+        unit.add(decalR, decalL)
+      }
+      // Bogie: rangka sisi di luar roda gerbong (roda di z +0.4)
+      for (const side of [-1, 1] as const) {
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.28, 1.35), darkMat)
+        frame.position.set(0.72 * side, 0.28, 0.4)
+        frame.userData.part = 'bogie'
+        unit.add(frame)
       }
       const wheels: THREE.Mesh[] = []
       for (const side of [-1, 1] as const) {
@@ -1152,8 +1259,7 @@ export class TrainScene {
     ctx.fillStyle = grad
     ctx.fillRect(0, 0, 64, 64)
     this.smokeTex = new THREE.CanvasTexture(canvas)
-    this.smokeAges = [0, 0.7, 1.4]
-    for (const age of this.smokeAges) {
+    for (let i = 0; i < 3; i++) {
       const mat = new THREE.SpriteMaterial({
         map: this.smokeTex,
         transparent: true,
@@ -1161,7 +1267,7 @@ export class TrainScene {
         depthWrite: false,
       })
       const sprite = new THREE.Sprite(mat)
-      sprite.scale.setScalar(0.4 + age * 0.8)
+      sprite.scale.setScalar(0.4 + i * 0.3)
       this.smokes.push(sprite)
       this.scene.add(sprite)
     }
@@ -1383,7 +1489,7 @@ export class TrainScene {
     }
   }
 
-  private updateSmoke(dt: number): void {
+  private updateSmoke(): void {
     if (this.smokes.length === 0) return
     if (this.locoShape !== 'classic' || this.rm) {
       for (const s of this.smokes) {
@@ -1394,13 +1500,15 @@ export class TrainScene {
     this.trainGroup.updateMatrixWorld()
     const chimney = new THREE.Vector3(0, 1.7, 1.1)
     this.trainGroup.localToWorld(chimney)
+    // Chuff: 2 ledakan uap per putaran roda, tersinkron laju roda. 3 sprite
+    // bergilir fase sehingga selalu ada puff yang naik dan memudar.
+    const rate = this.rm ? 4 : 8
     for (let i = 0; i < this.smokes.length; i++) {
-      this.smokeAges[i] = (this.smokeAges[i]! + dt) % 2
-      const age = this.smokeAges[i]!
       const s = this.smokes[i]!
-      s.position.set(chimney.x, chimney.y + age * 1.2, chimney.z)
-      s.scale.setScalar(0.4 + age * 0.8)
-      ;(s.material as THREE.SpriteMaterial).opacity = 0.5 * (1 - age / 2)
+      const phase = ((this.elapsed * rate) / Math.PI + i / this.smokes.length) % 1
+      s.position.set(chimney.x, chimney.y + phase * 1.3, chimney.z)
+      s.scale.setScalar(0.35 + phase * 0.95)
+      ;(s.material as THREE.SpriteMaterial).opacity = 0.55 * (1 - phase)
     }
   }
 
@@ -1520,11 +1628,17 @@ export class TrainScene {
     // quaternion menjadi terjungkir (bodi terkubur di tanah).
     const lean =
       this.phase === 'branch' && this.t < 0.3 ? (this.selected - 1) * 0.08 * (1 - this.t / 0.3) : 0
-    this.trainGroup.rotateZ(lean)
+    // Sway halus per unit dengan fase independen (dilewati saat reduced-motion)
+    const sway = this.rm ? 0 : Math.sin(this.elapsed * 6) * 0.008
+    this.trainGroup.rotateZ(lean + sway)
+    // Flex coupling: jarak antar unit berdenyut tipis mengikuti waktu
+    const flex = this.rm ? 1 : 1 + 0.02 * Math.sin(this.elapsed * 2.5)
     let back = 2.0
-    for (const unit of this.wagonUnits) {
-      this.placeUnitOnJourney(locoS - back, unit)
-      unit.rotateZ(lean)
+    for (let i = 0; i < this.wagonUnits.length; i++) {
+      const unit = this.wagonUnits[i]!
+      this.placeUnitOnJourney(locoS - back * flex, unit)
+      const unitSway = this.rm ? 0 : Math.sin(this.elapsed * 6 + (i + 1) * 2.1) * 0.014
+      unit.rotateZ(lean + unitSway)
       back += 1.9
     }
   }

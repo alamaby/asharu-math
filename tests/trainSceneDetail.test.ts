@@ -37,7 +37,7 @@ function countPart(scene: TrainScene, part: string): number {
 }
 
 describe('detail visual kereta (fase 1-2)', () => {
-  it('variant classic: rod ×2, cowcatcher, dome, jendela kabin, coupling ×1', () => {
+  it('variant classic: rod ×2, cowcatcher, dome, jendela kabin, coupling ×1, smokebox+whistle+handrail+bogie', () => {
     const scene = makeScene()
     scene.applyTrainVariant({
       loco: 'classic',
@@ -49,10 +49,17 @@ describe('detail visual kereta (fase 1-2)', () => {
     expect(countPart(scene, 'dome')).toBe(1)
     expect(countPart(scene, 'cabin-window')).toBe(1)
     expect(countPart(scene, 'coupling')).toBe(1)
+    expect(countPart(scene, 'smokebox')).toBe(1)
+    expect(countPart(scene, 'whistle')).toBe(1)
+    expect(countPart(scene, 'handrail')).toBe(2)
+    // bogie: 2 di loko + 2 di gerbong
+    expect(countPart(scene, 'bogie')).toBe(4)
+    // panel papan kayu bernomor di kedua sisi boxcar
+    expect(countPart(scene, 'wagon-decal')).toBe(2)
     scene.dispose()
   })
 
-  it('dua gerbong: coupling ×2; diesel: tanpa rod dan tanpa dome', () => {
+  it('dua gerbong: coupling ×2; diesel: tanpa rod/dome/smokebox; tanker ring+manhole; flatbed pasak', () => {
     const scene = makeScene()
     scene.applyTrainVariant({
       loco: 'diesel',
@@ -65,6 +72,12 @@ describe('detail visual kereta (fase 1-2)', () => {
     expect(countPart(scene, 'coupling')).toBe(2)
     expect(countPart(scene, 'rod')).toBe(0)
     expect(countPart(scene, 'dome')).toBe(0)
+    expect(countPart(scene, 'smokebox')).toBe(0)
+    expect(countPart(scene, 'tanker-ring')).toBe(1)
+    expect(countPart(scene, 'manhole')).toBe(1)
+    expect(countPart(scene, 'stake')).toBe(4)
+    // bogie: 2 di loko + 2 per gerbong = 6
+    expect(countPart(scene, 'bogie')).toBe(6)
     scene.dispose()
   })
 
