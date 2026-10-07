@@ -31,11 +31,28 @@ const BRANCH_ENDS: [number, number][] = [
   [6, -14],
 ]
 
-const BRANCH_MIDS: [number, number][] = [
-  [-3, -7],
-  [0, -7],
-  [3, -7],
-]
+/** Bow titik tengah cabang (unit dunia) agar rel melengkung, bukan snap di junction. */
+const BRANCH_BOW = 1.2
+
+/**
+ * Titik tengah cabang: titik tengah chord digeser tegak lurus ke arah sumbu
+ * jalur utama (x=0) sehingga kereta meninggalkan junction dengan heading yang
+ * hampir sama dengan jalur utama, lalu membengkok keluar menuju ujung cabang.
+ * Cabang tengah tetap lurus (tidak ada belokan yang perlu dilalui).
+ */
+function branchMid(end: [number, number]): [number, number] {
+  const mx = end[0] / 2
+  const mz = end[1] / 2
+  if (end[0] === 0) return [mx, mz]
+  const len = Math.hypot(end[0], end[1])
+  let px = end[1] / len
+  let pz = -end[0] / len
+  if (Math.abs(mx + BRANCH_BOW * px) > Math.abs(mx)) {
+    px = -px
+    pz = -pz
+  }
+  return [mx + BRANCH_BOW * px, mz + BRANCH_BOW * pz]
+}
 
 export type TrainCameraMode = 'fixed' | 'follow' | 'junction' | 'station'
 
@@ -173,18 +190,18 @@ export class TrainScene {
     this.branchCurves = [
       new THREE.CatmullRomCurve3([
         new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(BRANCH_MIDS[0]![0], 0, BRANCH_MIDS[0]![1]),
-        new THREE.Vector3(BRANCH_ENDS[0]![0], 0, BRANCH_ENDS[0]![1]),
+        new THREE.Vector3(branchMid(BRANCH_ENDS[0])[0], 0, branchMid(BRANCH_ENDS[0])[1]),
+        new THREE.Vector3(BRANCH_ENDS[0][0], 0, BRANCH_ENDS[0][1]),
       ]),
       new THREE.CatmullRomCurve3([
         new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(BRANCH_MIDS[1]![0], 0, BRANCH_MIDS[1]![1]),
-        new THREE.Vector3(BRANCH_ENDS[1]![0], 0, BRANCH_ENDS[1]![1]),
+        new THREE.Vector3(branchMid(BRANCH_ENDS[1])[0], 0, branchMid(BRANCH_ENDS[1])[1]),
+        new THREE.Vector3(BRANCH_ENDS[1][0], 0, BRANCH_ENDS[1][1]),
       ]),
       new THREE.CatmullRomCurve3([
         new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(BRANCH_MIDS[2]![0], 0, BRANCH_MIDS[2]![1]),
-        new THREE.Vector3(BRANCH_ENDS[2]![0], 0, BRANCH_ENDS[2]![1]),
+        new THREE.Vector3(branchMid(BRANCH_ENDS[2])[0], 0, branchMid(BRANCH_ENDS[2])[1]),
+        new THREE.Vector3(BRANCH_ENDS[2][0], 0, BRANCH_ENDS[2][1]),
       ]),
     ]
 
@@ -835,8 +852,9 @@ export class TrainScene {
         this.sleeperAt(branch, (i + 0.5) / 5)
       }
     }
-    // Papan jawaban 3D ×3 (cermin DOM saja, bukan antarmuka)
-    for (const [ex] of BRANCH_ENDS) {
+    // Papan jawaban 3D ×3 (cermin DOM saja, bukan antarmuka) — diletakkan di
+    // atas kurva cabangnya masing-masing (t=0.85) agar menempel rel melengkung
+    for (let i = 0; i < 3; i++) {
       let mat: THREE.MeshLambertMaterial
       if (typeof document !== 'undefined') {
         const canvas = document.createElement('canvas')
@@ -851,7 +869,8 @@ export class TrainScene {
         mat = this.lambert('#ffffff')
       }
       const board = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.0, 0.15), mat)
-      board.position.set(ex, 1.6, -12)
+      const p = this.branchCurves[i]!.getPointAt(0.85)
+      board.position.set(p.x, 1.6, p.z)
       this.scene.add(board)
     }
   }
@@ -1153,7 +1172,12 @@ export class TrainScene {
   private updateCamera(dt: number): void {
     const trainPos = this.trainGroup.position
     const dir = this.lastDir
-    if (this.camMode === 'follow') {
+    if (this.maneuverActive) {
+      // Bingkai tetap saat ancang-ancang: gerakan mundur-maju terlihat jelas
+      // dari sudut pandang stabil sebelum kamera follow mengambil alih.
+      this.camPos.set(0, 5.5, 7.5)
+      this.camLook.set(0, 0.6, -0.5)
+    } else if (this.camMode === 'follow') {
       this.camPos.set(trainPos.x - dir.x * 6, trainPos.y + 4, trainPos.z - dir.z * 6)
       this.camLook.set(trainPos.x + dir.x * 3, trainPos.y + 1, trainPos.z + dir.z * 3)
     } else if (this.camMode === 'junction') {
