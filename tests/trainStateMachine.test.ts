@@ -19,6 +19,7 @@ describe('train state machine', () => {
     expect(transitionTrain('INTRO', 'INTRO_DONE')).toBe('TRAIN_MOVING')
     expect(transitionTrain('TRAIN_MOVING', 'ARRIVE_JUNCTION')).toBe('APPROACHING_JUNCTION')
     expect(transitionTrain('APPROACHING_JUNCTION', 'ANSWER')).toBe('WAITING_FOR_ANSWER')
+    expect(transitionTrain('APPROACHING_JUNCTION', 'READY_FOR_ANSWER')).toBe('WAITING_FOR_ANSWER')
     expect(transitionTrain('WAITING_FOR_ANSWER', 'ANSWER')).toBe('CHECKING_ANSWER')
     expect(transitionTrain('CHECKING_ANSWER', 'CHECK_OK')).toBe('SWITCHING_TRACK')
     expect(transitionTrain('SWITCHING_TRACK', 'SWITCH_DONE')).toBe('TRAVELLING_TO_STATION')
@@ -37,6 +38,8 @@ describe('train state machine', () => {
 
   it('pause dan resume', () => {
     expect(transitionTrain('TRAIN_MOVING', 'PAUSE')).toBe('PAUSED')
+    expect(transitionTrain('PAUSED', 'QUIT_TO_MENU')).toBe('MENU')
+    expect(transitionTrain('PAUSED', 'RETRY')).toBe('INTRO')
     expect(resumeTrain('TRAIN_MOVING')).toBe('TRAIN_MOVING')
     expect(resumeTrain('WAITING_FOR_ANSWER')).toBe('WAITING_FOR_ANSWER')
     expect(() => resumeTrain('MENU')).toThrow()

@@ -17,7 +17,12 @@ import {
   type TrainQuestion,
 } from '../lib/trainQuestionGenerator'
 import { starsForTrainAttempt, sumTrainStars } from '../lib/trainStars'
-import { resumeTrain, type TrainState } from '../lib/trainStateMachine'
+import {
+  resumeTrain,
+  transitionTrain,
+  type TrainEvent,
+  type TrainState,
+} from '../lib/trainStateMachine'
 import {
   clearTrainSession,
   defaultTrainProgress,
@@ -105,6 +110,14 @@ export default function TrainScreen() {
     phaseRef.current = phase
   }, [phase])
 
+  const sendEvent = useCallback((event: TrainEvent) => {
+    setPhase((current) => {
+      const next = transitionTrain(current, event)
+      phaseRef.current = next
+      return next
+    })
+  }, [])
+
   const reducedMotion = useMemo(() => {
     if (!progress.animationsEnabled) return true
     if (typeof window !== 'undefined' && window.matchMedia) {
@@ -135,14 +148,14 @@ export default function TrainScreen() {
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    setPhase('MENU')
+    sendEvent('LOAD_OK')
     return () => {
       clearTimers()
       stopTrainAudio()
       stopAllTrainAudio()
       stopTrainSpeech()
     }
-  }, [clearTimers])
+  }, [clearTimers, sendEvent])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const question = questions[round] ?? null
@@ -204,7 +217,7 @@ export default function TrainScreen() {
       setCelebrate(false)
       sceneRef.current?.reset()
       setCameraMode('follow')
-      setPhase('INTRO')
+      sendEvent('START')
       if (sfxOn) playTrainWhistle()
       if (musicActive) {
         startTrainMusic()
@@ -228,10 +241,10 @@ export default function TrainScreen() {
       )
       setResumable(null)
       later(800, () => {
-        if (phaseRef.current === 'INTRO') setPhase('TRAIN_MOVING')
+        if (phaseRef.current === 'INTRO') sendEvent('INTRO_DONE')
       })
     },
-    [clearTimers, later, sfxOn, musicActive, reducedMotion],
+    [clearTimers, later, sendEvent, sfxOn, musicActive, reducedMotion],
   )
 
   const handleResumeSession = useCallback(() => {
@@ -251,7 +264,7 @@ export default function TrainScreen() {
     setCelebrate(false)
     sceneRef.current?.reset()
     setCameraMode('follow')
-    setPhase('INTRO')
+    sendEvent('START')
     if (sfxOn) playTrainWhistle()
     if (musicActive) {
       startTrainMusic()
@@ -262,9 +275,9 @@ export default function TrainScreen() {
     setVariant(resumable.variant ?? pickTrainVariant())
     setResumable(null)
     later(800, () => {
-      if (phaseRef.current === 'INTRO') setPhase('TRAIN_MOVING')
+      if (phaseRef.current === 'INTRO') sendEvent('INTRO_DONE')
     })
-  }, [clearTimers, later, sfxOn, musicActive, reducedMotion, resumable])
+  }, [clearTimers, later, sendEvent, sfxOn, musicActive, reducedMotion, resumable])
 
   const finishSession = useCallback(
     (log: number[], g: TrainGrade) => {
@@ -300,10 +313,10 @@ export default function TrainScreen() {
 
   const handleReachJunction = useCallback(() => {
     if (phaseRef.current !== 'TRAIN_MOVING') return
-    setPhase('APPROACHING_JUNCTION')
+    sendEvent('ARRIVE_JUNCTION')
     setCameraMode('junction')
     later(400, () => {
-      if (phaseRef.current === 'APPROACHING_JUNCTION') setPhase('WAITING_FOR_ANSWER')
+      if (phaseRef.current === 'APPROACHING_JUNCTION') sendEvent('READY_FOR_ANSWER')
       const q = questions[round]
       if (q) {
         narrate(
@@ -311,11 +324,11 @@ export default function TrainScreen() {
         )
       }
     })
-  }, [lang, later, narrate, questions, round, t])
+  }, [lang, later, narrate, questions, round, sendEvent, t])
 
   const handleReachStation = useCallback(() => {
     if (phaseRef.current !== 'TRAVELLING_TO_STATION') return
-    setPhase('ROUND_COMPLETE')
+    sendEvent('ARRIVE_STATION')
     setCameraMode('station')
     sceneRef.current?.celebrateAtStation()
     if (sfxOn) playTrainWhistle()
@@ -346,32 +359,32 @@ export default function TrainScreen() {
             undefined,
           )
         }
-        setPhase('TRAIN_MOVING')
+        sendEvent('NEXT_ROUND')
       } else {
-        setPhase('SESSION_COMPLETE')
+        sendEvent('FINISH')
         finishSession(log, g)
       }
     })
-  }, [attemptsLog, finishSession, grade, later, sfxOn, questions, round, variant])
+  }, [attemptsLog, finishSession, grade, later, sfxOn, questions, round, sendEvent, variant])
 
   const handleAnswer = useCallback(
     (choiceIndex: 0 | 1 | 2) => {
       const q = questions[round]
       if (!q) {
-        setPhase('ERROR')
+        sendEvent('LOAD_FAIL')
         return
       }
       if (phaseRef.current !== 'WAITING_FOR_ANSWER' && phaseRef.current !== 'SHOWING_HINT') return
       if (answeringRef.current) return
       answeringRef.current = true
-      setPhase('CHECKING_ANSWER')
+      sendEvent('ANSWER')
       if (choiceIndex === q.correctIndex) {
         if (sfxOn) playTrainStar(starsForTrainAttempt(attempts + 1))
         const attemptCount = attempts + 1
         const nextLog = [...attemptsLog, attemptCount]
         setAttemptsLog(nextLog)
         setFeedback({ kind: 'correct', text: t('train.correct') })
-        setPhase('SWITCHING_TRACK')
+        sendEvent('CHECK_OK')
         sceneRef.current?.setBranch(choiceIndex)
         sceneRef.current?.setSelectedGlow(choiceIndex)
         sceneRef.current?.setSignal(choiceIndex, true)
@@ -384,7 +397,7 @@ export default function TrainScreen() {
         later(600, () => setMusicDucked(false))
         later(1200, () => setCelebrate(false))
         later(900, () => {
-          if (phaseRef.current === 'SWITCHING_TRACK') setPhase('TRAVELLING_TO_STATION')
+          if (phaseRef.current === 'SWITCHING_TRACK') sendEvent('SWITCH_DONE')
         })
       } else {
         if (sfxOn) playTrainWrong()
@@ -400,24 +413,24 @@ export default function TrainScreen() {
             const q = questions[round]
             if (q) narrate(`${t('train.hintTitle')}. ${q.hintText}`)
           })
-          setPhase('SHOWING_HINT')
+          sendEvent('CHECK_WRONG_HINT')
           later(800, () => {
             if (phaseRef.current === 'SHOWING_HINT') {
               answeringRef.current = false
-              setPhase('WAITING_FOR_ANSWER')
+              sendEvent('HINT_DONE')
             }
           })
         } else {
           later(400, () => {
             if (phaseRef.current === 'CHECKING_ANSWER') {
               answeringRef.current = false
-              setPhase('WAITING_FOR_ANSWER')
+              sendEvent('CHECK_WRONG_FIRST')
             }
           })
         }
       }
     },
-    [attempts, attemptsLog, later, sfxOn, narrate, questions, round, t],
+    [attempts, attemptsLog, later, sfxOn, narrate, questions, round, sendEvent, t],
   )
 
   const handlePause = useCallback(() => {
@@ -428,27 +441,28 @@ export default function TrainScreen() {
       current === 'APPROACHING_JUNCTION'
     ) {
       setPausedFrom(current)
-      setPhase('PAUSED')
+      sendEvent('PAUSE')
       sceneRef.current?.setPaused(true)
       stopChug()
       stopTrainSpeech()
     }
-  }, [])
+  }, [sendEvent])
 
   const handleResume = useCallback(() => {
     if (!pausedFrom) return
     try {
       const back = resumeTrain(pausedFrom)
       setPhase(back)
+      phaseRef.current = back
       sceneRef.current?.setPaused(false)
       setPausedFrom(null)
       if (sfxOn) playTrainClick()
       if (musicActive) startChug()
     } catch {
-      setPhase('MENU')
+      sendEvent('QUIT_TO_MENU')
       setPausedFrom(null)
     }
-  }, [sfxOn, musicActive, pausedFrom])
+  }, [musicActive, pausedFrom, sendEvent, sfxOn])
 
   const handleToggleMute = useCallback(() => {
     // Toggle state EFEKTIF: bila sedang bisu (dari HUD maupun header),

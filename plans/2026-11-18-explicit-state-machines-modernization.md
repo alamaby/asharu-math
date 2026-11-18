@@ -25,7 +25,7 @@ Mengidentifikasi seluruh mesin status implisit (*implicit state machines*) di da
 - [x] Satukan dual-session state di `PracticeScreen.tsx` menjadi single discriminated union dan pure reducer `columnSessionMachine`.
 - [x] Gantikan status implisit di `LearnScreen.tsx` dengan explicit `stepStatus: 'interactive' | 'advancing' | 'revealed' | 'ready_next'`.
 - [x] Satukan 15+ flag di `MagicAppleGarden.tsx` dan `CheerfulAquarium.tsx` ke dalam `placeValueWorldReducer`.
-- [ ] Sambungkan `transitionTrain` dari `trainStateMachine.ts` ke dalam event handler `TrainScreen.tsx`.
+- [x] Sambungkan `transitionTrain` dari `trainStateMachine.ts` ke dalam event handler `TrainScreen.tsx`.
 - [ ] Ubah return value `useInstallPrompt` menjadi discriminated union status PWA.
 - [ ] Modernisasi state modal `ShareAchievement.tsx` dengan penanganan status kegagalan kanvas.
 
@@ -41,6 +41,7 @@ Mengidentifikasi seluruh mesin status implisit (*implicit state machines*) di da
 - 2026-11-18 09:46:00 — Prioritas 3 selesai: unifikasi dual-session state di `PracticeScreen.tsx` menjadi discriminated union (`setup | column | story`), ekstraksi pure reducer `columnSessionMachine`, dan reuse `useQuestionSession`. 64 test files (453 tests) lulus 100%.
 - 2026-11-18 10:06:00 — Prioritas 4 selesai: explicit step status lifecycle (`StepStatus`) di `LearnScreen.tsx` (`learnReducer`), menyatukan alur auto-advance, terungkap, dan interaktif secara semantik. 64 test files (454 tests) lulus 100%.
 - 2026-11-18 10:41:00 — Prioritas 5 selesai: pembuatan pure reducer `placeValueWorldReducer` di `src/lib/placeValueWorldMachine.ts` dan unifikasi 20+ `useState` di `MagicAppleGarden.tsx` serta `CheerfulAquarium.tsx`. 65 test files (462 tests) lulus 100%.
+- 2026-11-18 11:15:00 — Prioritas 6 selesai: integrasi transisi valid trainStateMachine ke TrainScreen.tsx via sendEvent, penambahan event READY_FOR_ANSWER dan penanganan PAUSED resume/quit aman. 66 test files (464 tests) lulus 100%.
 
 ## Notes
 - Semua usulan perubahan mempertahankan kontrak props publik, aturan pedagogis matematika anak SD (mis. susunan angka tanpa `reverse()`), dan sistem penyimpanan lokal saat ini.
