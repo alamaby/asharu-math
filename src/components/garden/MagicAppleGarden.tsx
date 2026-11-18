@@ -183,10 +183,7 @@ export default function MagicAppleGarden({
       () => dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } }),
       0,
     )
-    const id = window.setTimeout(
-      () => dispatch({ type: 'SET_PHASE', phase: 'showQuestion' }),
-      600,
-    )
+    const id = window.setTimeout(() => dispatch({ type: 'SET_PHASE', phase: 'showQuestion' }), 600)
     timersRef.current.push(fbId, id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
@@ -226,16 +223,11 @@ export default function MagicAppleGarden({
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
       const nextOnes = afterOnes
-      const nextTens = isThree
-        ? exchangedHundred
-          ? afterTens
-          : initialTens + carry1
-        : afterTens
+      const nextTens = isThree ? (exchangedHundred ? afterTens : initialTens + carry1) : afterTens
       const nextHundreds = isThree ? undefined : afterHundreds
       const nextPhase =
         isThree && carry2 > 0 && !exchangedHundred ? 'exchangeOrRegroup' : 'enterOnesAnswer'
-      const nextHighlight =
-        isThree && carry2 > 0 && !exchangedHundred ? 'hundreds' : 'ones'
+      const nextHighlight = isThree && carry2 > 0 && !exchangedHundred ? 'hundreds' : 'ones'
       const nextFeedbackText =
         isThree && carry2 > 0 && !exchangedHundred
           ? t('garden.tenTensToHundred')
@@ -278,16 +270,11 @@ export default function MagicAppleGarden({
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
       const nextOnes = afterOnes
-      const nextTens = isThree
-        ? openedHundred
-          ? afterTens
-          : initialTens - borrow1
-        : afterTens
+      const nextTens = isThree ? (openedHundred ? afterTens : initialTens - borrow1) : afterTens
       const nextHundreds = isThree ? undefined : afterHundreds
       const nextPhase =
         isThree && borrow2 > 0 && !openedHundred ? 'exchangeOrRegroup' : 'enterOnesAnswer'
-      const nextHighlight =
-        isThree && borrow2 > 0 && !openedHundred ? 'hundreds' : 'ones'
+      const nextHighlight = isThree && borrow2 > 0 && !openedHundred ? 'hundreds' : 'ones'
       const nextFeedbackText =
         isThree && borrow2 > 0 && !openedHundred
           ? t('garden.openHundredAction')

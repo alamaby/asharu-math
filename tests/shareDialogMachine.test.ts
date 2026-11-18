@@ -84,7 +84,10 @@ describe('shareDialogMachine', () => {
 
   it('SET_FEEDBACK memperbarui pesan pada phase ready dan error, tapi mengabaikan closed', () => {
     const errorState: ShareDialogState = { phase: 'error', feedback: null }
-    const next = shareDialogReducer(errorState, { type: 'SET_FEEDBACK', message: 'Berhasil disalin' })
+    const next = shareDialogReducer(errorState, {
+      type: 'SET_FEEDBACK',
+      message: 'Berhasil disalin',
+    })
     expect(next.phase).toBe('error')
     if (next.phase === 'error') {
       expect(next.feedback).toBe('Berhasil disalin')

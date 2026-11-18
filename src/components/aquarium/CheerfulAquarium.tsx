@@ -237,10 +237,7 @@ export default function CheerfulAquarium({
       type: 'TUTORIAL_CLOSE',
       feedbackText: text,
     })
-    const id = window.setTimeout(
-      () => dispatch({ type: 'SET_PHASE', phase: 'showQuestion' }),
-      200,
-    )
+    const id = window.setTimeout(() => dispatch({ type: 'SET_PHASE', phase: 'showQuestion' }), 200)
     timersRef.current.push(id)
   }
 
@@ -285,16 +282,11 @@ export default function CheerfulAquarium({
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
       const nextOnes = afterOnes
-      const nextTens = isThree
-        ? exchangedHundred
-          ? afterTens
-          : initialTens + carry1
-        : afterTens
+      const nextTens = isThree ? (exchangedHundred ? afterTens : initialTens + carry1) : afterTens
       const nextHundreds = isThree ? undefined : afterHundreds
       const nextPhase =
         isThree && carry2 > 0 && !exchangedHundred ? 'exchangeOrGroup' : 'enterOnesAnswer'
-      const nextHighlight =
-        isThree && carry2 > 0 && !exchangedHundred ? 'hundreds' : 'ones'
+      const nextHighlight = isThree && carry2 > 0 && !exchangedHundred ? 'hundreds' : 'ones'
       const nextFeedbackText =
         isThree && carry2 > 0 && !exchangedHundred
           ? t('aquarium.tenGroupsToHundred')
@@ -364,16 +356,11 @@ export default function CheerfulAquarium({
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
       const nextOnes = afterOnes
-      const nextTens = isThree
-        ? openedHundred
-          ? afterTens
-          : initialTens - borrow1
-        : afterTens
+      const nextTens = isThree ? (openedHundred ? afterTens : initialTens - borrow1) : afterTens
       const nextHundreds = isThree ? undefined : afterHundreds
       const nextPhase =
         isThree && borrow2 > 0 && !openedHundred ? 'exchangeOrGroup' : 'enterOnesAnswer'
-      const nextHighlight =
-        isThree && borrow2 > 0 && !openedHundred ? 'hundreds' : 'ones'
+      const nextHighlight = isThree && borrow2 > 0 && !openedHundred ? 'hundreds' : 'ones'
       const nextFeedbackText =
         isThree && borrow2 > 0 && !openedHundred
           ? t('aquarium.splitHundredAction')

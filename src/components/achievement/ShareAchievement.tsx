@@ -2,10 +2,7 @@ import { useEffect, useReducer, useRef } from 'react'
 import { useI18n } from '../../i18n/LanguageContext'
 import { achievementShareText } from '../../lib/achievements'
 import { copyText, shareText } from '../../lib/share'
-import {
-  initialShareDialogState,
-  shareDialogReducer,
-} from '../../lib/shareDialogMachine'
+import { initialShareDialogState, shareDialogReducer } from '../../lib/shareDialogMachine'
 import { generateAchievementImage } from '../../lib/shareImage'
 import {
   facebookShareUrl,
