@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import FeedbackMessage, { type Feedback } from '../components/guide/FeedbackMessage'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import FeedbackMessage from '../components/guide/FeedbackMessage'
 import HintPanel from '../components/guide/HintPanel'
 import ProgressBar from '../components/guide/ProgressBar'
 import MascotBubble from '../components/layout/MascotBubble'
@@ -33,70 +33,33 @@ import type {
   StoryProblem,
   StorySettings,
 } from '../types'
-
-interface ProblemResult {
-  problem: MathProblem
-  wrongAttempts: number
-}
-
-interface SessionState {
-  problems: MathProblem[]
-  index: number
-  title: string
-  settings: GeneratorSettings | null
-  given: (number | null)[]
-  activeCol: number
-  wrongCols: number[]
-  attempts: number
-  wrongInProblem: number
-  feedback: Feedback | null
-  hint: string | null
-  offerHelp: boolean
-  locked: boolean
-  results: ProblemResult[]
-}
+import {
+  columnSessionReducer,
+  initColumnSessionState,
+  type ColumnSessionState,
+} from '../lib/columnSessionMachine'
+import { useQuestionSession } from '../hooks/useQuestionSession'
+import type { QuestionResult } from '../lib/questionSessionMachine'
 
 interface StoryQueueItem {
   story: StoryProblem
   part: StoryPart
 }
 
-interface StorySessionState {
-  queue: StoryQueueItem[]
-  index: number
-  interim: string
-  attempts: number
-  wrongInPart: number
-  feedback: Feedback | null
-  locked: boolean
-  results: { part: StoryPart; wrongAttempts: number }[]
-  settings: GeneratorSettings | null
-  title: string
-}
-
-function startSession(
-  problems: MathProblem[],
-  settings: GeneratorSettings | null,
-  title: string,
-): SessionState {
-  const required = requiredAnswerColumnIndexes(problems[0])
-  return {
-    problems,
-    index: 0,
-    title,
-    settings,
-    given: new Array<number | null>(problems[0].columns.length).fill(null),
-    activeCol: required[required.length - 1],
-    wrongCols: [],
-    attempts: 0,
-    wrongInProblem: 0,
-    feedback: null,
-    hint: null,
-    offerHelp: false,
-    locked: false,
-    results: [],
-  }
-}
+export type PracticeSessionState =
+  | { kind: 'setup' }
+  | {
+      kind: 'column'
+      problems: MathProblem[]
+      settings: GeneratorSettings | null
+      title: string
+    }
+  | {
+      kind: 'story'
+      queue: StoryQueueItem[]
+      settings: GeneratorSettings | null
+      title: string
+    }
 
 function familiesForPractice(digits: DigitCount, op: OperationChoice): readonly StoryFamily[] {
   const f0: StoryFamily[] =
@@ -144,52 +107,20 @@ function OptionGroup<T extends string | number>(props: {
   )
 }
 
-export interface PracticeScreenProps {
-  settings?: GeneratorSettings
+// ─── Setup View ─────────────────────────────────────────────────────────────
+
+interface PracticeSetupViewProps {
+  initialSettings?: GeneratorSettings
+  onStartConfigured: (settings: GeneratorSettings, mode: 'column' | 'story') => void
+  onStartCustom: (problem: MathProblem) => void
 }
 
-export default function PracticeScreen({ settings: initialSettings }: PracticeScreenProps) {
-  const { navigate } = useNavigation()
-  const { recordAnswer } = useProgress()
+function PracticeSetupView({
+  initialSettings,
+  onStartConfigured,
+  onStartCustom,
+}: PracticeSetupViewProps) {
   const { t } = useI18n()
-
-  const [phase, setPhase] = useState<'setup' | 'solving' | 'solving-story'>(
-    initialSettings?.presentation === 'story'
-      ? 'solving-story'
-      : initialSettings
-        ? 'solving'
-        : 'setup',
-  )
-  const [session, setSession] = useState<SessionState | null>(() =>
-    initialSettings?.presentation !== 'story' && initialSettings
-      ? startSession(generateSession(initialSettings), initialSettings, t('practice.sessionTitle'))
-      : null,
-  )
-  const [storySession, setStorySession] = useState<StorySessionState | null>(() => {
-    if (initialSettings?.presentation !== 'story' || !initialSettings) return null
-    const storySettings: StorySettings = {
-      kind: 'story',
-      operation: initialSettings.operation,
-      digitCount: initialSettings.digitCount,
-      carryMode: initialSettings.carryMode,
-      questionCount: initialSettings.questionCount,
-      families: familiesForPractice(initialSettings.digitCount, initialSettings.operation),
-    }
-    const stems = generateStorySession(storySettings)
-    const queue = stems.flatMap((s) => s.parts.map((p) => ({ story: s, part: p })))
-    return {
-      queue,
-      index: 0,
-      interim: '',
-      attempts: 0,
-      wrongInPart: 0,
-      feedback: null,
-      locked: false,
-      results: [],
-      settings: initialSettings,
-      title: t('practice.sessionTitle'),
-    }
-  })
 
   const [formMode, setFormMode] = useState<'column' | 'story'>(
     initialSettings?.presentation ?? 'column',
@@ -204,63 +135,17 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
   const [customOperation, setCustomOperation] = useState<OperationType>('addition')
   const [customError, setCustomError] = useState<string | null>(null)
 
-  const timeoutRef = useRef<number | null>(null)
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
-    }
-  }, [])
-
-  const problem = session?.problems[session.index]
-
-  const updateSession = (patch: Partial<SessionState>) => {
-    setSession((current) => (current ? { ...current, ...patch } : current))
-  }
-
-  const startConfigured = () => {
-    if (formMode === 'story') {
-      const storySettings: StorySettings = {
-        kind: 'story',
-        operation: formOperation,
-        digitCount: formDigits,
-        carryMode: formCarry,
-        questionCount: formCount,
-        families: familiesForPractice(formDigits, formOperation),
-      }
-      const stems = generateStorySession(storySettings)
-      const queue = stems.flatMap((s) => s.parts.map((p) => ({ story: s, part: p })))
-      setStorySession({
-        queue,
-        index: 0,
-        interim: '',
-        attempts: 0,
-        wrongInPart: 0,
-        feedback: null,
-        locked: false,
-        results: [],
-        settings: {
-          operation: formOperation,
-          digitCount: formDigits,
-          carryMode: formCarry,
-          questionCount: formCount,
-          presentation: 'story' as const,
-        },
-        title: t('practice.sessionTitle'),
-      })
-      setPhase('solving-story')
-      return
-    }
+  const handleStartConfigured = () => {
     const settings: GeneratorSettings = {
       operation: formOperation,
       digitCount: formDigits,
       carryMode: formCarry,
       questionCount: formCount,
     }
-    setSession(startSession(generateSession(settings), settings, t('practice.sessionTitle')))
-    setPhase('solving')
+    onStartConfigured(settings, formMode)
   }
 
-  const startCustom = () => {
+  const handleStartCustom = () => {
     const first = Number(customFirst)
     const second = Number(customSecond)
     if (customFirst === '' || customSecond === '') {
@@ -283,96 +168,346 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
     }
     setCustomError(null)
     const problem = buildProblem(customOperation, first, second)
-    setSession(startSession([problem], null, t('practice.customSessionTitle')))
-    setPhase('solving')
+    onStartCustom(problem)
   }
 
-  const finishColumnSession = (finished: SessionState) => {
-    const totalQuestions = finished.results.length
-    const correctFirstTry = finished.results.filter((r) => r.wrongAttempts === 0).length
-    const wrongAttempts = finished.results.reduce((sum, r) => sum + r.wrongAttempts, 0)
-    const recovered = finished.results.filter((r) => r.wrongAttempts > 0).length
-    const stars = starsFor(correctFirstTry, totalQuestions)
-    const newAchievementIds: string[] = []
-    for (const result of finished.results) {
-      newAchievementIds.push(
-        ...recordAnswer({ problem: result.problem, wrongAttempts: result.wrongAttempts }).map(
-          (a) => a.id,
-        ),
+  return (
+    <div className="space-y-5">
+      <MascotBubble text={t('practice.bubble')} mood="happy" />
+
+      <section className="space-y-4 rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm md:p-5">
+        <h2 className="text-base font-black text-slate-800">{t('practice.configTitle')}</h2>
+        <OptionGroup
+          label={t('practice.modeLabel')}
+          value={formMode}
+          onChange={setFormMode}
+          options={[
+            { value: 'column', label: t('practice.modeColumn') },
+            { value: 'story', label: t('practice.modeStory') },
+          ]}
+        />
+        <OptionGroup
+          label={t('practice.operationLabel')}
+          value={formOperation}
+          onChange={setFormOperation}
+          options={[
+            { value: 'addition', label: t('practice.op.addition') },
+            { value: 'subtraction', label: t('practice.op.subtraction') },
+            { value: 'mixed', label: t('practice.op.mixed') },
+          ]}
+        />
+        <OptionGroup
+          label={t('practice.digitsLabel')}
+          value={formDigits}
+          onChange={setFormDigits}
+          options={[
+            { value: 1, label: t('practice.digitOption', { n: 1 }) },
+            { value: 2, label: t('practice.digitOption', { n: 2 }) },
+            { value: 3, label: t('practice.digitOption', { n: 3 }) },
+            { value: 4, label: t('practice.digitOption', { n: 4 }) },
+          ]}
+        />
+        <OptionGroup
+          label={t('practice.countLabel')}
+          value={formCount}
+          onChange={setFormCount}
+          options={[
+            { value: 5, label: t('practice.countOption', { n: 5 }) },
+            { value: 10, label: t('practice.countOption', { n: 10 }) },
+            { value: 15, label: t('practice.countOption', { n: 15 }) },
+            { value: 20, label: t('practice.countOption', { n: 20 }) },
+          ]}
+        />
+        <OptionGroup
+          label={t('practice.carryLabel')}
+          value={formCarry}
+          onChange={setFormCarry}
+          options={[
+            { value: 'none', label: t('practice.carry.none') },
+            { value: 'required', label: t('practice.carry.required') },
+            { value: 'any', label: t('practice.carry.any') },
+          ]}
+        />
+        <button
+          type="button"
+          onClick={handleStartConfigured}
+          className="min-h-12 w-full rounded-2xl border-b-4 border-sky-600 bg-sky-500 text-base font-black text-white hover:bg-sky-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
+        >
+          {t('practice.start')}
+        </button>
+      </section>
+
+      <section className="space-y-4 rounded-3xl border-2 border-amber-200 bg-amber-50 p-4 shadow-sm md:p-5">
+        <h2 className="text-base font-black text-amber-900">{t('practice.customTitle')}</h2>
+        <p className="text-sm font-semibold text-amber-800">{t('practice.customDesc')}</p>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-xs font-bold text-amber-900">
+            {t('practice.topNumber')}
+            <input
+              value={customFirst}
+              onChange={(event) =>
+                setCustomFirst(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))
+              }
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={4}
+              placeholder="26"
+              aria-label={t('practice.topAria')}
+              className="h-12 w-24 rounded-xl border-2 border-amber-300 bg-white px-3 text-xl font-extrabold tabular-nums text-slate-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-bold text-amber-900">
+            {t('practice.bottomNumber')}
+            <input
+              value={customSecond}
+              onChange={(event) =>
+                setCustomSecond(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))
+              }
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={4}
+              placeholder="87"
+              aria-label={t('practice.bottomAria')}
+              className="h-12 w-24 rounded-xl border-2 border-amber-300 bg-white px-3 text-xl font-extrabold tabular-nums text-slate-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200"
+            />
+          </label>
+          <div className="flex gap-2" role="group" aria-label={t('practice.groupAria')}>
+            {(
+              [
+                { value: 'addition', label: t('practice.addBtn') },
+                { value: 'subtraction', label: t('practice.subBtn') },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={customOperation === option.value}
+                onClick={() => setCustomOperation(option.value)}
+                className={`min-h-12 rounded-2xl border-2 px-4 text-sm font-bold focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200 ${
+                  customOperation === option.value
+                    ? 'border-amber-500 bg-amber-200 text-amber-900'
+                    : 'border-amber-300 bg-white text-amber-800'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {customError && (
+          <p role="alert" className="text-sm font-bold text-amber-800">
+            {customError}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={handleStartCustom}
+          className="min-h-12 w-full rounded-2xl border-b-4 border-amber-500 bg-amber-400 text-base font-black text-amber-950 hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200"
+        >
+          {t('practice.doIt')}
+        </button>
+      </section>
+    </div>
+  )
+}
+
+// ─── Story Solving View ─────────────────────────────────────────────────────
+
+interface PracticeStorySolvingViewProps {
+  queue: StoryQueueItem[]
+  title: string
+  settings: GeneratorSettings | null
+  onFinish: (
+    results: QuestionResult<StoryQueueItem>[],
+    title: string,
+    settings: GeneratorSettings | null,
+  ) => void
+  onSwitchToGuided: (remaining: MathProblem[], stats: SessionStats, title: string) => void
+}
+
+function PracticeStorySolvingView({
+  queue,
+  title,
+  settings,
+  onFinish,
+  onSwitchToGuided,
+}: PracticeStorySolvingViewProps) {
+  const { t } = useI18n()
+
+  const handleComplete = useCallback(
+    (results: QuestionResult<StoryQueueItem>[]) => {
+      onFinish(results, title, settings)
+    },
+    [onFinish, title, settings],
+  )
+
+  const {
+    currentItem: item,
+    isLocked,
+    interim,
+    attempts,
+    wrongInCurrent,
+    feedback,
+    index,
+    totalItems,
+    results,
+    handleDigit,
+    handleBackspace,
+    submitAnswer,
+  } = useQuestionSession<StoryQueueItem>({
+    items: queue,
+    onComplete: handleComplete,
+  })
+
+  const part = item?.part
+  const story = item?.story
+
+  const handleCheck = () => {
+    if (!part || isLocked || interim === '') return
+    const answer = Number(interim)
+    if (answer === part.expectedAnswer) {
+      submitAnswer(true, { kind: 'correct', text: t('concept.correctFeedback') })
+      return
+    }
+    const nextAttempts = attempts + 1
+    if (nextAttempts >= 3) {
+      submitAnswer(
+        false,
+        {
+          kind: 'info',
+          text: t('concept.revealedFeedback', { answer: String(part.expectedAnswer) }),
+        },
+        String(part.expectedAnswer),
       )
+      return
     }
-    const summary: SessionSummary = {
-      title: finished.title,
-      totalQuestions,
-      correctFirstTry,
-      wrongAttempts,
-      recovered,
-      stars,
-      levelId: null,
-      settings: finished.settings,
-      nextLevelId: null,
-      newAchievementIds: [...new Set(newAchievementIds)],
-    }
-    navigate({ name: 'result', summary })
+    submitAnswer(false, { kind: 'wrong', text: t('concept.wrongFeedback') })
   }
 
-  const finishStorySession = (finished: StorySessionState) => {
-    const totalQuestions = finished.results.length
-    const correctFirstTry = finished.results.filter((r) => r.wrongAttempts === 0).length
-    const wrongAttempts = finished.results.reduce((sum, r) => sum + r.wrongAttempts, 0)
-    const recovered = finished.results.filter((r) => r.wrongAttempts > 0).length
-    const stars = starsFor(correctFirstTry, totalQuestions)
-    const newAchievementIds: string[] = []
-    for (const r of finished.results) {
-      newAchievementIds.push(
-        ...recordAnswer({ problem: r.part.math, wrongAttempts: r.wrongAttempts }).map((a) => a.id),
-      )
+  const handleSwitchToGuided = () => {
+    if (!part) return
+    const remaining = queue.slice(index)
+    const initialStats: SessionStats = {
+      correctFirstTry: results.filter((r) => r.wrongAttempts === 0).length,
+      wrongAttempts: results.reduce((sum, r) => sum + r.wrongAttempts, 0) + wrongInCurrent,
+      recovered: results.filter((r) => r.wrongAttempts > 0).length,
+      totalDone: results.length,
     }
-    const summary: SessionSummary = {
-      title: finished.title,
-      totalQuestions,
-      correctFirstTry,
-      wrongAttempts,
-      recovered,
-      stars,
-      levelId: null,
-      settings: finished.settings,
-      nextLevelId: null,
-      newAchievementIds: [...new Set(newAchievementIds)],
-    }
-    navigate({ name: 'result', summary })
+    onSwitchToGuided(
+      remaining.map((q) => q.part.math),
+      initialStats,
+      title,
+    )
   }
 
-  const finishProblem = (current: SessionState) => {
-    const results = [
-      ...current.results,
-      { problem: current.problems[current.index], wrongAttempts: current.wrongInProblem },
-    ]
-    if (current.index + 1 < current.problems.length) {
-      const nextProblem = current.problems[current.index + 1]
-      const width = nextProblem.columns.length
-      const required = requiredAnswerColumnIndexes(nextProblem)
-      setSession({
-        ...current,
-        results,
-        index: current.index + 1,
-        given: new Array<number | null>(width).fill(null),
-        activeCol: required[required.length - 1],
-        wrongCols: [],
-        attempts: 0,
-        wrongInProblem: 0,
-        feedback: { kind: 'info', text: t('feedback.nextProblem') },
-        hint: null,
-        offerHelp: false,
-        locked: false,
-      })
-    } else {
-      finishColumnSession({ ...current, results })
+  if (!item || !part || !story) return null
+
+  const checkDisabled = interim === '' || isLocked
+
+  return (
+    <div className="space-y-4">
+      <section aria-label={t('practice.progressAria')} className="space-y-1.5">
+        <div className="flex items-baseline justify-between">
+          <h1 className="text-base font-black text-slate-800 md:text-lg">{title}</h1>
+          <p className="text-xs font-bold text-slate-500">
+            {t('learn.questionOf', {
+              current: index + 1,
+              total: totalItems,
+            })}
+          </p>
+        </div>
+        <ProgressBar value={index / totalItems} label="Progres cerita" />
+      </section>
+
+      <div className="rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm">
+        <StoryCard story={story} part={part} />
+      </div>
+
+      <div className="flex flex-col items-center gap-3">
+        <div
+          aria-live="polite"
+          className="flex h-16 w-full max-w-xs items-center justify-center rounded-2xl border-2 border-sky-200 bg-white text-3xl font-black text-slate-800"
+        >
+          {interim || <span className="text-slate-300">...</span>}
+        </div>
+        <NumericKeypad
+          onDigit={handleDigit}
+          onBackspace={handleBackspace}
+          onCheck={handleCheck}
+          checkDisabled={checkDisabled}
+          digitsDisabled={isLocked}
+          checkLabel={t('keypad.checkDefault')}
+        />
+        {attempts >= 2 && !isLocked && (
+          <button
+            type="button"
+            onClick={handleSwitchToGuided}
+            className="min-h-11 rounded-2xl border-2 border-violet-200 bg-violet-50 px-4 text-sm font-bold text-violet-700 hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300"
+          >
+            {t('story.tryColumn')}
+          </button>
+        )}
+        <FeedbackMessage feedback={feedback} />
+      </div>
+    </div>
+  )
+}
+
+// ─── Column Solving View ────────────────────────────────────────────────────
+
+interface PracticeColumnSolvingViewProps {
+  problems: MathProblem[]
+  settings: GeneratorSettings | null
+  title: string
+  onFinish: (finished: ColumnSessionState) => void
+  onSwitchToGuided: (remaining: MathProblem[], stats: SessionStats, title: string) => void
+}
+
+function PracticeColumnSolvingView({
+  problems,
+  settings,
+  title,
+  onFinish,
+  onSwitchToGuided,
+}: PracticeColumnSolvingViewProps) {
+  const { t } = useI18n()
+  const [session, dispatch] = useReducer(
+    columnSessionReducer,
+    { problems, settings, title },
+    (init) => initColumnSessionState(init.problems, init.settings, init.title),
+  )
+
+  const finishedRef = useRef(false)
+  useEffect(() => {
+    if (session.finished && !finishedRef.current) {
+      finishedRef.current = true
+      onFinish(session)
     }
+  }, [session, onFinish])
+
+  const problem = session.problems[session.index]
+
+  const timeoutRef = useRef<number | null>(null)
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
+    }
+  }, [])
+
+  const handleDigit = (digit: number) => {
+    dispatch({ type: 'digit', digit })
+  }
+
+  const handleBackspace = () => {
+    dispatch({ type: 'backspace' })
+  }
+
+  const handleSelectCol = (columnIndex: number) => {
+    dispatch({ type: 'select_col', columnIndex })
   }
 
   const handleCheck = () => {
-    if (!session || session.locked || !problem) return
+    if (!problem || session.locked) return
     const required = requiredAnswerColumnIndexes(problem)
     if (required.some((columnIndex) => session.given[columnIndex] === null)) return
 
@@ -386,65 +521,31 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
         t('practice.praise4'),
       ]
       const praise = praises[Math.floor(Math.random() * praises.length)]
-      updateSession({
-        locked: true,
-        feedback: { kind: 'correct', text: praise },
-        hint: null,
-        wrongCols: [],
-      })
-      const snapshot = session
-      timeoutRef.current = window.setTimeout(() => finishProblem(snapshot), 1000)
+      dispatch({ type: 'check_correct', praise })
+      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
+      timeoutRef.current = window.setTimeout(() => {
+        dispatch({ type: 'advance', nextProblemFeedbackText: t('feedback.nextProblem') })
+      }, 1000)
       return
     }
+
     playWrong()
     const attempts = session.attempts + 1
-    updateSession({
-      locked: true,
-      attempts,
+    dispatch({
+      type: 'check_wrong',
       wrongCols: result.wrongColumnIndexes,
-      wrongInProblem: session.wrongInProblem + 1,
-      feedback: { kind: 'wrong', text: t('feedback.wrongPractice') },
+      feedbackText: t('feedback.wrongPractice'),
       hint: getHint(problem, attempts, result.wrongColumnIndexes, t),
       offerHelp: shouldOfferGuidedMode(attempts),
     })
-    timeoutRef.current = window.setTimeout(() => updateSession({ locked: false }), 700)
-  }
-
-  const handleDigit = (digit: number) => {
-    if (!session || session.locked || !problem) return
-    const required = requiredAnswerColumnIndexes(problem)
-    const given = [...session.given]
-    given[session.activeCol] = digit
-    // Lanjut otomatis ke kolom wajib yang masih kosong di sebelah kiri
-    const orderedDescending = [...required].sort((a, b) => b - a)
-    const currentPos = orderedDescending.indexOf(session.activeCol)
-    let nextCol = session.activeCol
-    for (let i = currentPos - 1; i >= 0; i--) {
-      if (given[orderedDescending[i]] === null) {
-        nextCol = orderedDescending[i]
-        break
-      }
-    }
-    if (nextCol === session.activeCol) {
-      for (const columnIndex of orderedDescending) {
-        if (given[columnIndex] === null) {
-          nextCol = columnIndex
-          break
-        }
-      }
-    }
-    updateSession({ given, activeCol: nextCol, feedback: null, hint: null })
-  }
-
-  const handleBackspace = () => {
-    if (!session || session.locked) return
-    const given = [...session.given]
-    given[session.activeCol] = null
-    updateSession({ given })
+    if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
+    timeoutRef.current = window.setTimeout(() => {
+      dispatch({ type: 'unlock' })
+    }, 700)
   }
 
   const switchToGuided = () => {
-    if (!session || !problem) return
+    if (!problem) return
     const remaining = session.problems.slice(session.index)
     const initialStats: SessionStats = {
       correctFirstTry: session.results.filter((r) => r.wrongAttempts === 0).length,
@@ -453,336 +554,10 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
       recovered: session.results.filter((r) => r.wrongAttempts > 0).length,
       totalDone: session.results.length,
     }
-    navigate({
-      name: 'learn',
-      levelId: null,
-      problems: remaining,
-      initialStats,
-      title: session.title,
-    })
+    onSwitchToGuided(remaining, initialStats, session.title)
   }
 
-  // ─── Story helpers ──────────────────────────────────────────────────────────
-
-  const storyItem = storySession?.queue[storySession.index]
-  const storyPart = storyItem?.part
-  const storyProblem = storyItem?.story
-
-  const updateStorySession = (patch: Partial<StorySessionState>) => {
-    setStorySession((current) => (current ? { ...current, ...patch } : current))
-  }
-
-  const storyHandleDigit = (digit: number) => {
-    if (!storySession || storySession.locked || !storyPart) return
-    updateStorySession({
-      interim: (storySession.interim + String(digit)).slice(0, 3),
-      feedback: null,
-    })
-  }
-
-  const storyHandleBackspace = () => {
-    if (!storySession || storySession.locked) return
-    updateStorySession({ interim: storySession.interim.slice(0, -1) })
-  }
-
-  const storyHandleCheck = () => {
-    if (!storyPart || !storySession || storySession.locked || storySession.interim === '') return
-    const snapshot = storySession
-    const answer = Number(snapshot.interim)
-    if (answer === storyPart.expectedAnswer) {
-      playCorrect()
-      const feedback: Feedback = { kind: 'correct', text: t('concept.correctFeedback') }
-      const nextResults = [
-        ...snapshot.results,
-        { part: storyPart, wrongAttempts: snapshot.wrongInPart },
-      ]
-      updateStorySession({ feedback, locked: true })
-      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
-      timeoutRef.current = window.setTimeout(() => {
-        if (snapshot.index + 1 < snapshot.queue.length) {
-          updateStorySession({
-            index: snapshot.index + 1,
-            interim: '',
-            attempts: 0,
-            wrongInPart: 0,
-            feedback: null,
-            locked: false,
-            results: nextResults,
-          })
-        } else {
-          finishStorySession({ ...snapshot, results: nextResults })
-        }
-      }, 700)
-      return
-    }
-    playWrong()
-    const attempts = snapshot.attempts + 1
-    const wrongInPart = snapshot.wrongInPart + 1
-    if (attempts >= 3) {
-      updateStorySession({
-        attempts: 0,
-        wrongInPart,
-        interim: String(storyPart.expectedAnswer),
-        feedback: {
-          kind: 'info',
-          text: t('concept.revealedFeedback', { answer: String(storyPart.expectedAnswer) }),
-        },
-        locked: true,
-      })
-      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
-      timeoutRef.current = window.setTimeout(() => {
-        const nextResults = [...snapshot.results, { part: storyPart, wrongAttempts: wrongInPart }]
-        if (snapshot.index + 1 < snapshot.queue.length) {
-          updateStorySession({
-            index: snapshot.index + 1,
-            interim: '',
-            attempts: 0,
-            wrongInPart: 0,
-            feedback: null,
-            locked: false,
-            results: nextResults,
-          })
-        } else {
-          finishStorySession({ ...snapshot, results: nextResults })
-        }
-      }, 1200)
-      return
-    }
-    updateStorySession({
-      attempts,
-      wrongInPart,
-      feedback: { kind: 'wrong', text: t('concept.wrongFeedback') },
-      locked: true,
-    })
-    if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
-    timeoutRef.current = window.setTimeout(() => updateStorySession({ locked: false }), 600)
-  }
-
-  const storySwitchToGuided = () => {
-    if (!storyPart) return
-    const remaining = storySession!.queue.slice(storySession!.index)
-    const initialStats: SessionStats = {
-      correctFirstTry: storySession!.results.filter((r) => r.wrongAttempts === 0).length,
-      wrongAttempts:
-        storySession!.results.reduce((sum, r) => sum + r.wrongAttempts, 0) +
-        storySession!.wrongInPart,
-      recovered: storySession!.results.filter((r) => r.wrongAttempts > 0).length,
-      totalDone: storySession!.results.length,
-    }
-    navigate({
-      name: 'learn',
-      levelId: null,
-      problems: remaining.map((q) => q.part.math),
-      initialStats,
-      title: storySession!.title,
-    })
-  }
-
-  useEffect(() => {
-    if (!storySession?.feedback) return
-    if (storySession.feedback.kind === 'correct') playCorrect()
-    else if (storySession.feedback.kind === 'wrong') playWrong()
-  }, [storySession?.feedback])
-
-  if (phase === 'setup' || (!session && !storySession && !problem && !storyPart)) {
-    return (
-      <div className="space-y-5">
-        <MascotBubble text={t('practice.bubble')} mood="happy" />
-
-        <section className="space-y-4 rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm md:p-5">
-          <h2 className="text-base font-black text-slate-800">{t('practice.configTitle')}</h2>
-          <OptionGroup
-            label={t('practice.modeLabel')}
-            value={formMode}
-            onChange={setFormMode}
-            options={[
-              { value: 'column', label: t('practice.modeColumn') },
-              { value: 'story', label: t('practice.modeStory') },
-            ]}
-          />
-          <OptionGroup
-            label={t('practice.operationLabel')}
-            value={formOperation}
-            onChange={setFormOperation}
-            options={[
-              { value: 'addition', label: t('practice.op.addition') },
-              { value: 'subtraction', label: t('practice.op.subtraction') },
-              { value: 'mixed', label: t('practice.op.mixed') },
-            ]}
-          />
-          <OptionGroup
-            label={t('practice.digitsLabel')}
-            value={formDigits}
-            onChange={setFormDigits}
-            options={[
-              { value: 1, label: t('practice.digitOption', { n: 1 }) },
-              { value: 2, label: t('practice.digitOption', { n: 2 }) },
-              { value: 3, label: t('practice.digitOption', { n: 3 }) },
-              { value: 4, label: t('practice.digitOption', { n: 4 }) },
-            ]}
-          />
-          <OptionGroup
-            label={t('practice.countLabel')}
-            value={formCount}
-            onChange={setFormCount}
-            options={[
-              { value: 5, label: t('practice.countOption', { n: 5 }) },
-              { value: 10, label: t('practice.countOption', { n: 10 }) },
-              { value: 15, label: t('practice.countOption', { n: 15 }) },
-              { value: 20, label: t('practice.countOption', { n: 20 }) },
-            ]}
-          />
-          <OptionGroup
-            label={t('practice.carryLabel')}
-            value={formCarry}
-            onChange={setFormCarry}
-            options={[
-              { value: 'none', label: t('practice.carry.none') },
-              { value: 'required', label: t('practice.carry.required') },
-              { value: 'any', label: t('practice.carry.any') },
-            ]}
-          />
-          <button
-            type="button"
-            onClick={startConfigured}
-            className="min-h-12 w-full rounded-2xl border-b-4 border-sky-600 bg-sky-500 text-base font-black text-white hover:bg-sky-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
-          >
-            {t('practice.start')}
-          </button>
-        </section>
-
-        <section className="space-y-4 rounded-3xl border-2 border-amber-200 bg-amber-50 p-4 shadow-sm md:p-5">
-          <h2 className="text-base font-black text-amber-900">{t('practice.customTitle')}</h2>
-          <p className="text-sm font-semibold text-amber-800">{t('practice.customDesc')}</p>
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-xs font-bold text-amber-900">
-              {t('practice.topNumber')}
-              <input
-                value={customFirst}
-                onChange={(event) =>
-                  setCustomFirst(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))
-                }
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={4}
-                placeholder="26"
-                aria-label={t('practice.topAria')}
-                className="h-12 w-24 rounded-xl border-2 border-amber-300 bg-white px-3 text-xl font-extrabold tabular-nums text-slate-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs font-bold text-amber-900">
-              {t('practice.bottomNumber')}
-              <input
-                value={customSecond}
-                onChange={(event) =>
-                  setCustomSecond(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))
-                }
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={4}
-                placeholder="87"
-                aria-label={t('practice.bottomAria')}
-                className="h-12 w-24 rounded-xl border-2 border-amber-300 bg-white px-3 text-xl font-extrabold tabular-nums text-slate-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200"
-              />
-            </label>
-            <div className="flex gap-2" role="group" aria-label={t('practice.groupAria')}>
-              {(
-                [
-                  { value: 'addition', label: t('practice.addBtn') },
-                  { value: 'subtraction', label: t('practice.subBtn') },
-                ] as const
-              ).map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-pressed={customOperation === option.value}
-                  onClick={() => setCustomOperation(option.value)}
-                  className={`min-h-12 rounded-2xl border-2 px-4 text-sm font-bold focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200 ${
-                    customOperation === option.value
-                      ? 'border-amber-500 bg-amber-200 text-amber-900'
-                      : 'border-amber-300 bg-white text-amber-800'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          {customError && (
-            <p role="alert" className="text-sm font-bold text-amber-800">
-              {customError}
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={startCustom}
-            className="min-h-12 w-full rounded-2xl border-b-4 border-amber-500 bg-amber-400 text-base font-black text-amber-950 hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200"
-          >
-            {t('practice.doIt')}
-          </button>
-        </section>
-      </div>
-    )
-  }
-
-  // ─── Story solving phase ────────────────────────────────────────────────────
-
-  if (phase === 'solving-story' && storySession && storyPart && storyProblem) {
-    const checkDisabled = storySession.interim === '' || storySession.locked
-    return (
-      <div className="space-y-4">
-        <section aria-label={t('practice.progressAria')} className="space-y-1.5">
-          <div className="flex items-baseline justify-between">
-            <h1 className="text-base font-black text-slate-800 md:text-lg">{storySession.title}</h1>
-            <p className="text-xs font-bold text-slate-500">
-              {t('learn.questionOf', {
-                current: storySession.index + 1,
-                total: storySession.queue.length,
-              })}
-            </p>
-          </div>
-          <ProgressBar
-            value={storySession.index / storySession.queue.length}
-            label="Progres cerita"
-          />
-        </section>
-
-        <div className="rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm">
-          <StoryCard story={storyProblem} part={storyPart} />
-        </div>
-
-        <div className="flex flex-col items-center gap-3">
-          <div
-            aria-live="polite"
-            className="flex h-16 w-full max-w-xs items-center justify-center rounded-2xl border-2 border-sky-200 bg-white text-3xl font-black text-slate-800"
-          >
-            {storySession.interim || <span className="text-slate-300">...</span>}
-          </div>
-          <NumericKeypad
-            onDigit={storyHandleDigit}
-            onBackspace={storyHandleBackspace}
-            onCheck={storyHandleCheck}
-            checkDisabled={checkDisabled}
-            checkLabel={t('keypad.checkDefault')}
-          />
-          {storySession.attempts >= 2 && !storySession.locked && (
-            <button
-              type="button"
-              onClick={storySwitchToGuided}
-              className="min-h-11 rounded-2xl border-2 border-violet-200 bg-violet-50 px-4 text-sm font-bold text-violet-700 hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300"
-            >
-              {t('story.tryColumn')}
-            </button>
-          )}
-          <FeedbackMessage feedback={storySession.feedback} />
-        </div>
-      </div>
-    )
-  }
-
-  // ─── Column solving phase ───────────────────────────────────────────────────
-
-  if (!session || !problem) return null
+  if (!problem) return null
 
   const required = requiredAnswerColumnIndexes(problem)
   const checkDisabled =
@@ -800,7 +575,7 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
             })}
           </p>
         </div>
-        <ProgressBar value={session.index / session.problems.length} label={`Progres latihan`} />
+        <ProgressBar value={session.index / session.problems.length} label="Progres latihan" />
       </section>
 
       <div className="solve-main flex justify-center rounded-3xl border-2 border-sky-100 bg-white p-3 shadow-sm md:p-5">
@@ -809,7 +584,7 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
           answers={session.given}
           activeCell={{ kind: 'answer', columnIndex: session.activeCol }}
           wrongAnswerColumns={session.wrongCols}
-          onSelectAnswerCell={(columnIndex) => updateSession({ activeCol: columnIndex })}
+          onSelectAnswerCell={handleSelectCol}
         />
       </div>
 
@@ -830,7 +605,7 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
               </button>
               <button
                 type="button"
-                onClick={() => updateSession({ offerHelp: false })}
+                onClick={() => dispatch({ type: 'dismiss_help' })}
                 className="min-h-11 flex-1 rounded-2xl border-2 border-violet-200 bg-white text-sm font-bold text-violet-700 hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-300"
               >
                 {t('practice.guidedNo')}
@@ -848,10 +623,199 @@ export default function PracticeScreen({ settings: initialSettings }: PracticeSc
           onBackspace={handleBackspace}
           onCheck={handleCheck}
           checkDisabled={checkDisabled}
+          digitsDisabled={session.locked}
           checkLabel={t('keypad.checkDefault')}
         />
         <p className="text-center text-xs font-bold text-slate-400">{t('practice.hintFooter')}</p>
       </div>
     </div>
+  )
+}
+
+// ─── Main PracticeScreen ────────────────────────────────────────────────────
+
+export interface PracticeScreenProps {
+  settings?: GeneratorSettings
+}
+
+export default function PracticeScreen({ settings: initialSettings }: PracticeScreenProps) {
+  const { navigate } = useNavigation()
+  const { recordAnswer } = useProgress()
+  const { t } = useI18n()
+
+  const [sessionState, setSessionState] = useState<PracticeSessionState>(() => {
+    if (initialSettings?.presentation === 'story') {
+      const storySettings: StorySettings = {
+        kind: 'story',
+        operation: initialSettings.operation,
+        digitCount: initialSettings.digitCount,
+        carryMode: initialSettings.carryMode,
+        questionCount: initialSettings.questionCount,
+        families: familiesForPractice(initialSettings.digitCount, initialSettings.operation),
+      }
+      const stems = generateStorySession(storySettings)
+      const queue = stems.flatMap((s) => s.parts.map((p) => ({ story: s, part: p })))
+      return {
+        kind: 'story',
+        queue,
+        settings: initialSettings,
+        title: t('practice.sessionTitle'),
+      }
+    }
+    if (initialSettings) {
+      return {
+        kind: 'column',
+        problems: generateSession(initialSettings),
+        settings: initialSettings,
+        title: t('practice.sessionTitle'),
+      }
+    }
+    return { kind: 'setup' }
+  })
+
+  const handleFinishColumn = useCallback(
+    (finished: ColumnSessionState) => {
+      const totalQuestions = finished.results.length
+      const correctFirstTry = finished.results.filter((r) => r.wrongAttempts === 0).length
+      const wrongAttempts = finished.results.reduce((sum, r) => sum + r.wrongAttempts, 0)
+      const recovered = finished.results.filter((r) => r.wrongAttempts > 0).length
+      const stars = starsFor(correctFirstTry, totalQuestions)
+      const newAchievementIds: string[] = []
+      for (const result of finished.results) {
+        newAchievementIds.push(
+          ...recordAnswer({ problem: result.problem, wrongAttempts: result.wrongAttempts }).map(
+            (a) => a.id,
+          ),
+        )
+      }
+      const summary: SessionSummary = {
+        title: finished.title,
+        totalQuestions,
+        correctFirstTry,
+        wrongAttempts,
+        recovered,
+        stars,
+        levelId: null,
+        settings: finished.settings,
+        nextLevelId: null,
+        newAchievementIds: [...new Set(newAchievementIds)],
+      }
+      navigate({ name: 'result', summary })
+    },
+    [navigate, recordAnswer],
+  )
+
+  const handleFinishStory = useCallback(
+    (
+      results: QuestionResult<StoryQueueItem>[],
+      title: string,
+      settings: GeneratorSettings | null,
+    ) => {
+      const totalQuestions = results.length
+      const correctFirstTry = results.filter((r) => r.wrongAttempts === 0).length
+      const wrongAttempts = results.reduce((sum, r) => sum + r.wrongAttempts, 0)
+      const recovered = results.filter((r) => r.wrongAttempts > 0).length
+      const stars = starsFor(correctFirstTry, totalQuestions)
+      const newAchievementIds: string[] = []
+      for (const r of results) {
+        newAchievementIds.push(
+          ...recordAnswer({ problem: r.item.part.math, wrongAttempts: r.wrongAttempts }).map(
+            (a) => a.id,
+          ),
+        )
+      }
+      const summary: SessionSummary = {
+        title,
+        totalQuestions,
+        correctFirstTry,
+        wrongAttempts,
+        recovered,
+        stars,
+        levelId: null,
+        settings,
+        nextLevelId: null,
+        newAchievementIds: [...new Set(newAchievementIds)],
+      }
+      navigate({ name: 'result', summary })
+    },
+    [navigate, recordAnswer],
+  )
+
+  const handleSwitchToGuided = useCallback(
+    (remaining: MathProblem[], initialStats: SessionStats, title: string) => {
+      navigate({
+        name: 'learn',
+        levelId: null,
+        problems: remaining,
+        initialStats,
+        title,
+      })
+    },
+    [navigate],
+  )
+
+  if (sessionState.kind === 'column') {
+    return (
+      <PracticeColumnSolvingView
+        problems={sessionState.problems}
+        settings={sessionState.settings}
+        title={sessionState.title}
+        onFinish={handleFinishColumn}
+        onSwitchToGuided={handleSwitchToGuided}
+      />
+    )
+  }
+
+  if (sessionState.kind === 'story') {
+    return (
+      <PracticeStorySolvingView
+        queue={sessionState.queue}
+        settings={sessionState.settings}
+        title={sessionState.title}
+        onFinish={handleFinishStory}
+        onSwitchToGuided={handleSwitchToGuided}
+      />
+    )
+  }
+
+  return (
+    <PracticeSetupView
+      initialSettings={initialSettings}
+      onStartConfigured={(settings, mode) => {
+        if (mode === 'story') {
+          const storySettings: StorySettings = {
+            kind: 'story',
+            operation: settings.operation,
+            digitCount: settings.digitCount,
+            carryMode: settings.carryMode,
+            questionCount: settings.questionCount,
+            families: familiesForPractice(settings.digitCount, settings.operation),
+          }
+          const stems = generateStorySession(storySettings)
+          const queue = stems.flatMap((s) => s.parts.map((p) => ({ story: s, part: p })))
+          setSessionState({
+            kind: 'story',
+            queue,
+            settings: { ...settings, presentation: 'story' },
+            title: t('practice.sessionTitle'),
+          })
+        } else {
+          setSessionState({
+            kind: 'column',
+            problems: generateSession(settings),
+            settings,
+            title: t('practice.sessionTitle'),
+          })
+        }
+      }}
+      onStartCustom={(problem) => {
+        setSessionState({
+          kind: 'column',
+          problems: [problem],
+          settings: null,
+          title: t('practice.customSessionTitle'),
+        })
+      }}
+    />
   )
 }

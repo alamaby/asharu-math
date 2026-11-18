@@ -1,10 +1,11 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-11-18 09:35:00
+Last Updated: 2026-11-18 09:46:00
 Format Version: 1
 
 ## Current State
 - Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.14.2`.
+- Mesin status latihan terpadu: `PracticeScreen` menggunakan discriminated union (`setup | column | story`), pure reducer `columnSessionMachine`, dan integrasi `useQuestionSession` untuk mode cerita tanpa duplikasi state. Entri: `2026-11-18/094600-unifikasi-state-sesi-practice-screen.md`. Plan: `plans/2026-11-18-explicit-state-machines-modernization.md`.
 - Mesin status kuis terpadu: `questionSessionMachine` (pure reducer) dan hook `useQuestionSession` menyatukan siklus hidup kuis konsep (`ConceptLearnScreen`) dan soal cerita (`StoryLearnScreen`), mencegah race conditions, timer leak, dan memperbaiki leave-guard pada tombol bantuan hitung bersusun. Entri: `2026-11-18/093500-unifikasi-mesin-kuis-terpadu.md`. Plan: `plans/2026-11-18-explicit-state-machines-modernization.md`.
 - Routing level kanonikal: `resolveScreenForLevel` menyelesaikan diskrepansi rute di `HomeScreen`, `LevelSelectScreen`, dan `ResultScreen`. Tombol Lanjutkan dan Ulangi/Next Level kini konsisten membuka kebun (`garden`) dan akuarium (`aquarium`). Entri: `2026-11-18/091200-kanonikal-level-routing-resolver.md`. Plan: `plans/2026-11-18-explicit-state-machines-modernization.md`.
 - Kereta detail visual Fase 1–2 (v1.11.0): batang roda beranimasi, cowcatcher, coupling, jendela kabin, dome uap, kupu-kupu bersayap flapping, masinis bertorso+mata+brim, penumpang berkepala+mata. Entri: `2026-10-07/145000-kereta-detail-visual-fase-1-2.md`.
@@ -53,6 +54,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-11-18 09:46:00 — Unifikasi State Sesi Latihan (PracticeScreen & columnSessionMachine)](2026-11-18/094600-unifikasi-state-sesi-practice-screen.md)
 - [2026-11-18 09:35:00 — Unifikasi Mesin Kuis Terpadu (questionSessionMachine & useQuestionSession)](2026-11-18/093500-unifikasi-mesin-kuis-terpadu.md)
 - [2026-11-18 09:12:00 — Kanonikal Level Routing Resolver (v1.14.2)](2026-11-18/091200-kanonikal-level-routing-resolver.md)
 - [2026-10-07 16:20:00 — Paket detailing kereta A–D: smokebox, chuff, bogie, decal, crank rod, sway (v1.14.0)](2026-10-07/162000-kereta-detailing-paket-A-D.md)
