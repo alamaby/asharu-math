@@ -183,4 +183,32 @@ describe('reducer mode belajar — auto-lanjut dari review', () => {
     expect(s.autoAdvanceToken).toBeNull()
     expect(problem.learningSteps[s.stepIndex].kind).toBe('review')
   })
+
+  it('siklus hidup stepStatus: transisi dari ready_next -> interactive -> advancing -> revealed', () => {
+    const problem = buildProblem('addition', 23, 14)
+    let s = initState([problem])
+    // Langkah 0: intro -> ready_next
+    expect(s.stepStatus).toBe('ready_next')
+
+    // Pindah ke langkah 1: interim-sum -> interactive
+    s = learnReducer(s, { type: 'next' })
+    expect(s.stepStatus).toBe('interactive')
+
+    // Jawaban benar: -> advancing
+    s = ketik(s, '7')
+    s = learnReducer(s, { type: 'check-interim' })
+    expect(s.stepStatus).toBe('advancing')
+
+    // Pindah ke langkah berikutnya
+    s = learnReducer(s, { type: 'next' })
+    expect(s.stepStatus).toBe('interactive')
+
+    // 3 kali salah -> revealed
+    s = learnReducer(s, { type: 'check-interim' }) // salah 1
+    expect(s.stepStatus).toBe('interactive')
+    s = learnReducer(s, { type: 'check-interim' }) // salah 2
+    expect(s.stepStatus).toBe('interactive')
+    s = learnReducer(s, { type: 'check-interim' }) // salah 3
+    expect(s.stepStatus).toBe('revealed')
+  })
 })

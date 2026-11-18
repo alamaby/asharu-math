@@ -27,12 +27,22 @@ interface ProblemResult {
   wrongAttempts: number
 }
 
+export type StepStatus = 'interactive' | 'advancing' | 'revealed' | 'ready_next'
+
 export type { LearnState }
 
 interface LearnState {
   problems: MathProblem[]
   problemIndex: number
   stepIndex: number
+  /**
+   * Siklus hidup langkah eksplisit:
+   * - interactive: menunggu aksi anak (ketik angka / pilih jawaban)
+   * - advancing: jawaban benar atau langkah otomatis, sedang menghitung mundur auto-advance (700ms)
+   * - revealed: 3x salah, jawaban benar diungkap untuk dibaca anak
+   * - ready_next: langkah informatif (intro/borrow-explain), anak siap menekan Berikutnya
+   */
+  stepStatus: StepStatus
   answers: (number | null)[]
   carries: (number | null)[]
   /** Nilai pinjam terungkap per kolom grid; null = belum dijelaskan */
@@ -70,6 +80,12 @@ function isAutoCompleteStep(step: LearningStep): boolean {
   )
 }
 
+function stepStatusFor(step: LearningStep): StepStatus {
+  if (step.kind === 'carry-down' || step.kind === 'review') return 'advancing'
+  if (isAutoCompleteStep(step)) return 'ready_next'
+  return 'interactive'
+}
+
 function currentStepOf(state: LearnState): LearningStep | undefined {
   return state.problems[state.problemIndex]?.learningSteps[state.stepIndex]
 }
@@ -91,8 +107,10 @@ function freshProblemState(
   | 'wrongInProblem'
   | 'feedback'
   | 'stepComplete'
+  | 'stepStatus'
 > {
   const width = problem.columns.length
+  const firstStep = problem.learningSteps[0]
   return {
     answers: new Array<number | null>(width).fill(null),
     carries: new Array<number | null>(width).fill(null),
@@ -102,7 +120,8 @@ function freshProblemState(
     attempts: 0,
     wrongInProblem: 0,
     feedback: null,
-    stepComplete: isAutoCompleteStep(problem.learningSteps[0]),
+    stepComplete: isAutoCompleteStep(firstStep),
+    stepStatus: stepStatusFor(firstStep),
   }
 }
 
@@ -149,6 +168,7 @@ function replayTo(state: LearnState, targetIndex: number): LearnState {
   // carry-down selalu auto-complete (isAutoCompleteStep); interim-sum tidak
   // pernah "sudah terisi" karena ia sendiri yang mengisi jawaban.
   const filled = step.kind === 'answer-digit' ? answers[step.columnIndex] !== null : false
+  const complete = isAutoCompleteStep(step) || filled
 
   return {
     ...state,
@@ -159,7 +179,12 @@ function replayTo(state: LearnState, targetIndex: number): LearnState {
     doneAnswerColumns,
     interim: '',
     attempts: 0,
-    stepComplete: isAutoCompleteStep(step) || filled,
+    stepComplete: complete,
+    stepStatus: complete
+      ? step.kind === 'carry-down' || step.kind === 'review'
+        ? 'advancing'
+        : 'ready_next'
+      : 'interactive',
     feedback: null,
     autoAdvanceToken: null,
   }
@@ -194,6 +219,7 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
             answers,
             doneAnswerColumns: uniqueAdd(state.doneAnswerColumns, step.columnIndex),
             stepComplete: true,
+            stepStatus: 'advancing',
             attempts: 0,
             feedback: { kind: 'correct', text: 'Benar! Hebat!' },
             autoAdvanceToken: nextToken(),
@@ -208,6 +234,7 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
             answers,
             doneAnswerColumns: uniqueAdd(state.doneAnswerColumns, step.columnIndex),
             stepComplete: true,
+            stepStatus: 'revealed',
             attempts: 0,
             wrongInProblem,
             feedback: {
@@ -221,6 +248,7 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
           answers,
           attempts,
           wrongInProblem,
+          stepStatus: 'interactive',
           feedback: { kind: 'wrong', text: digitHint(action.digit, step.expectedDigit, attempts) },
         }
       }
@@ -248,6 +276,7 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
         return {
           ...state,
           stepComplete: true,
+          stepStatus: 'advancing',
           attempts: 0,
           feedback: {
             kind: 'correct',
@@ -262,6 +291,7 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
         return {
           ...state,
           stepComplete: true,
+          stepStatus: 'revealed',
           attempts: 0,
           wrongInProblem,
           feedback: {
@@ -274,6 +304,7 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
         ...state,
         attempts,
         wrongInProblem,
+        stepStatus: 'interactive',
         feedback: {
           kind: 'wrong',
           text: `Coba lihat sekali lagi. Mana yang lebih besar, ${step.top} atau ${step.bottom}?`,
@@ -310,6 +341,7 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
           ...state,
           ...fillInterim(state),
           stepComplete: true,
+          stepStatus: 'advancing',
           attempts: 0,
           feedback: { kind: 'correct', text },
           autoAdvanceToken: nextToken(),
@@ -326,6 +358,7 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
           ...fillInterim(state),
           interim: String(step.expected),
           stepComplete: true,
+          stepStatus: 'revealed',
           attempts: 0,
           wrongInProblem,
           feedback: {
@@ -343,6 +376,7 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
         interim: '',
         attempts,
         wrongInProblem,
+        stepStatus: 'interactive',
         feedback: { kind: 'wrong', text: hint },
       }
     }
@@ -353,12 +387,15 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
       const nextIndex = state.stepIndex + 1
       if (nextIndex < steps.length) {
         const nextStep = steps[nextIndex]
+        const isAuto = isAutoCompleteStep(nextStep)
+        const isAdvanceStep = nextStep.kind === 'carry-down' || nextStep.kind === 'review'
         const updated: LearnState = {
           ...state,
           stepIndex: nextIndex,
           attempts: 0,
           interim: '',
-          stepComplete: isAutoCompleteStep(nextStep),
+          stepComplete: isAuto,
+          stepStatus: isAdvanceStep ? 'advancing' : isAuto ? 'ready_next' : 'interactive',
           feedback: null,
           autoAdvanceToken: null,
         }
@@ -402,7 +439,7 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
           ...freshProblemState(nextProblem),
         }
       }
-      return { ...state, results, finished: true, autoAdvanceToken: null }
+      return { ...state, results, finished: true, stepStatus: 'ready_next', autoAdvanceToken: null }
     }
 
     case 'prev': {
@@ -411,12 +448,14 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
     }
 
     case 'repeat': {
+      const isAuto = isAutoCompleteStep(step)
       const reset: LearnState = {
         ...state,
         attempts: 0,
         interim: '',
         feedback: null,
-        stepComplete: isAutoCompleteStep(step),
+        stepComplete: isAuto,
+        stepStatus: isAuto ? 'ready_next' : 'interactive',
         autoAdvanceToken: null,
       }
       if (step.kind === 'answer-digit') {
@@ -427,6 +466,7 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
           (index) => index !== step.columnIndex,
         )
         reset.stepComplete = false
+        reset.stepStatus = 'interactive'
       }
       if (step.kind === 'interim-sum') {
         // Ulangi hitung kolom: bersihkan hasil otomatis sebelumnya
@@ -442,6 +482,7 @@ export function learnReducer(state: LearnState, action: LearnAction): LearnState
           reset.carries = carries
         }
         reset.stepComplete = false
+        reset.stepStatus = 'interactive'
       }
       return reset
     }
@@ -538,13 +579,13 @@ export default function LearnScreen({
     dispatch({ type: 'check-interim' })
   }, [state.interim, state.stepComplete, step])
 
-  // Auto-lanjut ke langkah berikutnya segera setelah jawaban benar,
+  // Auto-lanjut ke langkah berikutnya segera setelah jawaban benar atau auto-step,
   // agar anak cukup mengetik tanpa menekan Periksa lalu Berikutnya.
   useEffect(() => {
-    if (state.autoAdvanceToken === null) return
+    if (state.stepStatus !== 'advancing' && state.autoAdvanceToken === null) return
     const timer = window.setTimeout(() => dispatch({ type: 'next' }), 700)
     return () => window.clearTimeout(timer)
-  }, [state.autoAdvanceToken])
+  }, [state.stepStatus, state.autoAdvanceToken])
 
   useEffect(() => {
     if (!state.finished || reportedRef.current) return
