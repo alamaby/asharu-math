@@ -1,4 +1,4 @@
-import { cleanup, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import LevelSelectScreen from '../../src/screens/LevelSelectScreen'
 import { LEVELS } from '../../src/data/levels'
@@ -60,5 +60,21 @@ describe('LevelSelectScreen', () => {
     renderScreenWithProviders(<LevelSelectScreen />)
     expect(screen.getByLabelText('Kamu mendapat 2 dari 3 bintang')).not.toBeNull()
     window.localStorage.clear()
+  })
+
+  it('menavigasi ke screen yang tepat untuk kebun dan akuarium', () => {
+    const { unmount } = renderScreenWithProviders(<LevelSelectScreen />)
+    const kebunHeading = screen.getByRole('heading', { name: /Kebun: Tambah Tanpa Simpan/i })
+    const kebunCard = kebunHeading.closest('article')!
+    fireEvent.click(within(kebunCard).getByRole('button', { name: 'Mulai' }))
+    expect(screen.getByTestId('probe-screen').textContent).toBe('garden')
+    unmount()
+    cleanup()
+
+    renderScreenWithProviders(<LevelSelectScreen />)
+    const akuariumHeading = screen.getByRole('heading', { name: /Akuarium: Tambah Tanpa Simpan/i })
+    const akuariumCard = akuariumHeading.closest('article')!
+    fireEvent.click(within(akuariumCard).getByRole('button', { name: 'Mulai' }))
+    expect(screen.getByTestId('probe-screen').textContent).toBe('aquarium')
   })
 })

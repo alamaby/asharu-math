@@ -116,4 +116,38 @@ describe('ResultScreen', () => {
     unmount()
     window.localStorage.clear()
   })
+
+  it('retry dan next level kebun mengarah ke screen garden', () => {
+    const { unmount } = renderScreenWithProviders(
+      <ResultScreen summary={makeSummary({ levelId: 'kebun-1', nextLevelId: 'kebun-2' })} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Ulangi Level Ini/ }))
+    expect(screen.getByTestId('probe-screen').textContent).toBe('garden')
+
+    fireEvent.click(screen.getByRole('button', { name: /Level Berikutnya/ }))
+    expect(screen.getByTestId('probe-screen').textContent).toBe('garden')
+    cleanup()
+    unmount()
+  })
+
+  it('retry dan next level akuarium mengarah ke screen aquarium', () => {
+    const { unmount } = renderScreenWithProviders(
+      <ResultScreen summary={makeSummary({ levelId: 'akuarium-1', nextLevelId: 'akuarium-2' })} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Ulangi Level Ini/ }))
+    expect(screen.getByTestId('probe-screen').textContent).toBe('aquarium')
+
+    fireEvent.click(screen.getByRole('button', { name: /Level Berikutnya/ }))
+    expect(screen.getByTestId('probe-screen').textContent).toBe('aquarium')
+    cleanup()
+    unmount()
+  })
+
+  it('transisi lintas tipe: akuarium-4 ke kebun-5 mengarah ke screen garden', () => {
+    renderScreenWithProviders(
+      <ResultScreen summary={makeSummary({ levelId: 'akuarium-4', nextLevelId: 'kebun-5' })} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Level Berikutnya/ }))
+    expect(screen.getByTestId('probe-screen').textContent).toBe('garden')
+  })
 })

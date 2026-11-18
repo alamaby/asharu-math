@@ -91,8 +91,41 @@ describe('HomeScreen', () => {
       STORAGE_KEY,
       JSON.stringify({ ...defaultProgress(), lastLevelId: 'level-1' }),
     )
-    renderScreenWithProviders(<HomeScreen />)
+    const { unmount: u2 } = renderScreenWithProviders(<HomeScreen />)
     fireEvent.click(screen.getByRole('button', { name: /Lanjutkan:/ }))
     expect(screen.getByTestId('probe-screen').textContent).toBe('learn')
+    u2()
+    window.localStorage.clear()
+
+    // kebun lastLevel
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...defaultProgress(), lastLevelId: 'kebun-1' }),
+    )
+    const { unmount: u3 } = renderScreenWithProviders(<HomeScreen />)
+    fireEvent.click(screen.getByRole('button', { name: /Lanjutkan:/ }))
+    expect(screen.getByTestId('probe-screen').textContent).toBe('garden')
+    u3()
+    window.localStorage.clear()
+
+    // akuarium lastLevel
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...defaultProgress(), lastLevelId: 'akuarium-1' }),
+    )
+    const { unmount: u4 } = renderScreenWithProviders(<HomeScreen />)
+    fireEvent.click(screen.getByRole('button', { name: /Lanjutkan:/ }))
+    expect(screen.getByTestId('probe-screen').textContent).toBe('aquarium')
+    u4()
+    window.localStorage.clear()
+
+    // cerita lastLevel
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...defaultProgress(), lastLevelId: 'cerita-1' }),
+    )
+    renderScreenWithProviders(<HomeScreen />)
+    fireEvent.click(screen.getByRole('button', { name: /Lanjutkan:/ }))
+    expect(screen.getByTestId('probe-screen').textContent).toBe('story-learn')
   })
 })

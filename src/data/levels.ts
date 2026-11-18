@@ -1,4 +1,5 @@
 import type { GeneratorSettings, LevelDefinition, PracticeRecord } from '../types'
+import type { Screen } from '../state/NavigationContext'
 
 export const LEVELS: readonly LevelDefinition[] = [
   // ---- Kelas 1: konsep (pilihan ganda) ----
@@ -582,6 +583,36 @@ export function getNextLevelId(levelId: string | null): string | null {
   const index = LEVELS.findIndex((level) => level.id === levelId)
   if (index < 0 || index + 1 >= LEVELS.length) return null
   return LEVELS[index + 1].id
+}
+
+/**
+ * Alasan Bisnis:
+ * Setiap kategori level dirancang dengan pedagogi visual yang berbeda:
+ * 1. Level 'kebun-*' mengajarkan konsep nilai tempat melalui manipulasi apel dan keranjang puluhan.
+ * 2. Level 'akuarium-*' mengajarkan pertukaran nilai tempat melalui akuarium 3D ikan ceria.
+ * 3. Level konsep ('k1-*') berfokus pada pemahaman membilang/membandingkan lewat pilihan ganda visual.
+ * 4. Level cerita ('cerita-*') melatih literasi matematika berbasis cerita multi-langkah kontekstual.
+ * 5. Level lainnya memakai papan bersusun standar (LearnScreen).
+ *
+ * Fungsi ini menjadi satu-satunya sumber kebenaran (single source of truth) untuk
+ * pemetaan level ke layar target agar seluruh titik masuk (LevelSelect, Home, Result)
+ * konsisten dan tidak keliru mengarahkan anak ke antarmuka yang salah.
+ */
+export function resolveScreenForLevel(levelId: string): Screen {
+  if (levelId.startsWith('kebun-')) {
+    return { name: 'garden', levelId }
+  }
+  if (levelId.startsWith('akuarium-')) {
+    return { name: 'aquarium', levelId }
+  }
+  const level = getLevel(levelId)
+  if (level?.levelKind === 'story') {
+    return { name: 'story-learn', levelId }
+  }
+  if (level?.levelKind === 'concept') {
+    return { name: 'concept-learn', levelId }
+  }
+  return { name: 'learn', levelId }
 }
 
 /**

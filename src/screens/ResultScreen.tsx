@@ -2,7 +2,7 @@ import AchievementCard from '../components/achievement/AchievementCard'
 import { useI18n } from '../i18n/LanguageContext'
 import Mascot from '../components/layout/Mascot'
 import { getAchievement } from '../lib/achievements'
-import { getLevel } from '../data/levels'
+import { resolveScreenForLevel } from '../data/levels'
 import { useNavigation } from '../state/NavigationContext'
 import { useProgress } from '../state/ProgressContext'
 import type { SessionSummary } from '../types'
@@ -18,12 +18,6 @@ export default function ResultScreen({ summary }: ResultScreenProps) {
   const { t } = useI18n()
 
   const nextLevelAvailable = summary.nextLevelId !== null
-  const currentLevel = summary.levelId ? getLevel(summary.levelId) : undefined
-  const nextLevel = summary.nextLevelId ? getLevel(summary.nextLevelId) : undefined
-  const isConceptLevel = currentLevel?.levelKind === 'concept'
-  const isNextConcept = nextLevel?.levelKind === 'concept'
-  const isStoryLevel = currentLevel?.levelKind === 'story'
-  const isNextStory = nextLevel?.levelKind === 'story'
 
   return (
     <div className="space-y-5">
@@ -96,13 +90,7 @@ export default function ResultScreen({ summary }: ResultScreenProps) {
         {summary.levelId && (
           <button
             type="button"
-            onClick={() =>
-              isConceptLevel
-                ? navigate({ name: 'concept-learn', levelId: summary.levelId! })
-                : isStoryLevel
-                  ? navigate({ name: 'story-learn', levelId: summary.levelId! })
-                  : navigate({ name: 'learn', levelId: summary.levelId! })
-            }
+            onClick={() => navigate(resolveScreenForLevel(summary.levelId!))}
             className="min-h-14 w-full rounded-2xl border-b-4 border-sky-600 bg-sky-500 text-base font-black text-white hover:bg-sky-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
           >
             {t('result.retryLevel')}
@@ -111,13 +99,7 @@ export default function ResultScreen({ summary }: ResultScreenProps) {
         {nextLevelAvailable && (
           <button
             type="button"
-            onClick={() =>
-              isNextConcept
-                ? navigate({ name: 'concept-learn', levelId: summary.nextLevelId! })
-                : isNextStory
-                  ? navigate({ name: 'story-learn', levelId: summary.nextLevelId! })
-                  : navigate({ name: 'learn', levelId: summary.nextLevelId! })
-            }
+            onClick={() => navigate(resolveScreenForLevel(summary.nextLevelId!))}
             className="min-h-14 w-full rounded-2xl border-b-4 border-emerald-600 bg-emerald-500 text-base font-black text-white hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300"
           >
             {t('result.nextLevel')}

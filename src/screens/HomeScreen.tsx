@@ -2,7 +2,7 @@ import { useState } from 'react'
 import ChildNameForm from '../components/common/ChildNameForm'
 import InstallButton from '../components/common/InstallButton'
 import MascotBubble from '../components/layout/MascotBubble'
-import { LEVELS, getLevel } from '../data/levels'
+import { LEVELS, getLevel, resolveScreenForLevel } from '../data/levels'
 import { useI18n } from '../i18n/LanguageContext'
 import { APP_VERSION } from '../lib/version'
 import { getAchievement } from '../lib/achievements'
@@ -25,13 +25,7 @@ export default function HomeScreen() {
   const lastLevel = progress.lastLevelId ? getLevel(progress.lastLevelId) : undefined
   const handleContinue = () => {
     if (!lastLevel) return
-    if (lastLevel.levelKind === 'concept') {
-      navigate({ name: 'concept-learn', levelId: lastLevel.id })
-    } else if (lastLevel.levelKind === 'story') {
-      navigate({ name: 'story-learn', levelId: lastLevel.id })
-    } else {
-      navigate({ name: 'learn', levelId: lastLevel.id })
-    }
+    navigate(resolveScreenForLevel(lastLevel.id))
   }
   const recentAchievements = Object.entries(progress.unlockedAchievements)
     .sort((a, b) => b[1].localeCompare(a[1]))
@@ -119,14 +113,14 @@ export default function HomeScreen() {
       <section aria-label={t('home.actionsAria')} className="space-y-2">
         <button
           type="button"
-          onClick={() => navigate({ name: 'aquarium', levelId: 'akuarium-1' })}
+          onClick={() => navigate(resolveScreenForLevel('akuarium-1'))}
           className="min-h-14 w-full rounded-2xl border-b-4 border-sky-600 bg-sky-500 px-4 text-left text-base font-black text-white hover:bg-sky-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
         >
           {t('aquarium.tryAquarium')}
         </button>
         <button
           type="button"
-          onClick={() => navigate({ name: 'garden', levelId: 'kebun-1' })}
+          onClick={() => navigate(resolveScreenForLevel('kebun-1'))}
           className="min-h-14 w-full rounded-2xl border-b-4 border-emerald-600 bg-emerald-500 px-4 text-left text-base font-black text-white hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300"
         >
           {t('garden.tryGarden')}

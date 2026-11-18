@@ -1,6 +1,6 @@
 import LevelCard from '../components/LevelCard'
 import MascotBubble from '../components/layout/MascotBubble'
-import { LEVELS, isLevelUnlocked } from '../data/levels'
+import { LEVELS, isLevelUnlocked, resolveScreenForLevel } from '../data/levels'
 import { useI18n } from '../i18n/LanguageContext'
 import { useNavigation } from '../state/NavigationContext'
 import { useProgress } from '../state/ProgressContext'
@@ -33,21 +33,7 @@ export default function LevelSelectScreen() {
                   unlocked={isLevelUnlocked(level.id, progress.completedLevelIds)}
                   completed={progress.completedLevelIds.includes(level.id)}
                   stars={progress.bestScores[level.id] ?? 0}
-                  onStart={() => {
-                    if (level.id.startsWith('kebun-')) {
-                      navigate({ name: 'garden', levelId: level.id })
-                      return
-                    }
-                    if (level.id.startsWith('akuarium-')) {
-                      navigate({ name: 'aquarium', levelId: level.id })
-                      return
-                    }
-                    return level.levelKind === 'story'
-                      ? navigate({ name: 'story-learn', levelId: level.id })
-                      : level.levelKind === 'concept'
-                        ? navigate({ name: 'concept-learn', levelId: level.id })
-                        : navigate({ name: 'learn', levelId: level.id })
-                  }}
+                  onStart={() => navigate(resolveScreenForLevel(level.id))}
                 />
               ))}
             </div>
