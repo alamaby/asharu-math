@@ -14,7 +14,7 @@ export default defineConfig({
         'favicon.svg',
         'apple-touch-icon.png',
         'og-image.png',
-        'models/train/**/*.{glb,png}',
+        'models/**/*.{glb,png}',
       ],
       manifest: {
         id: '/',

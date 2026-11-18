@@ -13,6 +13,7 @@ import type { TrainGrade } from '../../lib/trainQuestionGenerator'
 import { isValidTrainVariant, type LocoShape, type TrainVariant } from '../../lib/trainVariants'
 import { MANEUVER_TOTAL_MS, computeManeuver } from '../../lib/trainManeuver'
 import { instantiateTrainModel, type TrainModelKey } from '../../lib/trainModelLoader'
+import { instantiateAnimalModel } from '../../lib/animalModelLoader'
 
 export type BranchIndex = 0 | 1 | 2
 
@@ -142,6 +143,11 @@ export class TrainScene {
   private hopT = 99
   private flag: THREE.Mesh | null = null
   private cowHead: THREE.Mesh | null = null
+  private animalMixers: THREE.AnimationMixer[] = []
+  private gltfCow: THREE.Group | null = null
+  private proceduralCowGroup: THREE.Group | null = null
+  private gltfSheep: THREE.Group[] = []
+  private proceduralSheepGroup: THREE.Group | null = null
   private butterflies: THREE.Group[] = []
   private butterflyBase: [number, number, number][] = []
   private flowersGroup = new THREE.Group()
@@ -340,6 +346,7 @@ export class TrainScene {
     if (this.disposed || this.useGltf === enabled) return
     this.useGltf = enabled
     this.refreshTrainMesh()
+    this.refreshAnimalMeshes()
   }
 
   isGltfEnabled(): boolean {
@@ -470,8 +477,13 @@ export class TrainScene {
     if (this.flag && !this.rm) {
       this.flag.rotation.y = Math.sin(this.elapsed * 3) * 0.35
     }
-    if (this.cowHead && !this.rm) {
+    if (this.cowHead && !this.rm && !this.gltfCow) {
       this.cowHead.rotation.x = Math.sin(this.elapsed * 0.8) * 0.15
+    }
+    if (!this.rm && this.farmGroup.visible) {
+      for (const mixer of this.animalMixers) {
+        mixer.update(dtc)
+      }
     }
     if (this.driverHead) {
       this.driverHead.rotation.y = this.phase === 'branch' ? this.selected * 0.4 - 0.4 : 0
@@ -526,6 +538,10 @@ export class TrainScene {
   dispose(): void {
     if (this.disposed) return
     this.disposed = true
+    for (const m of this.animalMixers) {
+      m.stopAllAction()
+    }
+    this.animalMixers = []
     this.disposeParts(this.locoParts)
     if (this.canvasEl) {
       this.canvasEl.removeEventListener('pointerdown', this.onPointerDown)
@@ -1148,25 +1164,8 @@ export class TrainScene {
     }
     this.scene.add(this.flowersGroup)
 
-    // Dekor tematik: sapi (K2) — dengan tanduk + telinga
-    const cowBody = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.7), this.lambert('#f8fafc'))
-    cowBody.position.set(7, 0.55, -4)
-    const cowHead = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), this.lambert('#8a5a3b'))
-    cowHead.position.set(7.7, 0.75, -4)
-    const hornGeo = new THREE.ConeGeometry(0.045, 0.16, 6)
-    const hornMat = this.lambert('#e2e8f0')
-    for (const side of [-1, 1] as const) {
-      const horn = new THREE.Mesh(hornGeo, hornMat)
-      horn.position.set(7.7, 1.02, -4 + 0.14 * side)
-      horn.rotation.x = 0.5 * side
-      this.farmGroup.add(horn)
-      const ear = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 5), this.lambert('#8a5a3b'))
-      ear.scale.set(1, 0.6, 1)
-      ear.position.set(7.62, 0.92, -4 + 0.24 * side)
-      this.farmGroup.add(ear)
-    }
-    this.cowHead = cowHead
-    this.farmGroup.add(cowBody, cowHead)
+    // Dekor tematik: sapi (K2) — GLTF dengan fallback prosedural
+    this.buildCow()
     this.scene.add(this.farmGroup)
 
     // Dekor tematik: lentera senja (K3)
@@ -1226,6 +1225,113 @@ export class TrainScene {
       ctx.font = 'bold 28px Nunito, sans-serif'
       ctx.fillText(sub, 128, 68)
     }
+  }
+
+  private buildCow(): void {
+    if (this.gltfCow) {
+      this.farmGroup.remove(this.gltfCow)
+      this.gltfCow = null
+    }
+    if (this.proceduralCowGroup) {
+      this.farmGroup.remove(this.proceduralCowGroup)
+      this.proceduralCowGroup.clear()
+    } else {
+      this.proceduralCowGroup = new THREE.Group()
+    }
+
+    const cowBody = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.7), this.lambert('#f8fafc'))
+    cowBody.position.set(7, 0.55, -4)
+    const cowHead = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), this.lambert('#8a5a3b'))
+    cowHead.position.set(7.7, 0.75, -4)
+    const hornGeo = new THREE.ConeGeometry(0.045, 0.16, 6)
+    const hornMat = this.lambert('#e2e8f0')
+    for (const side of [-1, 1] as const) {
+      const horn = new THREE.Mesh(hornGeo, hornMat)
+      horn.position.set(7.7, 1.02, -4 + 0.14 * side)
+      horn.rotation.x = 0.5 * side
+      this.proceduralCowGroup.add(horn)
+      const ear = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 5), this.lambert('#8a5a3b'))
+      ear.scale.set(1, 0.6, 1)
+      ear.position.set(7.62, 0.92, -4 + 0.24 * side)
+      this.proceduralCowGroup.add(ear)
+    }
+    this.cowHead = cowHead
+    this.proceduralCowGroup.add(cowBody, cowHead)
+    this.farmGroup.add(this.proceduralCowGroup)
+
+    if (this.useGltf) {
+      const entity = instantiateAnimalModel('cow')
+      if (entity) {
+        this.gltfCow = entity.root
+        this.gltfCow.position.set(7.2, 0, -4)
+        this.gltfCow.rotation.y = -Math.PI / 2
+        this.farmGroup.add(this.gltfCow)
+        this.proceduralCowGroup.visible = false
+        if (entity.mixer) {
+          this.animalMixers.push(entity.mixer)
+        }
+      } else {
+        this.proceduralCowGroup.visible = true
+      }
+    } else {
+      this.proceduralCowGroup.visible = true
+    }
+  }
+
+  private buildSheep(): void {
+    for (const g of this.gltfSheep) {
+      this.farmGroup.remove(g)
+    }
+    this.gltfSheep = []
+    if (this.proceduralSheepGroup) {
+      this.farmGroup.remove(this.proceduralSheepGroup)
+      this.proceduralSheepGroup.clear()
+    } else {
+      this.proceduralSheepGroup = new THREE.Group()
+    }
+
+    const sheepSpots: [number, number, number][] = [
+      [9, -14, -Math.PI / 2 + 0.2],
+      [10.5, -15, -Math.PI / 2 - 0.3],
+    ]
+
+    for (const [x, z, rotY] of sheepSpots) {
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), this.lambert('#f1f5f9'))
+      body.position.set(x, 0.4, z)
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 5), this.lambert('#475569'))
+      head.position.set(x + 0.35, 0.5, z)
+      this.proceduralSheepGroup.add(body, head)
+
+      if (this.useGltf) {
+        const entity = instantiateAnimalModel('sheep')
+        if (entity) {
+          entity.root.position.set(x, 0, z)
+          entity.root.rotation.y = rotY
+          this.farmGroup.add(entity.root)
+          this.gltfSheep.push(entity.root)
+          if (entity.mixer) {
+            this.animalMixers.push(entity.mixer)
+          }
+        }
+      }
+    }
+
+    this.farmGroup.add(this.proceduralSheepGroup)
+    if (this.useGltf && this.gltfSheep.length > 0) {
+      this.proceduralSheepGroup.visible = false
+    } else {
+      this.proceduralSheepGroup.visible = true
+    }
+  }
+
+  private refreshAnimalMeshes(): void {
+    if (this.disposed) return
+    for (const m of this.animalMixers) {
+      m.stopAllAction()
+    }
+    this.animalMixers = []
+    this.buildCow()
+    this.buildSheep()
   }
 
   private buildTracks(): void {
@@ -1565,17 +1671,8 @@ export class TrainScene {
     barnRoof.position.set(-12, 1.3, -16)
     barnRoof.rotation.y = Math.PI / 4
     this.farmGroup.add(barnBody, barnRoof)
-    const sheepSpots: [number, number][] = [
-      [9, -14],
-      [10.5, -15],
-    ]
-    for (const [x, z] of sheepSpots) {
-      const body = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), this.lambert('#f1f5f9'))
-      body.position.set(x, 0.4, z)
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 5), this.lambert('#475569'))
-      head.position.set(x + 0.35, 0.5, z)
-      this.farmGroup.add(body, head)
-    }
+    // Domba (K2) — GLTF dengan fallback prosedural
+    this.buildSheep()
     // K3: kunang-kunang (sprite) + jendela menyala
     if (typeof document !== 'undefined') {
       const fireflyGeo = new THREE.SphereGeometry(0.08, 5, 4)

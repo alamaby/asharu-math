@@ -188,4 +188,42 @@ describe('TrainScene GLTF integration (Fase 3 & 4)', () => {
 
     scene.dispose()
   })
+
+  it('menggunakan model GLTF sapi dan domba saat cache fauna tersedia', async () => {
+    const mockCow = new THREE.Group()
+    mockCow.name = 'MockCow'
+    const mockSheep = new THREE.Group()
+    mockSheep.name = 'MockSheep'
+
+    const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js')
+    vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad) => {
+      const p = String(path)
+      let sceneModel = mockCow
+      if (p.includes('sheep')) sceneModel = mockSheep
+      if (onLoad) {
+        // @ts-expect-error test stub
+        onLoad({ scene: sceneModel, animations: [] })
+      }
+    })
+
+    const { loadAnimalModel, clearAnimalModelCache } = await import('../src/lib/animalModelLoader')
+    clearAnimalModelCache()
+    await loadAnimalModel('cow')
+    await loadAnimalModel('sheep')
+
+    const scene = new TrainScene(document.createElement('canvas'), { useGltf: true })
+    scene.applyTheme(2, 'DESA')
+
+    let foundCow = false
+    let foundSheepCount = 0
+    // @ts-expect-error test inspection
+    scene.farmGroup.traverse((o: THREE.Object3D) => {
+      if (o.name === 'MockCow') foundCow = true
+      if (o.name === 'MockSheep') foundSheepCount++
+    })
+
+    expect(foundCow).toBe(true)
+    expect(foundSheepCount).toBe(2)
+    scene.dispose()
+  })
 })
