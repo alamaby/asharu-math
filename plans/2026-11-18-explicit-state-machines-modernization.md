@@ -27,7 +27,7 @@ Mengidentifikasi seluruh mesin status implisit (*implicit state machines*) di da
 - [x] Satukan 15+ flag di `MagicAppleGarden.tsx` dan `CheerfulAquarium.tsx` ke dalam `placeValueWorldReducer`.
 - [x] Sambungkan `transitionTrain` dari `trainStateMachine.ts` ke dalam event handler `TrainScreen.tsx`.
 - [x] Ubah return value `useInstallPrompt` menjadi discriminated union status PWA.
-- [ ] Modernisasi state modal `ShareAchievement.tsx` dengan penanganan status kegagalan kanvas.
+- [x] Modernisasi state modal `ShareAchievement.tsx` dengan penanganan status kegagalan kanvas.
 
 ## Risks
 - **Regresi Animasi dan Audio Berantai**: Perubahan dari `useEffect` berbasis `setTimeout` ke explicit reducer dapat memengaruhi urutan audio WebAudio/TTS jika adapter efek samping tidak sinkron dengan tepat.
@@ -43,6 +43,7 @@ Mengidentifikasi seluruh mesin status implisit (*implicit state machines*) di da
 - 2026-11-18 10:41:00 — Prioritas 5 selesai: pembuatan pure reducer `placeValueWorldReducer` di `src/lib/placeValueWorldMachine.ts` dan unifikasi 20+ `useState` di `MagicAppleGarden.tsx` serta `CheerfulAquarium.tsx`. 65 test files (462 tests) lulus 100%.
 - 2026-11-18 11:15:00 — Prioritas 6 selesai: integrasi transisi valid trainStateMachine ke TrainScreen.tsx via sendEvent, penambahan event READY_FOR_ANSWER dan penanganan PAUSED resume/quit aman. 66 test files (464 tests) lulus 100%.
 - 2026-11-18 11:18:00 — Prioritas 7 selesai: modernisasi useInstallPrompt dengan discriminated union InstallPromptResult (status: 'installed' | 'available' | 'ios_instructions' | 'unsupported') dan refaktor InstallButton via pattern matching. 10/10 test useInstallPrompt dan typecheck lulus.
+- 2026-11-18 11:23:00 — Prioritas 8 selesai: pembuatan pure reducer shareDialogReducer di src/lib/shareDialogMachine.ts, integrasi ke ShareAchievement.tsx, dan penanganan ramah anak fallback canvas failure serta busy-state Web Share API. 68 test files (478 tests) lulus 100%.
 
 ## Notes
 - Semua usulan perubahan mempertahankan kontrak props publik, aturan pedagogis matematika anak SD (mis. susunan angka tanpa `reverse()`), dan sistem penyimpanan lokal saat ini.

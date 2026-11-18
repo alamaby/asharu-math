@@ -107,6 +107,7 @@ const en: Dict = {
   'share.copyOk': 'Achievement text copied!',
   'share.shareFail': "Can't share right now. Try downloading the image instead.",
   'share.copyFail': "Can't copy right now.",
+  'share.imageFail': 'Card image could not be loaded on this device.',
   'share.template': (p: { intro: string; achievement: string; url: string }) =>
     `${p.intro}I just earned the '${p.achievement}' badge on Asharu Math! Come learn math with me at ${p.url}`,
   'share.introWithName': (p: { name: string }) => `My name is ${p.name}. `,

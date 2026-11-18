@@ -1,7 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useReducer, useRef } from 'react'
 import { useI18n } from '../../i18n/LanguageContext'
 import { achievementShareText } from '../../lib/achievements'
-import { shareText } from '../../lib/share'
+import { copyText, shareText } from '../../lib/share'
+import {
+  initialShareDialogState,
+  shareDialogReducer,
+} from '../../lib/shareDialogMachine'
 import { generateAchievementImage } from '../../lib/shareImage'
 import {
   facebookShareUrl,
@@ -9,7 +13,6 @@ import {
   whatsappShareUrl,
   xShareUrl,
 } from '../../lib/socialShare'
-import { copyText } from '../../lib/share'
 import type { AchievementDefinition } from '../../types'
 
 interface ShareAchievementProps {
@@ -24,31 +27,45 @@ const SOCIAL_BUTTON_CLASS =
  * Tombol "Bagikan" yang membuka panel berbagi: pratinjau gambar kartu
  * pencapaian (bernama anak), Web Share API untuk file gambar dengan
  * fallback unduh, tautan langsung WhatsApp/Facebook/X/Telegram, serta
- * salin teks. Tidak ada publikasi otomatis — semua butuh tindakan anak.
+ * salin teks.
+ *
+ * Menggunakan mesin status eksplisit `shareDialogReducer` untuk
+ * menangani siklus rendering canvas, kesiapan blob, penanganan error,
+ * dan pencegahan operasi ganda (busy lock).
  */
 export default function ShareAchievement({ achievement, childName }: ShareAchievementProps) {
-  const [open, setOpen] = useState(false)
-  const [imageBlob, setImageBlob] = useState<Blob | null>(null)
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const [state, dispatch] = useReducer(shareDialogReducer, initialShareDialogState)
   const closeRef = useRef<HTMLButtonElement>(null)
+  const activeUrlRef = useRef<string | null>(null)
   const { lang, t } = useI18n()
 
   const shareMessage = achievementShareText(achievement, childName, lang)
+  const isOpen = state.phase !== 'closed'
 
-  /** Reset gambar lama sebelum membuka panel agar pratinjau selalu segar */
+  // Buka panel berbagi dan transisikan status ke rendering
   const openSharePanel = () => {
-    setImageBlob(null)
-    setImageUrl(null)
-    setOpen(true)
+    if (activeUrlRef.current) {
+      URL.revokeObjectURL(activeUrlRef.current)
+      activeUrlRef.current = null
+    }
+    dispatch({ type: 'OPEN' })
   }
 
+  const closeSharePanel = () => {
+    if (activeUrlRef.current) {
+      URL.revokeObjectURL(activeUrlRef.current)
+      activeUrlRef.current = null
+    }
+    dispatch({ type: 'CLOSE' })
+  }
+
+  // Efek pembuatan gambar kartu saat dialog memasuki fase 'rendering'
   useEffect(() => {
-    if (!open) return
+    if (state.phase !== 'rendering') return
     closeRef.current?.focus()
-    let revokeUrl: string | null = null
+
     let cancelled = false
+
     void generateAchievementImage({
       achievement,
       childName,
@@ -58,31 +75,56 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
         greet: t('ach.greet', { name: childName }),
       },
       locale: lang === 'id' ? 'id-ID' : 'en-US',
-    }).then((blob) => {
-      if (cancelled) return
-      if (blob) {
-        const url = URL.createObjectURL(blob)
-        revokeUrl = url
-        setImageBlob(blob)
-        setImageUrl(url)
-      }
     })
+      .then((blob) => {
+        if (cancelled) return
+        if (blob) {
+          const url = URL.createObjectURL(blob)
+          activeUrlRef.current = url
+          dispatch({ type: 'IMAGE_READY', blob, url })
+        } else {
+          dispatch({ type: 'IMAGE_FAILED', feedback: t('share.imageFail') })
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          dispatch({ type: 'IMAGE_FAILED', feedback: t('share.imageFail') })
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [state.phase, achievement, childName, lang, t])
+
+  // Listener tombol keyboard Escape untuk menutup dialog dengan aksesibilitas ramah anak
+  useEffect(() => {
+    if (!isOpen) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
+      if (event.key === 'Escape') closeSharePanel()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => {
-      cancelled = true
       window.removeEventListener('keydown', onKeyDown)
-      if (revokeUrl) URL.revokeObjectURL(revokeUrl)
     }
-  }, [open, achievement, childName, lang, t])
+  }, [isOpen])
+
+  // Bersihkan ObjectURL saat komponen unmount
+  useEffect(() => {
+    return () => {
+      if (activeUrlRef.current) {
+        URL.revokeObjectURL(activeUrlRef.current)
+      }
+    }
+  }, [])
 
   const shareImage = async () => {
-    if (!imageBlob) return
-    setBusy(true)
+    if (state.phase !== 'ready') return
+    dispatch({ type: 'SET_BUSY', busy: true })
     try {
-      const file = new File([imageBlob], `pencapaian-${achievement.id}.png`, { type: 'image/png' })
+      const file = new File([state.imageBlob], `pencapaian-${achievement.id}.png`, {
+        type: 'image/png',
+      })
       const navigatorWithShare = navigator as Navigator & {
         canShare?: (data: { files: File[] }) => boolean
       }
@@ -91,20 +133,20 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
         navigatorWithShare.canShare({ files: [file] })
       ) {
         await navigatorWithShare.share({ files: [file], text: shareMessage })
-        setMessage(t('share.sharedOk'))
+        dispatch({ type: 'SET_FEEDBACK', message: t('share.sharedOk') })
       } else {
         downloadImage()
       }
     } catch {
-      setMessage(t('share.shareFail'))
+      dispatch({ type: 'SET_FEEDBACK', message: t('share.shareFail') })
     } finally {
-      setBusy(false)
+      dispatch({ type: 'SET_BUSY', busy: false })
     }
   }
 
   const downloadImage = () => {
-    if (!imageBlob) return
-    const url = URL.createObjectURL(imageBlob)
+    if (state.phase !== 'ready') return
+    const url = URL.createObjectURL(state.imageBlob)
     const anchor = document.createElement('a')
     anchor.href = url
     anchor.download = `pencapaian-${achievement.id}.png`
@@ -112,25 +154,29 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
     anchor.click()
     document.body.removeChild(anchor)
     URL.revokeObjectURL(url)
-    setMessage(t('share.downloadOk'))
+    dispatch({ type: 'SET_FEEDBACK', message: t('share.downloadOk') })
   }
 
   const handleCopy = async () => {
     const outcome = await copyText(shareMessage)
-    setMessage(outcome === 'copied' ? t('share.copyOk') : t('share.copyFail'))
+    dispatch({
+      type: 'SET_FEEDBACK',
+      message: outcome === 'copied' ? t('share.copyOk') : t('share.copyFail'),
+    })
   }
 
   const legacyShare = async () => {
-    setBusy(true)
+    if (state.phase === 'ready' && state.busy) return
     const outcome = await shareText(shareMessage)
-    setMessage(
-      outcome === 'shared'
-        ? t('share.sharedOk')
-        : outcome === 'copied'
-          ? t('share.copyOk')
-          : t('share.shareFail'),
-    )
-    setBusy(false)
+    dispatch({
+      type: 'SET_FEEDBACK',
+      message:
+        outcome === 'shared'
+          ? t('share.sharedOk')
+          : outcome === 'copied'
+            ? t('share.copyOk')
+            : t('share.shareFail'),
+    })
   }
 
   return (
@@ -143,11 +189,11 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
         {t('share.open')}
       </button>
 
-      {open && (
+      {isOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
           onClick={(event) => {
-            if (event.target === event.currentTarget) setOpen(false)
+            if (event.target === event.currentTarget) closeSharePanel()
           }}
         >
           <div
@@ -163,7 +209,7 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
               <button
                 ref={closeRef}
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={closeSharePanel}
                 aria-label={t('share.closePanel')}
                 className="flex h-11 w-11 items-center justify-center rounded-full text-xl font-bold text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300"
               >
@@ -172,15 +218,19 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
             </div>
 
             <div className="mt-3 flex justify-center">
-              {imageUrl ? (
+              {state.phase === 'ready' ? (
                 <img
-                  src={imageUrl}
+                  src={state.imageUrl}
                   alt={t('share.imageAlt', { name: achievement.name[lang], child: childName })}
                   className="w-56 rounded-2xl border-2 border-sky-100 shadow-md"
                 />
-              ) : (
+              ) : state.phase === 'rendering' ? (
                 <div className="flex h-40 w-56 items-center justify-center rounded-2xl border-2 border-dashed border-sky-200 bg-sky-50 text-sm font-bold text-slate-400">
                   {t('share.preparing')}
+                </div>
+              ) : (
+                <div className="flex h-40 w-56 flex-col items-center justify-center rounded-2xl border-2 border-amber-200 bg-amber-50 p-3 text-center text-xs font-bold text-amber-800">
+                  <span>⚠️ {t('share.imageFail')}</span>
                 </div>
               )}
             </div>
@@ -189,7 +239,7 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
               <button
                 type="button"
                 onClick={shareImage}
-                disabled={busy || imageBlob === null}
+                disabled={state.phase !== 'ready' || state.busy}
                 className="min-h-12 w-full rounded-2xl border-b-4 border-emerald-600 bg-emerald-500 text-base font-black text-white hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300 disabled:opacity-40"
               >
                 {t('share.sendImage')}
@@ -197,7 +247,7 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
               <button
                 type="button"
                 onClick={downloadImage}
-                disabled={imageBlob === null}
+                disabled={state.phase !== 'ready'}
                 className="min-h-11 w-full rounded-2xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 disabled:opacity-40"
               >
                 {t('share.downloadImage')}
@@ -239,7 +289,7 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
               <button
                 type="button"
                 onClick={legacyShare}
-                disabled={busy}
+                disabled={state.phase === 'ready' && state.busy}
                 className="min-h-11 w-full rounded-2xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-300 disabled:opacity-50"
               >
                 {t('share.viaDevice')}
@@ -253,13 +303,13 @@ export default function ShareAchievement({ achievement, childName }: ShareAchiev
               </button>
             </div>
 
-            {message && (
+            {state.feedback && (
               <p
                 role="status"
                 aria-live="polite"
                 className="mt-3 text-center text-xs font-bold text-emerald-700"
               >
-                {message}
+                {state.feedback}
               </p>
             )}
           </div>

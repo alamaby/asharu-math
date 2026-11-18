@@ -106,6 +106,7 @@ const id = {
   'share.copyOk': 'Teks pencapaian sudah disalin!',
   'share.shareFail': 'Belum bisa membagikan sekarang. Coba unduh gambarnya ya.',
   'share.copyFail': 'Belum bisa menyalin sekarang.',
+  'share.imageFail': 'Gambar kartu tidak dapat dimuat di perangkat ini.',
   'share.template': (p: { intro: string; achievement: string; url: string }) =>
     `${p.intro}Aku mendapatkan pencapaian '${p.achievement}' di Asharu Math! Yuk, belajar matematika bersama di ${p.url}`,
   'share.introWithName': (p: { name: string }) => `Namaku ${p.name}. `,
