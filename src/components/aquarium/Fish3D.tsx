@@ -11,8 +11,13 @@ import {
   type SwimBounds,
 } from '../../lib/aquariumSwim'
 import { playPickFish } from '../../lib/aquariumSound'
+import {
+  instantiateFishModel,
+  loadFishModel,
+  type LoadedFishEntity,
+} from '../../lib/fishModelLoader'
 
-// Shared low-poly geometries/materials — disposed on unmount via effect not needed as reused
+// Shared low-poly geometries/materials — dipertahankan sebagai graceful fallback saat GLTF belum/gagal dimuat
 const bodyGeo = new THREE.BoxGeometry(0.55, 0.32, 0.22)
 const tailGeo = new THREE.ConeGeometry(0.18, 0.32, 6)
 const eyeWhiteGeo = new THREE.SphereGeometry(0.07, 8, 8)
@@ -56,11 +61,17 @@ export default function Fish3D({
   const [flee, setFlee] = useState<[number, number]>([0, 0])
   const reducedRef = useRef(false)
   const { progress } = useProgress()
+
+  const modelKey = variant === 'ones' ? 'clownfish' : 'bluefish'
+  const [gltfEntity, setGltfEntity] = useState<LoadedFishEntity | null>(() => {
+    return instantiateFishModel(modelKey)
+  })
+
   const bodyMat = variant === 'ones' ? matOnesBody : matTensBody
   const tailMat = variant === 'ones' ? matTailOnes : matTailTens
   const dotMat = variant === 'ones' ? matOnesDot : matTensDot
 
-  // S7: detect prefers-reduced-motion once at mount
+  // Deteksi prefers-reduced-motion untuk aksesibilitas anak yang sensitif gerakan
   useEffect(() => {
     try {
       reducedRef.current = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -69,20 +80,50 @@ export default function Fish3D({
     }
   }, [])
 
+  // Muat model GLTF jika belum ada di cache in-memory, lalu instansiasikan salinan independen
+  useEffect(() => {
+    let active = true
+    loadFishModel(modelKey)
+      .then(() => {
+        if (active) {
+          const inst = instantiateFishModel(modelKey)
+          if (inst?.action) {
+            inst.action.time = wiggleOffset % (inst.action.getClip().duration || 1.2)
+          }
+          setGltfEntity(inst)
+        }
+      })
+      .catch(() => {
+        // Tetap gunakan fallback geometri balok prosedural jika pemuatan gagal
+      })
+    return () => {
+      active = false
+    }
+  }, [modelKey, wiggleOffset])
+
+  // Bersihkan mixer animasi saat unmount
+  useEffect(() => {
+    return () => {
+      if (gltfEntity?.mixer) {
+        gltfEntity.mixer.stopAllAction()
+      }
+    }
+  }, [gltfEntity])
+
   useEffect(() => {
     posRef.current = position
-    if (groupRef.current) {
+    if (groupRef.current?.position?.set) {
       groupRef.current.position.set(position[0], position[1], position[2])
-      groupRef.current.scale.set(scale, scale, scale)
+      groupRef.current.scale?.set(scale, scale, scale)
     }
   }, [position, scale])
 
-  // S6: sync internal flee state to ref
+  // Sinkronisasi flee offset ke ref untuk frame loop
   useEffect(() => {
     fleeRef.current = flee
   }, [flee])
 
-  // S6: cleanup timeout on unmount
+  // Pembersihan timeout flee saat unmount
   useEffect(() => {
     return () => {
       if (fleeTimeoutRef.current !== null) {
@@ -92,7 +133,10 @@ export default function Fish3D({
     }
   }, [])
 
-  // S6: klik menghindar — visual only, tidak ubah hitungan
+  /**
+   * Alasan Bisnis: Interaksi menghindar (fleeing) memberikan umpan balik visual menyenangkan
+   * saat anak menyentuh ikan, memperkuat keterikatan anak pada materi visual tanpa mengubah nilai hitungan matematika.
+   */
   const handleFlee = (e: ThreeEvent<PointerEvent>) => {
     if (!progress.animationsEnabled) return
     if (reducedRef.current) return
@@ -117,17 +161,23 @@ export default function Fish3D({
     e.stopPropagation()
   }
 
-  // S4/S7: floating wiggle + swim wander in bounds — skip when animations disabled or reduced-motion
-  useFrame(({ clock }) => {
+  // Wiggle mengapung + renang berkelana di dalam batas akuarium
+  useFrame(({ clock }, delta) => {
     if (!groupRef.current) return
     if (!progress.animationsEnabled) return
+
+    // Kibaskan ekor GLTF dengan mixer bawaan jika animasi diizinkan
+    if (gltfEntity?.mixer && !reducedRef.current) {
+      gltfEntity.mixer.update(delta)
+    }
+
     const target = posRef.current
     const hasSwim = !!swimBounds
     const reduced = reducedRef.current
     let baseX: number
     let baseY: number
     if (reduced) {
-      // S7: reduced-motion → hanya wiggle mini, skip wander/flee/flip
+      // Reduced-motion: gerakan minimal tanpa wander/flee/flip
       const t = clock.getElapsedTime() + wiggleOffset
       baseX = target[0]
       baseY = target[1] + Math.sin(t * 1.2) * 0.02
@@ -182,34 +232,43 @@ export default function Fish3D({
       scale={scale}
       dispose={null}
       onPointerDown={(e) => {
-        // S6: klik pada fish memicu flee; stopPropagation agar tidak tembus ke parent
+        // Klik pada fish memicu flee; stopPropagation agar tidak tembus ke parent
         handleFlee(e as unknown as ThreeEvent<PointerEvent>)
       }}
     >
-      {/* Hit-area invisible sphere untuk memperluas area klik */}
+      {/* Hit-area invisible sphere untuk memperluas area klik pada layar sentuh */}
       <mesh visible={false} position={[0, 0, 0]}>
         <sphereGeometry args={[0.55, 8, 8]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
-      {/* Body */}
-      <mesh geometry={bodyGeo} material={bodyMat} castShadow={false} receiveShadow={false} />
-      {/* Tail */}
-      <mesh
-        geometry={tailGeo}
-        material={tailMat}
-        position={[-0.42, 0, 0]}
-        rotation={[0, 0, Math.PI / 2]}
-      />
-      {/* Eyes */}
-      <mesh geometry={eyeWhiteGeo} material={matWhite} position={[0.18, 0.08, 0.12]} />
-      <mesh geometry={eyeWhiteGeo} material={matWhite} position={[0.18, 0.08, -0.12]} />
-      <mesh geometry={eyePupilGeo} material={matBlack} position={[0.22, 0.08, 0.12]} />
-      <mesh geometry={eyePupilGeo} material={matBlack} position={[0.22, 0.08, -0.12]} />
-      {/* Pattern dot for not relying only on color (spec D) */}
-      <mesh geometry={dotGeo} material={dotMat} position={[0, 0.12, 0.13]} scale={0.7} />
-      {variant === 'tens' && (
-        <mesh geometry={dotGeo} material={dotMat} position={[-0.08, 0.1, -0.12]} scale={0.6} />
+
+      {/* Tampilkan model 3D GLTF jika siap, atau fallback geometri prosedural jika belum/gagal */}
+      {gltfEntity ? (
+        <primitive object={gltfEntity.root} />
+      ) : (
+        <>
+          {/* Body */}
+          <mesh geometry={bodyGeo} material={bodyMat} castShadow={false} receiveShadow={false} />
+          {/* Tail */}
+          <mesh
+            geometry={tailGeo}
+            material={tailMat}
+            position={[-0.42, 0, 0]}
+            rotation={[0, 0, Math.PI / 2]}
+          />
+          {/* Eyes */}
+          <mesh geometry={eyeWhiteGeo} material={matWhite} position={[0.18, 0.08, 0.12]} />
+          <mesh geometry={eyeWhiteGeo} material={matWhite} position={[0.18, 0.08, -0.12]} />
+          <mesh geometry={eyePupilGeo} material={matBlack} position={[0.22, 0.08, 0.12]} />
+          <mesh geometry={eyePupilGeo} material={matBlack} position={[0.22, 0.08, -0.12]} />
+          {/* Pattern dot for not relying only on color (spec D) */}
+          <mesh geometry={dotGeo} material={dotMat} position={[0, 0.12, 0.13]} scale={0.7} />
+          {variant === 'tens' && (
+            <mesh geometry={dotGeo} material={dotMat} position={[-0.08, 0.1, -0.12]} scale={0.6} />
+          )}
+        </>
       )}
+
       {/* Highlight ring */}
       {highlight && (
         <mesh position={[0, -0.28, 0]} rotation={[-Math.PI / 2, 0, 0]}>

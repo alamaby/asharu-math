@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import * as THREE from 'three'
+import { preloadFishModels } from '../../lib/fishModelLoader'
 
 const AquariumScene3D = lazy(() => import('./AquariumScene3D'))
 
@@ -43,6 +44,7 @@ export default function AquariumCanvas(props: AquariumCanvasProps) {
   const webGL = useMemo(() => hasWebGL(), [])
 
   useEffect(() => {
+    preloadFishModels().catch(() => {})
     const onVis = () => setHidden(document.hidden)
     document.addEventListener('visibilitychange', onVis)
     return () => document.removeEventListener('visibilitychange', onVis)
