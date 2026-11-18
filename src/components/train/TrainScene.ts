@@ -12,12 +12,17 @@ import * as THREE from 'three'
 import type { TrainGrade } from '../../lib/trainQuestionGenerator'
 import { isValidTrainVariant, type LocoShape, type TrainVariant } from '../../lib/trainVariants'
 import { MANEUVER_TOTAL_MS, computeManeuver } from '../../lib/trainManeuver'
+import { instantiateTrainModel, type TrainModelKey } from '../../lib/trainModelLoader'
 
 export type BranchIndex = 0 | 1 | 2
 
 export interface TrainSceneCallbacks {
   onReachJunction?: () => void
   onReachStation?: () => void
+}
+
+export interface TrainSceneOptions extends TrainSceneCallbacks {
+  useGltf?: boolean
 }
 
 const MAIN_POINTS = [
@@ -106,7 +111,10 @@ export class TrainScene {
   private renderer: THREE.WebGLRenderer
   private scene = new THREE.Scene()
   private camera: THREE.PerspectiveCamera
-  private cb: TrainSceneCallbacks
+  private cb: TrainSceneOptions
+  private useGltf = false
+  private currentLocoColor = '#e05555'
+  private currentWagons: { kind: string; color: string }[] = [{ kind: 'boxcar', color: '#f5b942' }]
   private phase: 'main' | 'branch' = 'main'
   private t = 0
   private speed = 0.12
@@ -118,7 +126,8 @@ export class TrainScene {
   private stationFired = false
   private selected: BranchIndex = 1
   private disposed = false
-  private wheels: THREE.Mesh[] = []
+  private wheels: THREE.Object3D[] = []
+  private proceduralWheels: THREE.Mesh[] = []
   private smokes: THREE.Sprite[] = []
   private smokeTex: THREE.CanvasTexture | null = null
   private clouds: THREE.Group[] = []
@@ -163,7 +172,7 @@ export class TrainScene {
   private dragging = false
   private dragLastX = 0
 
-  constructor(canvas: HTMLCanvasElement, cb: TrainSceneCallbacks = {}) {
+  constructor(canvas: HTMLCanvasElement, cb: TrainSceneOptions = {}) {
     try {
       this.renderer = new THREE.WebGLRenderer({
         canvas,
@@ -174,6 +183,9 @@ export class TrainScene {
       throw new Error('WebGL tidak tersedia')
     }
     this.cb = cb
+    if (cb.useGltf) {
+      this.useGltf = true
+    }
 
     const w = canvas.clientWidth || 320
     const h = canvas.clientHeight || 220
@@ -312,6 +324,9 @@ export class TrainScene {
   applyTrainVariant(variant: TrainVariant): void {
     if (this.disposed) return
     if (!isValidTrainVariant(variant)) return
+    this.currentLocoColor = variant.locoColor
+    this.currentWagons = variant.wagons
+    this.locoShape = variant.loco
     // Bangun dulu, buang yang lama belakangan: jika konstruksi gagal,
     // part lama tetap terpasang sehingga kereta tidak pernah tanpa badan.
     const freshLoco = this.makeLocoParts(variant.loco, variant.locoColor)
@@ -319,7 +334,29 @@ export class TrainScene {
     this.disposeParts(this.locoParts)
     this.locoParts = freshLoco
     this.buildWagonUnits(variant.wagons)
-    this.locoShape = variant.loco
+  }
+
+  setGltfEnabled(enabled: boolean): void {
+    if (this.disposed || this.useGltf === enabled) return
+    this.useGltf = enabled
+    this.refreshTrainMesh()
+  }
+
+  isGltfEnabled(): boolean {
+    return this.useGltf
+  }
+
+  isDisposed(): boolean {
+    return this.disposed
+  }
+
+  private refreshTrainMesh(): void {
+    if (this.disposed) return
+    const freshLoco = this.makeLocoParts(this.locoShape, this.currentLocoColor)
+    this.trainGroup.add(...freshLoco)
+    this.disposeParts(this.locoParts)
+    this.locoParts = freshLoco
+    this.buildWagonUnits(this.currentWagons)
   }
 
   applyTheme(grade: TrainGrade, stationLabel: string): void {
@@ -358,14 +395,16 @@ export class TrainScene {
     const spin = dtc * wheelRate
     for (const w of this.wheels) w.rotation.x += spin
     for (const unit of this.wagonUnits) {
-      for (const w of (unit.userData.wheels as THREE.Mesh[]) ?? []) w.rotation.x += spin
+      for (const w of (unit.userData.wheels as THREE.Object3D[]) ?? []) w.rotation.x += spin
     }
     // Batang roda mengikuti pin crank (gerak melingkar penuh, radius 0.14 agar
     // jelas terlihat); kiri dan kanan 180° berlawanan fase
-    for (const rod of this.rods) {
-      const side = rod.userData.side as number
-      rod.position.y = 0.28 + 0.14 * Math.cos(this.elapsed * wheelRate) * side
-      rod.position.z = 0.3 + 0.14 * Math.sin(this.elapsed * wheelRate) * side
+    if (!this.useGltf) {
+      for (const rod of this.rods) {
+        const side = rod.userData.side as number
+        rod.position.y = 0.28 + 0.14 * Math.cos(this.elapsed * wheelRate) * side
+        rod.position.z = 0.3 + 0.14 * Math.sin(this.elapsed * wheelRate) * side
+      }
     }
     if (this.maneuverActive) {
       const elapsedMs = (this.elapsed - this.maneuverStart) * 1000
@@ -533,22 +572,42 @@ export class TrainScene {
 
   private disposeParts(parts: THREE.Object3D[]): void {
     for (const part of parts) {
-      const mesh = part as THREE.Mesh
-      if (mesh && (mesh as THREE.Mesh).isMesh) {
-        mesh.geometry?.dispose()
-        const m = mesh.material
-        if (Array.isArray(m)) {
-          for (const mm of m) mm.dispose()
-        } else if (m) {
-          m.dispose()
+      part.traverse((obj) => {
+        const mesh = obj as THREE.Mesh
+        if (mesh && mesh.isMesh) {
+          mesh.geometry?.dispose()
+          const m = mesh.material
+          if (Array.isArray(m)) {
+            for (const mm of m) mm.dispose()
+          } else if (m) {
+            m.dispose()
+          }
         }
-      }
+      })
       this.trainGroup.remove(part)
     }
     parts.length = 0
   }
 
   private makeLocoParts(shape: LocoShape, color: string): THREE.Object3D[] {
+    if (this.useGltf) {
+      const gltfKey: TrainModelKey = shape === 'diesel' ? 'loco-diesel' : 'loco-classic'
+      const entity = instantiateTrainModel(gltfKey)
+      if (entity) {
+        entity.root.userData.part = 'gltf-loco'
+        for (const w of this.proceduralWheels) w.visible = false
+        this.wheels = [...entity.wheels]
+        this.rods = []
+        return [entity.root]
+      }
+    }
+
+    for (const w of this.proceduralWheels) w.visible = true
+    this.wheels = [...this.proceduralWheels]
+    return this.makeProceduralLocoParts(shape, color)
+  }
+
+  private makeProceduralLocoParts(shape: LocoShape, color: string): THREE.Object3D[] {
     const parts: THREE.Object3D[] = []
     const bodyMat = this.phong(color)
     const cabinMat = this.lambert('#3b82f6')
@@ -640,12 +699,74 @@ export class TrainScene {
     return parts
   }
 
+  private disposeOldWagons(): void {
+    for (const old of this.wagonUnits) {
+      old.traverse((o) => {
+        const mesh = o as THREE.Mesh
+        if (mesh.isMesh) {
+          mesh.geometry?.dispose()
+          const m = mesh.material
+          if (Array.isArray(m)) {
+            for (const mm of m) mm.dispose()
+          } else if (m) {
+            m.dispose()
+          }
+        }
+      })
+      this.scene.remove(old)
+    }
+  }
+
   /**
    * Bangun ulang unit gerbong sebagai pivot terpisah (anak scene). Tiap unit
    * ditempatkan mengikuti rel pada jarak tetap di belakang lokomotif, sehingga
    * belokan terlihat articulated. Pola atomic: bangun baru dulu, buang lama.
    */
   private buildWagonUnits(wagons: { kind: string; color: string }[]): void {
+    if (this.useGltf) {
+      const gltfUnits: THREE.Group[] = []
+      let allLoaded = true
+      for (let i = 0; i < wagons.length; i++) {
+        const w = wagons[i]!
+        const gltfKey: TrainModelKey =
+          w.kind === 'tanker' ? 'wagon-tank' : w.kind === 'flatbed' ? 'wagon-flatbed' : 'wagon-box'
+        const entity = instantiateTrainModel(gltfKey)
+        if (!entity) {
+          allLoaded = false
+          break
+        }
+        const unit = new THREE.Group()
+        entity.root.userData.part = 'gltf-wagon'
+        unit.add(entity.root)
+        unit.userData.wheels = entity.wheels
+        unit.userData.isGltf = true
+
+        if (i < wagons.length - 1) {
+          const coupling = new THREE.Mesh(
+            new THREE.BoxGeometry(0.07, 0.07, 0.5),
+            this.lambert('#1f2937'),
+          )
+          coupling.position.set(0, 0.42, -0.95)
+          coupling.userData.part = 'coupling'
+          unit.add(coupling)
+        }
+        this.scene.add(unit)
+        gltfUnits.push(unit)
+      }
+
+      if (allLoaded && gltfUnits.length === wagons.length) {
+        this.disposeOldWagons()
+        this.wagonUnits = gltfUnits
+        return
+      }
+
+      for (const u of gltfUnits) this.scene.remove(u)
+    }
+
+    this.buildProceduralWagonUnits(wagons)
+  }
+
+  private buildProceduralWagonUnits(wagons: { kind: string; color: string }[]): void {
     const darkMat = this.lambert('#1f2937')
     const wheelGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.2, 12)
     const wheelMat = this.lambert('#1f2937')
@@ -759,21 +880,7 @@ export class TrainScene {
       units.push(unit)
     }
     // Buang unit lama setelah yang baru terpasang
-    for (const old of this.wagonUnits) {
-      old.traverse((o) => {
-        const mesh = o as THREE.Mesh
-        if (mesh.isMesh) {
-          mesh.geometry?.dispose()
-          const m = mesh.material
-          if (Array.isArray(m)) {
-            for (const mm of m) mm.dispose()
-          } else if (m) {
-            m.dispose()
-          }
-        }
-      })
-      this.scene.remove(old)
-    }
+    this.disposeOldWagons()
     this.wagonUnits = units
   }
 
@@ -1185,7 +1292,12 @@ export class TrainScene {
       const wheel = new THREE.Mesh(wheelGeo, wheelMat)
       wheel.rotation.z = Math.PI / 2
       wheel.position.set(x, y, z)
-      this.wheels.push(wheel)
+      if (this.useGltf) {
+        wheel.visible = false
+      } else {
+        this.wheels.push(wheel)
+      }
+      this.proceduralWheels.push(wheel)
       this.trainGroup.add(wheel)
     }
 

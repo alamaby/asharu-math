@@ -1,11 +1,11 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-11-18 14:05:00
+Last Updated: 2026-11-18 14:26:00
 Format Version: 1
 
 ## Current State
 - Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.15.0`.
-- Model GLTF kereta & gerbong (CC0) Fase 1 & 2: Aset GLB pilihan dari Kenney Train Kit (v1.1, CC0) ditempatkan di `public/models/train/` (~754 KB total), modul loader `trainModelLoader.ts` dibuat dengan in-memory caching dan wheel node detection, precaching PWA di `vite.config.ts` aktif, 100% test lulus (482 test). Entri: `2026-11-18/140500-model-gltf-kereta-fase-1-2.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-kereta.md`.
+- Model GLTF kereta & gerbong (CC0) Fase 1–4: Aset GLB dari Kenney Train Kit (v1.1) terintegrasi penuh ke `TrainScene.ts` dengan auto-fallback prosedural, rotasi dinamis seluruh roda GLTF, artikulasi belokan kurva rel terjaga, background preload di `TrainCanvas.tsx`, PWA precaching aktif, 100% test lulus (486 test). Entri: `2026-11-18/142600-model-gltf-kereta-fase-3-4.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-kereta.md`.
 - Mesin status modal pencapaian: `ShareAchievement.tsx` mengadopsi pure reducer `shareDialogReducer` (`src/lib/shareDialogMachine.ts`) dengan status `phase: 'closed' | 'rendering' | 'ready' | 'error'`, menangani kegagalan canvas secara ramah anak, dan mengeliminasi kebocoran ObjectURL. Entri: `2026-11-18/112300-eksplisit-share-dialog-state-machine.md`. Plan: `plans/2026-11-18-explicit-state-machines-modernization.md`.
 - Mesin status instalasi PWA: `useInstallPrompt` menggunakan discriminated union `InstallPromptResult` (`status: 'installed' | 'available' | 'ios_instructions' | 'unsupported'`) dan `InstallButton` beralih ke pattern matching tanpa impossible states. Entri: `2026-11-18/111800-modernisasi-pwa-install-prompt-discriminated-union.md`. Plan: `plans/2026-11-18-explicit-state-machines-modernization.md`.
 - Integrasi mesin status kereta: `TrainScreen.tsx` terhubung penuh ke `trainStateMachine.ts` melalui event semantik `sendEvent`, mengeliminasi pemanggilan raw `setPhase` dan memvalidasi seluruh transisi fase Three.js. Entri: `2026-11-18/111500-integrasi-train-state-machine.md`. Plan: `plans/2026-11-18-explicit-state-machines-modernization.md`.
@@ -60,6 +60,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-11-18 14:26:00 — Model GLTF Kereta & Gerbong (Fase 3-4: Integrasi & Animasi)](2026-11-18/142600-model-gltf-kereta-fase-3-4.md)
 - [2026-11-18 14:05:00 — Model GLTF Kereta & Gerbong Bebas Atribusi (Fase 1-2)](2026-11-18/140500-model-gltf-kereta-fase-1-2.md)
 - [2026-11-18 11:23:00 — Eksplisit Share Dialog State Machine (ShareAchievement)](2026-11-18/112300-eksplisit-share-dialog-state-machine.md)
 - [2026-11-18 11:18:00 — Modernisasi PWA Install Prompt Discriminated Union](2026-11-18/111800-modernisasi-pwa-install-prompt-discriminated-union.md)

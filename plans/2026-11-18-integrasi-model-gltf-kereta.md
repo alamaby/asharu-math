@@ -42,18 +42,18 @@ Mengintegrasikan model 3D GLTF/GLB lokomotif dan gerbong kereta berlisensi CC0 (
 - [x] Buat unit test `tests/trainModelLoader.test.ts` (100% lulus).
 
 ### Fase 3 — Integrasi TrainScene
-- [ ] Integrasikan `trainModelLoader` ke siklus hidup inisialisasi `TrainScene`.
-- [ ] Pertahankan attachment masinis, penumpang, dan asap partikel pada koordinat GLTF.
-- [ ] Sesuaikan skala (*scale*) dan orientasi model GLTF agar cocok dengan rel Three.js saat ini.
+- [x] Integrasikan `trainModelLoader` ke siklus hidup inisialisasi `TrainScene`.
+- [x] Pertahankan attachment masinis, penumpang, dan asap partikel pada koordinat GLTF.
+- [x] Sesuaikan skala (*scale*) dan orientasi model GLTF agar cocok dengan rel Three.js saat ini.
 
 ### Fase 4 — Binding Animasi Roda & Artikulasi
-- [ ] Bind rotasi roda pada node `wheel`, `wheels-front`, dan `wheels-back` saat `elapsed` bertambah.
-- [ ] Pastikan posisi pivot gerbong GLTF selaras dengan `placeUnitOnJourney` (artikulasi belokan).
+- [x] Bind rotasi roda pada node `wheel`, `wheels-front`, dan `wheels-back` saat `elapsed` bertambah.
+- [x] Pastikan posisi pivot gerbong GLTF selaras dengan `placeUnitOnJourney` (artikulasi belokan).
 
 ### Fase 5 — Verifikasi
-- [ ] Jalankan Vitest (`npm run test`) dan pastikan seluruh test suite lolos.
-- [ ] Jalankan Typecheck (`npm run typecheck`) dan linter (`npm run lint`).
-- [ ] Validasi build produksi (`npm run build`).
+- [x] Jalankan Vitest (`npm run test`) dan pastikan seluruh test suite lolos (70 berkas, 486 tes).
+- [x] Jalankan Typecheck (`npm run typecheck`) dan linter (`npm run lint`).
+- [x] Validasi build produksi (`npm run build`).
 
 ## Risks & Mitigations
 - **Risiko A — Asynchronous Loading**: Model GLTF butuh waktu fetch beberapa milidetik; jika canvas langsung merender frame pertama sebelum model siap, kereta bisa berkedip (*flicker*).
@@ -64,6 +64,7 @@ Mengintegrasikan model 3D GLTF/GLB lokomotif dan gerbong kereta berlisensi CC0 (
 ## Progress Log
 - 2026-11-18 12:40:00 — Paket Kenney Train Kit (CC0) berhasil diunduh ke scratch, diverifikasi lisensinya (CC0 1.0 Universal), dan diinspeksi struktur nodenya (node roda terbukti terpisah dari bodi). Plan integrasi dibuat.
 - 2026-11-18 14:04:00 — Fase 1 & 2 selesai: file GLB model lokomotif & gerbong + tekstur ditempatkan di `public/models/train/`, utilitas loader `src/lib/trainModelLoader.ts` dibuat dengan in-memory cache & wheel detection, `vite.config.ts` diperbarui untuk precaching PWA, dan test suite lulus 100% (482 test).
+- 2026-11-18 14:26:00 — Fase 3 & 4 selesai: `TrainScene.ts` mendukung integrasi model GLTF dengan auto-fallback ke prosedural, rotasi dinamis seluruh node roda GLTF pada lokomotif dan gerbong, artikulasi pivot gerbong pada rel, preload background di `TrainCanvas.tsx`, dan pengujian `tests/trainSceneGltf.test.ts` (4 tes baru) lulus 100%. Total 486 tes lulus.
 
 ## Notes
 - Sumber resmi: [Kenney Train Kit](https://kenney.nl/assets/train-kit).

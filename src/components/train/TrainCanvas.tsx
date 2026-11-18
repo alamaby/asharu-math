@@ -3,6 +3,7 @@ import { TrainScene } from './TrainScene'
 import type { BranchIndex, TrainCameraMode } from './TrainScene'
 import type { TrainGrade } from '../../lib/trainQuestionGenerator'
 import type { TrainVariant } from '../../lib/trainVariants'
+import { preloadTrainModels } from '../../lib/trainModelLoader'
 import TrainFallback2D from './TrainFallback2D'
 
 export interface TrainCanvasProps {
@@ -87,6 +88,18 @@ export default function TrainCanvas({
       sceneRef.current.applyTrainVariant(trainVariant)
     }
   }, [trainVariant, sceneRef])
+
+  useEffect(() => {
+    let active = true
+    preloadTrainModels().then(() => {
+      if (active && sceneRef.current && !sceneRef.current.isDisposed()) {
+        sceneRef.current.setGltfEnabled(true)
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [sceneRef])
 
   useEffect(() => {
     if (!webGL) return
