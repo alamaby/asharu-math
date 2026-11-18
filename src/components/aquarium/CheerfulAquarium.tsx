@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useReducer, useCallback } from 'react'
 import type { MathProblem } from '../../types'
 import AquariumCanvas from './AquariumCanvas'
 import StackedPlaceValueBoard from '../math/StackedPlaceValueBoard'
@@ -15,6 +15,10 @@ import { useProgress } from '../../state/ProgressContext'
 import { splitPlaces, isCorrectAt } from '../../lib/aquariumPlaceValueMath'
 import { hasBorrow, hasCarry } from '../../lib/arithmetic'
 import {
+  createInitialPlaceValueWorldState,
+  placeValueWorldReducer,
+} from '../../lib/placeValueWorldMachine'
+import {
   speak,
   repeatLastNarration,
   stopAllAudio,
@@ -25,16 +29,6 @@ import {
   playTryAgain,
 } from '../../lib/aquariumSound'
 import { playTap } from '../../lib/sound'
-
-type Phase =
-  | 'intro'
-  // 'tutorial' phase handled via tutorialOpen boolean + tutorialStep
-  | 'showQuestion'
-  | 'exchangeOrGroup'
-  | 'enterOnesAnswer'
-  | 'enterTensAnswer'
-  | 'enterHundredsAnswer'
-  | 'completed'
 
 interface CheerfulAquariumProps {
   problem: MathProblem
@@ -104,32 +98,41 @@ export default function CheerfulAquarium({
     ? topPlaces.hundreds + botPlaces.hundreds + carry2
     : topPlaces.hundreds - borrow2
 
-  const [visualTens, setVisualTens] = useState(initialTens)
-  const [visualOnes, setVisualOnes] = useState(initialOnes)
-  const [visualHundreds, setVisualHundreds] = useState(initialHundreds)
-  const [exchanged, setExchanged] = useState(false)
-  const [exchangedHundred, setExchangedHundred] = useState(false)
-  const [opened, setOpened] = useState(false)
-  const [openedHundred, setOpenedHundred] = useState(false)
-  const [phase, setPhase] = useState<Phase>('intro')
-  const [tutorialStep, setTutorialStep] = useState(0)
-  const [tutorialOpen, setTutorialOpen] = useState(false)
-  const [onesAnswer, setOnesAnswer] = useState<number | null>(null)
-  const [tensAnswer, setTensAnswer] = useState<number | null>(null)
-  const [hundredsAnswer, setHundredsAnswer] = useState<number | null>(null)
-  const [activeColumn, setActiveColumn] = useState<'ones' | 'tens' | 'hundreds' | null>('ones')
-  const [feedback, setFeedback] = useState<{
-    kind: 'correct' | 'wrong' | 'info'
-    text: string
-  } | null>(null)
-  const [subtitle, setSubtitle] = useState<string | null>(null)
-  const [highlight, setHighlight] = useState<'tens' | 'ones' | 'hundreds' | null>('ones')
-  const [animating, setAnimating] = useState(false)
-  const [wrongAttempts, setWrongAttempts] = useState(0)
-  const [wrongOnes, setWrongOnes] = useState(false)
-  const [wrongTens, setWrongTens] = useState(false)
-  const [wrongHundreds, setWrongHundreds] = useState(false)
-  const [hasCheckedOnce, setHasCheckedOnce] = useState(false)
+  const [state, dispatch] = useReducer(
+    placeValueWorldReducer,
+    {
+      initialTens,
+      initialOnes,
+      initialHundreds,
+    },
+    createInitialPlaceValueWorldState,
+  )
+
+  const {
+    phase,
+    visualTens,
+    visualOnes,
+    visualHundreds,
+    exchanged,
+    exchangedHundred,
+    opened,
+    openedHundred,
+    onesAnswer,
+    tensAnswer,
+    hundredsAnswer,
+    activeColumn,
+    highlight,
+    feedback,
+    subtitle,
+    animating,
+    wrongAttempts,
+    wrongOnes,
+    wrongTens,
+    wrongHundreds,
+    hasCheckedOnce,
+    tutorialStep,
+    tutorialOpen,
+  } = state
   const enterHundredsText = t('aquarium.enterHundreds')
   const hintHundredsText = t('aquarium.hintHundreds')
 
@@ -154,47 +157,23 @@ export default function CheerfulAquarium({
     }
   }, [clearTimers])
 
-  // Reset sinkron (tanpa setTimeout): timer soal lama dibersihkan DULU,
-  // lalu state di-reset. Timer soal baru dijadwalkan oleh effect intro/
-  // showQuestion SETELAH effect ini, sehingga tidak ikut terhapus.
-  // (Versi async sebelumnya menghapus timer intro 600ms/tutorial yang baru
-  // dijadwalkan pada mount yang sama → fase macet di 'intro' selamanya.)
-  // Reset sinkron disengaja + aman (deps hanya problem.id); cascading render
-  // tidak terjadi karena effect hanya fire saat soal berganti.
-  /* eslint-disable react-hooks/set-state-in-effect */
+  // Reset saat problem.id berganti
   useEffect(() => {
     clearTimers()
     stopAllAudio()
-    setVisualTens(initialTens)
-    setVisualOnes(initialOnes)
-    setVisualHundreds(initialHundreds)
-    setExchanged(false)
-    setExchangedHundred(false)
-    setOpened(false)
-    setOpenedHundred(false)
-    setPhase('intro')
-    setTutorialStep(0)
-    setTutorialOpen(false)
-    setOnesAnswer(null)
-    setTensAnswer(null)
-    setHundredsAnswer(null)
-    setActiveColumn('ones')
-    setFeedback(null)
-    setSubtitle(null)
-    setHighlight('ones')
-    setAnimating(false)
-    setWrongAttempts(0)
-    setWrongOnes(false)
-    setWrongTens(false)
-    setWrongHundreds(false)
-    setHasCheckedOnce(false)
+    dispatch({
+      type: 'RESET',
+      initialTens,
+      initialOnes,
+      initialHundreds,
+      phase: 'intro',
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [problem.id])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const narrate = useCallback(
     (text: string) => {
-      setSubtitle(text)
+      dispatch({ type: 'SET_SUBTITLE', subtitle: text })
       speak(text, soundEnabled)
     },
     [soundEnabled],
@@ -204,21 +183,29 @@ export default function CheerfulAquarium({
     if (phase !== 'intro') return
     if (currentIndex === 0) {
       const id = window.setTimeout(() => {
-        setTutorialOpen(true)
-        setTutorialStep(0)
         const text = 'Halo! Selamat datang di Akuarium Ikan Ceria.'
-        setSubtitle(text)
+        dispatch({
+          type: 'TUTORIAL_OPEN',
+          step: 0,
+          subtitle: text,
+        })
         speak(text, soundEnabled)
       }, 0)
       timersRef.current.push(id)
     } else {
       const text = t('aquarium.startUnit')
-      const fbId = window.setTimeout(() => setFeedback({ kind: 'info', text }), 0)
+      const fbId = window.setTimeout(
+        () => dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } }),
+        0,
+      )
       const subId = window.setTimeout(() => {
-        setSubtitle(text)
+        dispatch({ type: 'SET_SUBTITLE', subtitle: text })
         speak(text, soundEnabled)
       }, 0)
-      const id2 = window.setTimeout(() => setPhase('showQuestion'), 600)
+      const id2 = window.setTimeout(
+        () => dispatch({ type: 'SET_PHASE', phase: 'showQuestion' }),
+        600,
+      )
       timersRef.current.push(fbId, subId, id2)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -226,24 +213,34 @@ export default function CheerfulAquarium({
 
   const handleTutorialNext = () => {
     if (tutorialStep + 1 < TUTORIAL_STEPS_COUNT) {
-      setTutorialStep((s) => s + 1)
+      dispatch({ type: 'TUTORIAL_NEXT_STEP' })
       playTap()
     } else {
-      setTutorialOpen(false)
       const text = t('aquarium.startUnit')
       narrate(text)
-      setFeedback({ kind: 'info', text })
-      const id = window.setTimeout(() => setPhase('showQuestion'), 300)
+      dispatch({
+        type: 'TUTORIAL_CLOSE',
+        feedbackText: text,
+      })
+      const id = window.setTimeout(
+        () => dispatch({ type: 'SET_PHASE', phase: 'showQuestion' }),
+        300,
+      )
       timersRef.current.push(id)
     }
   }
 
   const handleTutorialSkip = () => {
-    setTutorialOpen(false)
     const text = t('aquarium.startUnit')
     narrate(text)
-    setFeedback({ kind: 'info', text })
-    const id = window.setTimeout(() => setPhase('showQuestion'), 200)
+    dispatch({
+      type: 'TUTORIAL_CLOSE',
+      feedbackText: text,
+    })
+    const id = window.setTimeout(
+      () => dispatch({ type: 'SET_PHASE', phase: 'showQuestion' }),
+      200,
+    )
     timersRef.current.push(id)
   }
 
@@ -253,57 +250,65 @@ export default function CheerfulAquarium({
       const id = window.setTimeout(fn, 0)
       timersRef.current.push(id)
     }
-    schedule(() => setHighlight('ones'))
+    schedule(() => dispatch({ type: 'SET_HIGHLIGHT', highlight: 'ones' }))
     if (isAdd && carryNeeded) {
       const text = t('aquarium.combineHint')
-      schedule(() => setFeedback({ kind: 'info', text }))
+      schedule(() => dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } }))
       schedule(() => {
-        setSubtitle(text)
+        dispatch({ type: 'SET_SUBTITLE', subtitle: text })
         speak(text, soundEnabled)
       })
-      schedule(() => setPhase('exchangeOrGroup'))
+      schedule(() => dispatch({ type: 'SET_PHASE', phase: 'exchangeOrGroup' }))
     } else if (!isAdd && borrowNeeded) {
       const text = t('aquarium.notEnough')
-      schedule(() => setFeedback({ kind: 'info', text }))
+      schedule(() => dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } }))
       schedule(() => {
-        setSubtitle(text)
+        dispatch({ type: 'SET_SUBTITLE', subtitle: text })
         speak(text, soundEnabled)
       })
-      schedule(() => setPhase('exchangeOrGroup'))
+      schedule(() => dispatch({ type: 'SET_PHASE', phase: 'exchangeOrGroup' }))
     } else {
-      schedule(() => setPhase('enterOnesAnswer'))
-      schedule(() => setHighlight('ones'))
+      schedule(() => dispatch({ type: 'SET_PHASE', phase: 'enterOnesAnswer' }))
+      schedule(() => dispatch({ type: 'SET_HIGHLIGHT', highlight: 'ones' }))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
 
   const doFormGroup = useCallback(() => {
     if (animating || exchanged) return
-    setAnimating(true)
     playFormGroup()
     narrate(t('aquarium.tenToGroup'))
-    setFeedback({ kind: 'info', text: t('aquarium.tenToGroup') })
+    dispatch({
+      type: 'START_ANIMATION',
+      feedback: { kind: 'info', text: t('aquarium.tenToGroup') },
+    })
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
-      if (isThree) {
-        setVisualOnes(afterOnes)
-        setVisualTens(exchangedHundred ? afterTens : initialTens + carry1)
-      } else {
-        setVisualTens(afterTens)
-        setVisualOnes(afterOnes)
-        setVisualHundreds(afterHundreds)
-      }
-      setExchanged(true)
-      setAnimating(false)
-      if (isThree && carry2 > 0 && !exchangedHundred) {
-        setPhase('exchangeOrGroup')
-        setHighlight('hundreds')
-        setFeedback({ kind: 'info', text: t('aquarium.tenGroupsToHundred') })
-      } else {
-        setPhase('enterOnesAnswer')
-        setHighlight('ones')
-        setFeedback({ kind: 'info', text: t('aquarium.enterOnes') })
-      }
+      const nextOnes = afterOnes
+      const nextTens = isThree
+        ? exchangedHundred
+          ? afterTens
+          : initialTens + carry1
+        : afterTens
+      const nextHundreds = isThree ? undefined : afterHundreds
+      const nextPhase =
+        isThree && carry2 > 0 && !exchangedHundred ? 'exchangeOrGroup' : 'enterOnesAnswer'
+      const nextHighlight =
+        isThree && carry2 > 0 && !exchangedHundred ? 'hundreds' : 'ones'
+      const nextFeedbackText =
+        isThree && carry2 > 0 && !exchangedHundred
+          ? t('aquarium.tenGroupsToHundred')
+          : t('aquarium.enterOnes')
+
+      dispatch({
+        type: 'FINISH_EXCHANGE_ONES',
+        visualOnes: nextOnes,
+        visualTens: nextTens,
+        visualHundreds: nextHundreds,
+        nextPhase,
+        highlight: nextHighlight,
+        feedback: { kind: 'info', text: nextFeedbackText },
+      })
     }, duration)
     timersRef.current.push(id)
   }, [
@@ -323,56 +328,66 @@ export default function CheerfulAquarium({
 
   const doFormHundred = useCallback(() => {
     if (animating || exchangedHundred) return
-    setAnimating(true)
     playFormGroup()
     narrate(t('aquarium.tenGroupsToHundred'))
-    setFeedback({ kind: 'info', text: t('aquarium.tenGroupsToHundred') })
+    dispatch({
+      type: 'START_ANIMATION',
+      feedback: { kind: 'info', text: t('aquarium.tenGroupsToHundred') },
+    })
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
-      setVisualTens(afterTens)
-      setVisualHundreds(afterHundreds)
-      setExchangedHundred(true)
-      setAnimating(false)
-      if (carry1 > 0 && !exchanged) {
-        setPhase('exchangeOrGroup')
-        setHighlight('ones')
-        setFeedback({ kind: 'info', text: t('aquarium.tenToGroup') })
-      } else {
-        setPhase('enterOnesAnswer')
-        setHighlight('ones')
-        setFeedback({ kind: 'info', text: t('aquarium.enterOnes') })
-      }
+      const nextPhase = carry1 > 0 && !exchanged ? 'exchangeOrGroup' : 'enterOnesAnswer'
+      const nextHighlight = 'ones'
+      const nextFeedbackText =
+        carry1 > 0 && !exchanged ? t('aquarium.tenToGroup') : t('aquarium.enterOnes')
+
+      dispatch({
+        type: 'FINISH_EXCHANGE_HUNDRED',
+        visualTens: afterTens,
+        visualHundreds: afterHundreds,
+        nextPhase,
+        highlight: nextHighlight,
+        feedback: { kind: 'info', text: nextFeedbackText },
+      })
     }, duration)
     timersRef.current.push(id)
   }, [animating, exchanged, exchangedHundred, afterTens, afterHundreds, carry1, narrate, t])
 
   const doSplitGroup = useCallback(() => {
     if (animating || opened) return
-    setAnimating(true)
     playSplitGroup()
     narrate(t('aquarium.splitGroup'))
-    setFeedback({ kind: 'info', text: t('aquarium.splitGroup') })
+    dispatch({
+      type: 'START_ANIMATION',
+      feedback: { kind: 'info', text: t('aquarium.splitGroup') },
+    })
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
-      if (isThree) {
-        setVisualOnes(afterOnes)
-        setVisualTens(openedHundred ? afterTens : initialTens - borrow1)
-      } else {
-        setVisualTens(afterTens)
-        setVisualOnes(afterOnes)
-        setVisualHundreds(afterHundreds)
-      }
-      setOpened(true)
-      setAnimating(false)
-      if (isThree && borrow2 > 0 && !openedHundred) {
-        setPhase('exchangeOrGroup')
-        setHighlight('hundreds')
-        setFeedback({ kind: 'info', text: t('aquarium.splitHundredAction') })
-      } else {
-        setPhase('enterOnesAnswer')
-        setHighlight('ones')
-        setFeedback({ kind: 'info', text: t('aquarium.enterOnes') })
-      }
+      const nextOnes = afterOnes
+      const nextTens = isThree
+        ? openedHundred
+          ? afterTens
+          : initialTens - borrow1
+        : afterTens
+      const nextHundreds = isThree ? undefined : afterHundreds
+      const nextPhase =
+        isThree && borrow2 > 0 && !openedHundred ? 'exchangeOrGroup' : 'enterOnesAnswer'
+      const nextHighlight =
+        isThree && borrow2 > 0 && !openedHundred ? 'hundreds' : 'ones'
+      const nextFeedbackText =
+        isThree && borrow2 > 0 && !openedHundred
+          ? t('aquarium.splitHundredAction')
+          : t('aquarium.enterOnes')
+
+      dispatch({
+        type: 'FINISH_OPEN_ONES',
+        visualOnes: nextOnes,
+        visualTens: nextTens,
+        visualHundreds: nextHundreds,
+        nextPhase,
+        highlight: nextHighlight,
+        feedback: { kind: 'info', text: nextFeedbackText },
+      })
     }, duration)
     timersRef.current.push(id)
   }, [
@@ -392,25 +407,27 @@ export default function CheerfulAquarium({
 
   const doSplitHundred = useCallback(() => {
     if (animating || openedHundred) return
-    setAnimating(true)
     playSplitGroup()
     narrate(t('aquarium.splitHundredAction'))
-    setFeedback({ kind: 'info', text: t('aquarium.splitHundredAction') })
+    dispatch({
+      type: 'START_ANIMATION',
+      feedback: { kind: 'info', text: t('aquarium.splitHundredAction') },
+    })
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
-      setVisualTens(afterTens)
-      setVisualHundreds(afterHundreds)
-      setOpenedHundred(true)
-      setAnimating(false)
-      if (borrow1 > 0 && !opened) {
-        setPhase('exchangeOrGroup')
-        setHighlight('ones')
-        setFeedback({ kind: 'info', text: t('aquarium.splitGroup') })
-      } else {
-        setPhase('enterOnesAnswer')
-        setHighlight('ones')
-        setFeedback({ kind: 'info', text: t('aquarium.enterOnes') })
-      }
+      const nextPhase = borrow1 > 0 && !opened ? 'exchangeOrGroup' : 'enterOnesAnswer'
+      const nextHighlight = 'ones'
+      const nextFeedbackText =
+        borrow1 > 0 && !opened ? t('aquarium.splitGroup') : t('aquarium.enterOnes')
+
+      dispatch({
+        type: 'FINISH_OPEN_HUNDRED',
+        visualTens: afterTens,
+        visualHundreds: afterHundreds,
+        nextPhase,
+        highlight: nextHighlight,
+        feedback: { kind: 'info', text: nextFeedbackText },
+      })
     }, duration)
     timersRef.current.push(id)
   }, [animating, opened, openedHundred, afterTens, afterHundreds, borrow1, narrate, t])
@@ -419,36 +436,36 @@ export default function CheerfulAquarium({
     playTap()
     if (phase === 'enterOnesAnswer' || phase === 'exchangeOrGroup') {
       const text = t('aquarium.hintOnes')
-      setFeedback({ kind: 'info', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } })
       narrate(text)
-      setHighlight('ones')
+      dispatch({ type: 'SET_HIGHLIGHT', highlight: 'ones' })
     } else if (phase === 'enterTensAnswer') {
       const text = t('aquarium.hintTens')
-      setFeedback({ kind: 'info', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } })
       narrate(text)
-      setHighlight('tens')
+      dispatch({ type: 'SET_HIGHLIGHT', highlight: 'tens' })
     } else if (phase === 'enterHundredsAnswer') {
-      setFeedback({ kind: 'info', text: hintHundredsText })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text: hintHundredsText } })
       narrate(hintHundredsText)
-      setHighlight('hundreds')
+      dispatch({ type: 'SET_HIGHLIGHT', highlight: 'hundreds' })
     } else if (!isAdd && borrowNeeded && !opened) {
       const text = t('aquarium.notEnough')
-      setFeedback({ kind: 'info', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } })
       narrate(text)
     } else if (isAdd && carryNeeded && !exchanged) {
       const text = t('aquarium.tenToGroup')
-      setFeedback({ kind: 'info', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } })
       narrate(text)
     } else if (isThree && isAdd && carry2 > 0 && !exchangedHundred) {
       const text = t('aquarium.tenGroupsToHundred')
-      setFeedback({ kind: 'info', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } })
       narrate(text)
     } else if (isThree && !isAdd && borrow2 > 0 && !openedHundred) {
       const text = t('aquarium.splitHundredAction')
-      setFeedback({ kind: 'info', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } })
       narrate(text)
     } else {
-      setFeedback({ kind: 'info', text: t('aquarium.tryAgain') })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text: t('aquarium.tryAgain') } })
       narrate(t('aquarium.tryAgain'))
     }
   }
@@ -462,7 +479,7 @@ export default function CheerfulAquarium({
     if (animating) return
     if (phase === 'intro' || tutorialOpen) {
       const text = t('aquarium.startUnit')
-      setFeedback({ kind: 'info', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } })
       narrate(text)
       return
     }
@@ -473,9 +490,12 @@ export default function CheerfulAquarium({
           : tensAnswer === null
             ? t('aquarium.enterTens')
             : enterHundredsText
-      setFeedback({ kind: 'wrong', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'wrong', text } })
       narrate(text)
-      setHighlight(onesAnswer === null ? 'ones' : tensAnswer === null ? 'tens' : 'hundreds')
+      dispatch({
+        type: 'SET_HIGHLIGHT',
+        highlight: onesAnswer === null ? 'ones' : tensAnswer === null ? 'tens' : 'hundreds',
+      })
       return
     }
     const onesIdx = width - 1
@@ -489,39 +509,37 @@ export default function CheerfulAquarium({
         : isCorrectAt(top, bottom, problem.operation, hundredsIdx, width, hundredsAnswer)
     if (onesOk && tensOk && hundredsOk) {
       if (hasCheckedOnce) return
-      setHasCheckedOnce(true)
-      setWrongOnes(false)
-      setWrongTens(false)
-      setWrongHundreds(false)
       const successText =
         isAdd && carryNeeded
           ? t('aquarium.successCarry')
           : !isAdd && borrowNeeded
             ? t('aquarium.successBorrow')
             : t('aquarium.correctGeneral')
-      setFeedback({ kind: 'correct', text: successText })
+      dispatch({ type: 'CHECK_SUCCESS', feedbackText: successText })
       narrate(successText)
       playReward()
-      setPhase('completed')
       const id = window.setTimeout(() => {
         onComplete(wrongAttempts === 0, wrongAttempts)
       }, 800)
       timersRef.current.push(id)
     } else {
-      setWrongOnes(!onesOk)
-      setWrongTens(!tensOk)
-      setWrongHundreds(isThree && !hundredsOk)
-      const attempts = wrongAttempts + 1
-      setWrongAttempts(attempts)
       playTryAgain()
       const text = !onesOk
         ? t('aquarium.hintOnes')
         : !tensOk
           ? t('aquarium.hintTens')
           : hintHundredsText
-      setFeedback({ kind: 'wrong', text: t('aquarium.tryAgain') + ' ' + text })
+      const feedbackText = t('aquarium.tryAgain') + ' ' + text
+      const highlightCol = !onesOk ? 'ones' : !tensOk ? 'tens' : 'hundreds'
+      dispatch({
+        type: 'CHECK_FAILURE',
+        wrongOnes: !onesOk,
+        wrongTens: !tensOk,
+        wrongHundreds: isThree && !hundredsOk,
+        feedbackText,
+        highlight: highlightCol,
+      })
       narrate(t('aquarium.tryAgain'))
-      setHighlight(!onesOk ? 'ones' : !tensOk ? 'tens' : 'hundreds')
     }
   }
 
@@ -529,69 +547,23 @@ export default function CheerfulAquarium({
     playTap()
     clearTimers()
     stopAllAudio()
-    setVisualTens(initialTens)
-    setVisualOnes(initialOnes)
-    setVisualHundreds(initialHundreds)
-    setExchanged(false)
-    setExchangedHundred(false)
-    setOpened(false)
-    setOpenedHundred(false)
-    setOnesAnswer(null)
-    setTensAnswer(null)
-    setHundredsAnswer(null)
-    setActiveColumn('ones')
-    setFeedback(null)
-    setHighlight('ones')
-    setAnimating(false)
-    setWrongAttempts(0)
-    setWrongOnes(false)
-    setWrongTens(false)
-    setWrongHundreds(false)
-    setHasCheckedOnce(false)
-    setSubtitle(null)
-    setPhase('showQuestion')
+    dispatch({
+      type: 'RESET',
+      initialTens,
+      initialOnes,
+      initialHundreds,
+      phase: 'showQuestion',
+    })
   }
 
   const handleDigit = (digit: number) => {
     playTap()
-    if (activeColumn === 'ones') {
-      setOnesAnswer(digit)
-      setWrongOnes(false)
-      setActiveColumn('tens')
-      setHighlight('tens')
-      if (phase === 'enterOnesAnswer') {
-        setPhase('enterTensAnswer')
-      }
-    } else if (activeColumn === 'tens') {
-      setTensAnswer(digit)
-      setWrongTens(false)
-      if (isThree) {
-        setActiveColumn('hundreds')
-        setHighlight('hundreds')
-        if (phase === 'enterTensAnswer') {
-          setPhase('enterHundredsAnswer')
-        }
-      }
-    } else if (activeColumn === 'hundreds') {
-      setHundredsAnswer(digit)
-      setWrongHundreds(false)
-    }
+    dispatch({ type: 'INPUT_DIGIT', digit, isThree })
   }
 
   const handleBackspace = () => {
     playTap()
-    if (activeColumn === 'hundreds' && hundredsAnswer !== null) {
-      setHundredsAnswer(null)
-    } else if (activeColumn === 'hundreds' && hundredsAnswer === null) {
-      setActiveColumn('tens')
-    } else if (activeColumn === 'tens' && tensAnswer !== null) {
-      setTensAnswer(null)
-    } else if (activeColumn === 'ones' && onesAnswer !== null) {
-      setOnesAnswer(null)
-    } else if (activeColumn === 'tens' && tensAnswer === null) {
-      setActiveColumn('ones')
-      setOnesAnswer(null)
-    }
+    dispatch({ type: 'BACKSPACE' })
   }
 
   const carryShown = isAdd && carryNeeded && (isThree ? exchangedHundred || exchanged : exchanged)
@@ -652,8 +624,7 @@ export default function CheerfulAquarium({
           wrongColumns={isThree ? [wrongHundreds, wrongTens, wrongOnes] : [wrongTens, wrongOnes]}
           tone="sky"
           onSelectColumn={(c) => {
-            setActiveColumn(c)
-            setHighlight(c)
+            dispatch({ type: 'SELECT_COLUMN', column: c })
             playTap()
           }}
         />

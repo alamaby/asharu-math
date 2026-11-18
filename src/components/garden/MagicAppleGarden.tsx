@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useReducer, useCallback } from 'react'
 import type { MathProblem } from '../../types'
 import GardenScene from './GardenScene'
 import StackedPlaceValueBoard from '../math/StackedPlaceValueBoard'
@@ -12,6 +12,10 @@ import { useProgress } from '../../state/ProgressContext'
 import { splitPlaces, isCorrectAt } from '../../lib/placeValueMath'
 import { hasBorrow, hasCarry } from '../../lib/arithmetic'
 import {
+  createInitialPlaceValueWorldState,
+  placeValueWorldReducer,
+} from '../../lib/placeValueWorldMachine'
+import {
   speak,
   repeatLastNarration,
   stopAllAudio,
@@ -22,19 +26,6 @@ import {
   playTryAgain,
 } from '../../lib/gardenSound'
 import { playTap } from '../../lib/sound'
-
-type GardenPhase =
-  | 'intro'
-  | 'showQuestion'
-  | 'countOnes'
-  | 'exchangeOrRegroup'
-  | 'enterOnesAnswer'
-  | 'countTens'
-  | 'enterTensAnswer'
-  | 'enterHundredsAnswer'
-  | 'checkAnswer'
-  | 'feedback'
-  | 'completed'
 
 interface MagicAppleGardenProps {
   problem: MathProblem
@@ -106,29 +97,38 @@ export default function MagicAppleGarden({
     ? topPlaces.hundreds + botPlaces.hundreds + carry2
     : topPlaces.hundreds - borrow2
 
-  const [visualTens, setVisualTens] = useState(initialTens)
-  const [visualOnes, setVisualOnes] = useState(initialOnes)
-  const [visualHundreds, setVisualHundreds] = useState(initialHundreds)
-  const [exchanged, setExchanged] = useState(false)
-  const [exchangedHundred, setExchangedHundred] = useState(false)
-  const [opened, setOpened] = useState(false)
-  const [openedHundred, setOpenedHundred] = useState(false)
-  const [phase, setPhase] = useState<GardenPhase>('intro')
-  const [onesAnswer, setOnesAnswer] = useState<number | null>(null)
-  const [tensAnswer, setTensAnswer] = useState<number | null>(null)
-  const [hundredsAnswer, setHundredsAnswer] = useState<number | null>(null)
-  const [activeColumn, setActiveColumn] = useState<'ones' | 'tens' | 'hundreds' | null>('ones')
-  const [feedback, setFeedback] = useState<{
-    kind: 'correct' | 'wrong' | 'info'
-    text: string
-  } | null>(null)
-  const [highlight, setHighlight] = useState<'tens' | 'ones' | 'hundreds' | null>('ones')
-  const [animating, setAnimating] = useState(false)
-  const [wrongAttempts, setWrongAttempts] = useState(0)
-  const [wrongOnes, setWrongOnes] = useState(false)
-  const [wrongTens, setWrongTens] = useState(false)
-  const [wrongHundreds, setWrongHundreds] = useState(false)
-  const [hasCheckedOnce, setHasCheckedOnce] = useState(false)
+  const [state, dispatch] = useReducer(
+    placeValueWorldReducer,
+    {
+      initialTens,
+      initialOnes,
+      initialHundreds,
+    },
+    createInitialPlaceValueWorldState,
+  )
+
+  const {
+    phase,
+    visualTens,
+    visualOnes,
+    visualHundreds,
+    exchanged,
+    exchangedHundred,
+    opened,
+    openedHundred,
+    onesAnswer,
+    tensAnswer,
+    hundredsAnswer,
+    activeColumn,
+    highlight,
+    feedback,
+    animating,
+    wrongAttempts,
+    wrongOnes,
+    wrongTens,
+    wrongHundreds,
+    hasCheckedOnce,
+  } = state
   const enterHundredsText = t('garden.enterHundreds')
   const hintHundredsText = t('garden.hintHundreds')
 
@@ -153,41 +153,19 @@ export default function MagicAppleGarden({
     }
   }, [clearTimers])
 
-  // Reset when problem changes — keyed by problem.id, also handles normal phase flow.
-  // Reset sinkron (tanpa setTimeout): timer soal lama dibersihkan DULU,
-  // lalu state di-reset. Timer soal baru dijadwalkan oleh effect intro/
-  // showQuestion SETELAH effect ini, sehingga tidak ikut terhapus.
-  // (Versi async sebelumnya menghapus timer intro 600ms yang baru
-  // dijadwalkan pada mount yang sama → fase macet di 'intro' selamanya.)
-  // Reset sinkron disengaja + aman (deps hanya problem.id); cascading render
-  // tidak terjadi karena effect hanya fire saat soal berganti.
-  /* eslint-disable react-hooks/set-state-in-effect */
+  // Reset saat soal berganti: timer dibersihkan lalu state di-reset secara atomik
   useEffect(() => {
     clearTimers()
     stopAllAudio()
-    setVisualTens(initialTens)
-    setVisualOnes(initialOnes)
-    setVisualHundreds(initialHundreds)
-    setExchanged(false)
-    setExchangedHundred(false)
-    setOpened(false)
-    setOpenedHundred(false)
-    setPhase('intro')
-    setOnesAnswer(null)
-    setTensAnswer(null)
-    setHundredsAnswer(null)
-    setActiveColumn('ones')
-    setFeedback(null)
-    setHighlight('ones')
-    setAnimating(false)
-    setWrongAttempts(0)
-    setWrongOnes(false)
-    setWrongTens(false)
-    setWrongHundreds(false)
-    setHasCheckedOnce(false)
+    dispatch({
+      type: 'RESET',
+      initialTens,
+      initialOnes,
+      initialHundreds,
+      phase: 'intro',
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [problem.id])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const narrate = useCallback(
     (text: string) => {
@@ -201,9 +179,14 @@ export default function MagicAppleGarden({
     if (phase !== 'intro') return
     const text = t('garden.startUnit')
     narrate(text)
-    // feedback & phase transition scheduled async to avoid sync setState in effect
-    const fbId = window.setTimeout(() => setFeedback({ kind: 'info', text }), 0)
-    const id = window.setTimeout(() => setPhase('showQuestion'), 600)
+    const fbId = window.setTimeout(
+      () => dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } }),
+      0,
+    )
+    const id = window.setTimeout(
+      () => dispatch({ type: 'SET_PHASE', phase: 'showQuestion' }),
+      600,
+    )
     timersRef.current.push(fbId, id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
@@ -214,51 +197,59 @@ export default function MagicAppleGarden({
       const id = window.setTimeout(fn, 0)
       timersRef.current.push(id)
     }
-    schedule(() => setHighlight('ones'))
+    schedule(() => dispatch({ type: 'SET_HIGHLIGHT', highlight: 'ones' }))
     if (isAdd && carryNeeded) {
       const text = t('garden.combineHint')
-      schedule(() => setFeedback({ kind: 'info', text }))
+      schedule(() => dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } }))
       narrate(text)
-      schedule(() => setPhase('countOnes'))
+      schedule(() => dispatch({ type: 'SET_PHASE', phase: 'countOnes' }))
     } else if (!isAdd && borrowNeeded) {
       const text = t('garden.notEnough')
-      schedule(() => setFeedback({ kind: 'info', text }))
+      schedule(() => dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } }))
       narrate(text)
-      schedule(() => setPhase('exchangeOrRegroup'))
+      schedule(() => dispatch({ type: 'SET_PHASE', phase: 'exchangeOrRegroup' }))
     } else {
-      schedule(() => setPhase('enterOnesAnswer'))
-      schedule(() => setHighlight('ones'))
+      schedule(() => dispatch({ type: 'SET_PHASE', phase: 'enterOnesAnswer' }))
+      schedule(() => dispatch({ type: 'SET_HIGHLIGHT', highlight: 'ones' }))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
 
   const doExchange = useCallback(() => {
     if (animating || exchanged) return
-    setAnimating(true)
     playPutToBasket()
     narrate(t('garden.tenToBasket'))
-    setFeedback({ kind: 'info', text: t('garden.tenToBasket') })
+    dispatch({
+      type: 'START_ANIMATION',
+      feedback: { kind: 'info', text: t('garden.tenToBasket') },
+    })
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
-      if (isThree) {
-        setVisualOnes(afterOnes)
-        setVisualTens(exchangedHundred ? afterTens : initialTens + carry1)
-      } else {
-        setVisualTens(afterTens)
-        setVisualOnes(afterOnes)
-        setVisualHundreds(afterHundreds)
-      }
-      setExchanged(true)
-      setAnimating(false)
-      if (isThree && carry2 > 0 && !exchangedHundred) {
-        setPhase('exchangeOrRegroup')
-        setHighlight('hundreds')
-        setFeedback({ kind: 'info', text: t('garden.tenTensToHundred') })
-      } else {
-        setPhase('enterOnesAnswer')
-        setHighlight('ones')
-        setFeedback({ kind: 'info', text: t('garden.enterOnes') })
-      }
+      const nextOnes = afterOnes
+      const nextTens = isThree
+        ? exchangedHundred
+          ? afterTens
+          : initialTens + carry1
+        : afterTens
+      const nextHundreds = isThree ? undefined : afterHundreds
+      const nextPhase =
+        isThree && carry2 > 0 && !exchangedHundred ? 'exchangeOrRegroup' : 'enterOnesAnswer'
+      const nextHighlight =
+        isThree && carry2 > 0 && !exchangedHundred ? 'hundreds' : 'ones'
+      const nextFeedbackText =
+        isThree && carry2 > 0 && !exchangedHundred
+          ? t('garden.tenTensToHundred')
+          : t('garden.enterOnes')
+
+      dispatch({
+        type: 'FINISH_EXCHANGE_ONES',
+        visualOnes: nextOnes,
+        visualTens: nextTens,
+        visualHundreds: nextHundreds,
+        nextPhase,
+        highlight: nextHighlight,
+        feedback: { kind: 'info', text: nextFeedbackText },
+      })
     }, duration)
     timersRef.current.push(id)
   }, [
@@ -278,31 +269,39 @@ export default function MagicAppleGarden({
 
   const doOpen = useCallback(() => {
     if (animating || opened) return
-    setAnimating(true)
     playOpenBasket()
     narrate(t('garden.openBasket'))
-    setFeedback({ kind: 'info', text: t('garden.openBasket') })
+    dispatch({
+      type: 'START_ANIMATION',
+      feedback: { kind: 'info', text: t('garden.openBasket') },
+    })
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
-      if (isThree) {
-        setVisualOnes(afterOnes)
-        setVisualTens(openedHundred ? afterTens : initialTens - borrow1)
-      } else {
-        setVisualTens(afterTens)
-        setVisualOnes(afterOnes)
-        setVisualHundreds(afterHundreds)
-      }
-      setOpened(true)
-      setAnimating(false)
-      if (isThree && borrow2 > 0 && !openedHundred) {
-        setPhase('exchangeOrRegroup')
-        setHighlight('hundreds')
-        setFeedback({ kind: 'info', text: t('garden.openHundredAction') })
-      } else {
-        setPhase('enterOnesAnswer')
-        setHighlight('ones')
-        setFeedback({ kind: 'info', text: t('garden.enterOnes') })
-      }
+      const nextOnes = afterOnes
+      const nextTens = isThree
+        ? openedHundred
+          ? afterTens
+          : initialTens - borrow1
+        : afterTens
+      const nextHundreds = isThree ? undefined : afterHundreds
+      const nextPhase =
+        isThree && borrow2 > 0 && !openedHundred ? 'exchangeOrRegroup' : 'enterOnesAnswer'
+      const nextHighlight =
+        isThree && borrow2 > 0 && !openedHundred ? 'hundreds' : 'ones'
+      const nextFeedbackText =
+        isThree && borrow2 > 0 && !openedHundred
+          ? t('garden.openHundredAction')
+          : t('garden.enterOnes')
+
+      dispatch({
+        type: 'FINISH_OPEN_ONES',
+        visualOnes: nextOnes,
+        visualTens: nextTens,
+        visualHundreds: nextHundreds,
+        nextPhase,
+        highlight: nextHighlight,
+        feedback: { kind: 'info', text: nextFeedbackText },
+      })
     }, duration)
     timersRef.current.push(id)
   }, [
@@ -322,50 +321,54 @@ export default function MagicAppleGarden({
 
   const doExchangeHundred = useCallback(() => {
     if (animating || exchangedHundred) return
-    setAnimating(true)
     playPutToBasket()
     narrate(t('garden.tenTensToHundred'))
-    setFeedback({ kind: 'info', text: t('garden.tenTensToHundred') })
+    dispatch({
+      type: 'START_ANIMATION',
+      feedback: { kind: 'info', text: t('garden.tenTensToHundred') },
+    })
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
-      setVisualTens(afterTens)
-      setVisualHundreds(afterHundreds)
-      setExchangedHundred(true)
-      setAnimating(false)
-      if (carry1 > 0 && !exchanged) {
-        setPhase('exchangeOrRegroup')
-        setHighlight('ones')
-        setFeedback({ kind: 'info', text: t('garden.tenToBasket') })
-      } else {
-        setPhase('enterOnesAnswer')
-        setHighlight('ones')
-        setFeedback({ kind: 'info', text: t('garden.enterOnes') })
-      }
+      const nextPhase = carry1 > 0 && !exchanged ? 'exchangeOrRegroup' : 'enterOnesAnswer'
+      const nextHighlight = 'ones'
+      const nextFeedbackText =
+        carry1 > 0 && !exchanged ? t('garden.tenToBasket') : t('garden.enterOnes')
+
+      dispatch({
+        type: 'FINISH_EXCHANGE_HUNDRED',
+        visualTens: afterTens,
+        visualHundreds: afterHundreds,
+        nextPhase,
+        highlight: nextHighlight,
+        feedback: { kind: 'info', text: nextFeedbackText },
+      })
     }, duration)
     timersRef.current.push(id)
   }, [animating, exchanged, exchangedHundred, afterTens, afterHundreds, carry1, narrate, t])
 
   const doOpenHundred = useCallback(() => {
     if (animating || openedHundred) return
-    setAnimating(true)
     playOpenBasket()
     narrate(t('garden.openHundredAction'))
-    setFeedback({ kind: 'info', text: t('garden.openHundredAction') })
+    dispatch({
+      type: 'START_ANIMATION',
+      feedback: { kind: 'info', text: t('garden.openHundredAction') },
+    })
     const duration = prefersReducedMotion.current ? 50 : 700
     const id = window.setTimeout(() => {
-      setVisualTens(afterTens)
-      setVisualHundreds(afterHundreds)
-      setOpenedHundred(true)
-      setAnimating(false)
-      if (borrow1 > 0 && !opened) {
-        setPhase('exchangeOrRegroup')
-        setHighlight('ones')
-        setFeedback({ kind: 'info', text: t('garden.openBasket') })
-      } else {
-        setPhase('enterOnesAnswer')
-        setHighlight('ones')
-        setFeedback({ kind: 'info', text: t('garden.enterOnes') })
-      }
+      const nextPhase = borrow1 > 0 && !opened ? 'exchangeOrRegroup' : 'enterOnesAnswer'
+      const nextHighlight = 'ones'
+      const nextFeedbackText =
+        borrow1 > 0 && !opened ? t('garden.openBasket') : t('garden.enterOnes')
+
+      dispatch({
+        type: 'FINISH_OPEN_HUNDRED',
+        visualTens: afterTens,
+        visualHundreds: afterHundreds,
+        nextPhase,
+        highlight: nextHighlight,
+        feedback: { kind: 'info', text: nextFeedbackText },
+      })
     }, duration)
     timersRef.current.push(id)
   }, [animating, opened, openedHundred, afterTens, afterHundreds, borrow1, narrate, t])
@@ -374,36 +377,36 @@ export default function MagicAppleGarden({
     playTap()
     if (phase === 'enterOnesAnswer' || phase === 'countOnes') {
       const text = t('garden.hintOnes')
-      setFeedback({ kind: 'info', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } })
       narrate(text)
-      setHighlight('ones')
+      dispatch({ type: 'SET_HIGHLIGHT', highlight: 'ones' })
     } else if (phase === 'enterTensAnswer' || phase === 'countTens') {
       const text = t('garden.hintTens')
-      setFeedback({ kind: 'info', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } })
       narrate(text)
-      setHighlight('tens')
+      dispatch({ type: 'SET_HIGHLIGHT', highlight: 'tens' })
     } else if (phase === 'enterHundredsAnswer') {
-      setFeedback({ kind: 'info', text: hintHundredsText })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text: hintHundredsText } })
       narrate(hintHundredsText)
-      setHighlight('hundreds')
+      dispatch({ type: 'SET_HIGHLIGHT', highlight: 'hundreds' })
     } else if (!isAdd && borrowNeeded && !opened) {
       const text = t('garden.notEnough')
-      setFeedback({ kind: 'info', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } })
       narrate(text)
     } else if (isAdd && carryNeeded && !exchanged) {
       const text = t('garden.tenToBasket')
-      setFeedback({ kind: 'info', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } })
       narrate(text)
     } else if (isThree && isAdd && carry2 > 0 && !exchangedHundred) {
       const text = t('garden.tenTensToHundred')
-      setFeedback({ kind: 'info', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } })
       narrate(text)
     } else if (isThree && !isAdd && borrow2 > 0 && !openedHundred) {
       const text = t('garden.openHundredAction')
-      setFeedback({ kind: 'info', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } })
       narrate(text)
     } else {
-      setFeedback({ kind: 'info', text: t('garden.tryAgain') })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text: t('garden.tryAgain') } })
       narrate(t('garden.tryAgain'))
     }
   }
@@ -417,7 +420,7 @@ export default function MagicAppleGarden({
     if (animating) return
     if (phase === 'intro') {
       const text = t('garden.startUnit')
-      setFeedback({ kind: 'info', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'info', text } })
       narrate(text)
       return
     }
@@ -428,9 +431,12 @@ export default function MagicAppleGarden({
           : tensAnswer === null
             ? t('garden.enterTens')
             : enterHundredsText
-      setFeedback({ kind: 'wrong', text })
+      dispatch({ type: 'SET_FEEDBACK', feedback: { kind: 'wrong', text } })
       narrate(text)
-      setHighlight(onesAnswer === null ? 'ones' : tensAnswer === null ? 'tens' : 'hundreds')
+      dispatch({
+        type: 'SET_HIGHLIGHT',
+        highlight: onesAnswer === null ? 'ones' : tensAnswer === null ? 'tens' : 'hundreds',
+      })
       return
     }
     const onesIdx = width - 1
@@ -444,20 +450,15 @@ export default function MagicAppleGarden({
         : isCorrectAt(top, bottom, problem.operation, hundredsIdx, width, hundredsAnswer)
     if (onesOk && tensOk && hundredsOk) {
       if (hasCheckedOnce) return // idempoten: jangan gandakan reward
-      setHasCheckedOnce(true)
-      setWrongOnes(false)
-      setWrongTens(false)
-      setWrongHundreds(false)
       const successText =
         isAdd && carryNeeded
           ? t('garden.successCarry')
           : !isAdd && borrowNeeded
             ? t('garden.successBorrow')
             : t('garden.correctGeneral')
-      setFeedback({ kind: 'correct', text: successText })
+      dispatch({ type: 'CHECK_SUCCESS', feedbackText: successText })
       narrate(successText)
       playReward()
-      setPhase('completed')
       // beri jeda lalu notify parent
       const id = window.setTimeout(() => {
         onComplete(wrongAttempts === 0, wrongAttempts)
@@ -465,22 +466,23 @@ export default function MagicAppleGarden({
       timersRef.current.push(id)
     } else {
       // belum tepat — jangan tampilkan silang besar, hanya sorot kolom
-      setWrongOnes(!onesOk)
-      setWrongTens(!tensOk)
-      setWrongHundreds(isThree && !hundredsOk)
-      const attempts = wrongAttempts + 1
-      setWrongAttempts(attempts)
       playTryAgain()
       const text = !onesOk
         ? t('garden.hintOnes')
         : !tensOk
           ? t('garden.hintTens')
           : hintHundredsText
-      setFeedback({ kind: 'wrong', text: t('garden.tryAgain') + ' ' + text })
+      const feedbackText = t('garden.tryAgain') + ' ' + text
+      const highlightCol = !onesOk ? 'ones' : !tensOk ? 'tens' : 'hundreds'
+      dispatch({
+        type: 'CHECK_FAILURE',
+        wrongOnes: !onesOk,
+        wrongTens: !tensOk,
+        wrongHundreds: isThree && !hundredsOk,
+        feedbackText,
+        highlight: highlightCol,
+      })
       narrate(t('garden.tryAgain'))
-      setHighlight(!onesOk ? 'ones' : !tensOk ? 'tens' : 'hundreds')
-      // jangan reset visual — biarkan anak hitung kembali
-      // batasi hint satu langkah
     }
   }
 
@@ -488,69 +490,23 @@ export default function MagicAppleGarden({
     playTap()
     clearTimers()
     stopAllAudio()
-    setVisualTens(initialTens)
-    setVisualOnes(initialOnes)
-    setVisualHundreds(initialHundreds)
-    setExchanged(false)
-    setExchangedHundred(false)
-    setOpened(false)
-    setOpenedHundred(false)
-    setOnesAnswer(null)
-    setTensAnswer(null)
-    setHundredsAnswer(null)
-    setActiveColumn('ones')
-    setFeedback(null)
-    setHighlight('ones')
-    setAnimating(false)
-    setWrongAttempts(0)
-    setWrongOnes(false)
-    setWrongTens(false)
-    setWrongHundreds(false)
-    setHasCheckedOnce(false)
-    setPhase('showQuestion')
+    dispatch({
+      type: 'RESET',
+      initialTens,
+      initialOnes,
+      initialHundreds,
+      phase: 'showQuestion',
+    })
   }
 
   const handleDigit = (digit: number) => {
     playTap()
-    if (activeColumn === 'ones') {
-      setOnesAnswer(digit)
-      setWrongOnes(false)
-      // auto pindah ke puluhan setelah isi satuan
-      setActiveColumn('tens')
-      setHighlight('tens')
-      if (phase === 'enterOnesAnswer') {
-        setPhase('enterTensAnswer')
-      }
-    } else if (activeColumn === 'tens') {
-      setTensAnswer(digit)
-      setWrongTens(false)
-      if (isThree) {
-        setActiveColumn('hundreds')
-        setHighlight('hundreds')
-        if (phase === 'enterTensAnswer') {
-          setPhase('enterHundredsAnswer')
-        }
-      }
-    } else if (activeColumn === 'hundreds') {
-      setHundredsAnswer(digit)
-      setWrongHundreds(false)
-    }
+    dispatch({ type: 'INPUT_DIGIT', digit, isThree })
   }
 
   const handleBackspace = () => {
     playTap()
-    if (activeColumn === 'hundreds' && hundredsAnswer !== null) {
-      setHundredsAnswer(null)
-    } else if (activeColumn === 'hundreds' && hundredsAnswer === null) {
-      setActiveColumn('tens')
-    } else if (activeColumn === 'tens' && tensAnswer !== null) {
-      setTensAnswer(null)
-    } else if (activeColumn === 'ones' && onesAnswer !== null) {
-      setOnesAnswer(null)
-    } else if (activeColumn === 'tens' && tensAnswer === null) {
-      setActiveColumn('ones')
-      setOnesAnswer(null)
-    }
+    dispatch({ type: 'BACKSPACE' })
   }
 
   const carryShown = isAdd && carryNeeded && (isThree ? exchangedHundred || exchanged : exchanged)
@@ -601,8 +557,7 @@ export default function MagicAppleGarden({
           wrongColumns={isThree ? [wrongHundreds, wrongTens, wrongOnes] : [wrongTens, wrongOnes]}
           tone="emerald"
           onSelectColumn={(c) => {
-            setActiveColumn(c)
-            setHighlight(c)
+            dispatch({ type: 'SELECT_COLUMN', column: c })
             playTap()
           }}
         />
