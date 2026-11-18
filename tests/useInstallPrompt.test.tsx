@@ -13,6 +13,7 @@ function HookProbe({ onState }: { onState?: (state: HookState) => void }) {
   onState?.(state)
   return (
     <div>
+      <span data-testid="status">{state.status}</span>
       <span data-testid="can-install">{String(state.canInstall)}</span>
       <span data-testid="installed">{String(state.installed)}</span>
       <span data-testid="show-ios-hint">{String(state.showIosHint)}</span>
@@ -43,26 +44,48 @@ afterEach(() => {
 })
 
 describe('useInstallPrompt', () => {
-  it('kondisi awal: belum bisa install, belum terpasang, tanpa petunjuk iOS', () => {
+  it('kondisi awal: belum bisa install, belum terpasang, tanpa petunjuk iOS, status unsupported', () => {
     render(<HookProbe />)
+    expect(screen.getByTestId('status').textContent).toBe('unsupported')
     expect(screen.getByTestId('can-install').textContent).toBe('false')
     expect(screen.getByTestId('installed').textContent).toBe('false')
     expect(screen.getByTestId('show-ios-hint').textContent).toBe('false')
   })
 
-  it('event beforeinstallprompt menandai siap install', () => {
+  it('event beforeinstallprompt menandai status available dan siap install', () => {
     render(<HookProbe />)
     fireBeforeInstallPrompt()
+    expect(screen.getByTestId('status').textContent).toBe('available')
     expect(screen.getByTestId('can-install').textContent).toBe('true')
   })
 
-  it('event appinstalled menandai terpasang dan menyembunyikan kemampuan install', () => {
+  it('event appinstalled menandai status installed dan menyembunyikan kemampuan install', () => {
     render(<HookProbe />)
     act(() => {
       window.dispatchEvent(new Event('appinstalled'))
     })
+    expect(screen.getByTestId('status').textContent).toBe('installed')
     expect(screen.getByTestId('installed').textContent).toBe('true')
     expect(screen.getByTestId('can-install').textContent).toBe('false')
+  })
+
+  it('mode iOS: menghasilkan status ios_instructions dan berpindah ke unsupported saat di-dismiss', () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+    )
+    let captured: HookState | null = null
+    render(<HookProbe onState={(s) => (captured = s)} />)
+
+    expect(screen.getByTestId('status').textContent).toBe('ios_instructions')
+    expect(screen.getByTestId('show-ios-hint').textContent).toBe('true')
+
+    act(() => {
+      captured!.dismissIosHint()
+    })
+
+    expect(screen.getByTestId('status').textContent).toBe('unsupported')
+    expect(screen.getByTestId('show-ios-hint').textContent).toBe('false')
+    expect(window.localStorage.getItem(IOS_HINT_KEY)).toBe('1')
   })
 
   it('install() memicu dialog native dan mengembalikan pilihan pengguna', async () => {

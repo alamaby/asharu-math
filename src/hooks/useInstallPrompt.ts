@@ -7,7 +7,47 @@ interface BeforeInstallPromptEvent extends Event {
 
 const IOS_HINT_KEY = 'asharu-math:ios-install-hint-dismissed'
 
-type InstallOutcome = 'accepted' | 'dismissed'
+export type InstallOutcome = 'accepted' | 'dismissed'
+
+export type InstallStatus = 'installed' | 'available' | 'ios_instructions' | 'unsupported'
+
+export type InstallPromptResult =
+  | {
+      status: 'installed'
+      canInstall: false
+      installed: true
+      isIos: boolean
+      showIosHint: false
+      install: () => Promise<null>
+      dismissIosHint: () => void
+    }
+  | {
+      status: 'available'
+      canInstall: true
+      installed: false
+      isIos: boolean
+      showIosHint: false
+      install: () => Promise<InstallOutcome | null>
+      dismissIosHint: () => void
+    }
+  | {
+      status: 'ios_instructions'
+      canInstall: false
+      installed: false
+      isIos: true
+      showIosHint: true
+      install: () => Promise<null>
+      dismissIosHint: () => void
+    }
+  | {
+      status: 'unsupported'
+      canInstall: false
+      installed: false
+      isIos: boolean
+      showIosHint: false
+      install: () => Promise<null>
+      dismissIosHint: () => void
+    }
 
 function detectStandalone(): boolean {
   if (typeof window === 'undefined') return false
@@ -27,11 +67,14 @@ function detectIos(): boolean {
 }
 
 /**
- * Menangkap event pemasangan PWA dari peramban:
- * - Android/desktop: `beforeinstallprompt` disimpan agar tombol kustom bisa memicu dialog.
- * - iOS: tidak ada API programatik, tampilkan petunjuk Add to Home Screen.
+ * Hook mesin status PWA installation.
+ * Mengintegrasikan event browser native dan deteksi platform ke dalam discriminated union `status`:
+ * - 'installed': Aplikasi sudah berjalan dalam display-mode standalone (tidak menampilkan dialog apapun).
+ * - 'available': Browser (Chromium/Android) memicu `beforeinstallprompt` sehingga dialog native siap dipanggil.
+ * - 'ios_instructions': Safari iOS tidak memiliki API prompt programatik, menampilkan panduan 'Add to Home Screen'.
+ * - 'unsupported': Browser tidak mendukung instalasi atau prompt event belum siap / telah ditolak.
  */
-export function useInstallPrompt() {
+export function useInstallPrompt(): InstallPromptResult {
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null)
   const [installed, setInstalled] = useState<boolean>(detectStandalone)
   const [isIos] = useState<boolean>(detectIos)
@@ -69,15 +112,54 @@ export function useInstallPrompt() {
     setHintDismissed(true)
   }, [])
 
+  // Evaluasi status kanonikal:
+  // 1. Prioritas tertinggi: jika sudah terpasang, jangan ganggu anak/orang tua dengan tombol atau banner apapun.
+  // 2. Jika ada promptEvent browser, dialog native 1-klik siap digunakan.
+  // 3. Jika di iOS dan petunjuk belum ditutup, berikan instruksi panduan Safari 'Share -> Add to Home Screen'.
+  // 4. Fallback: unsupported / idle.
+  if (installed) {
+    return {
+      status: 'installed',
+      canInstall: false,
+      installed: true,
+      isIos,
+      showIosHint: false,
+      install: async () => null,
+      dismissIosHint,
+    }
+  }
+
+  if (promptEvent !== null) {
+    return {
+      status: 'available',
+      canInstall: true,
+      installed: false,
+      isIos,
+      showIosHint: false,
+      install,
+      dismissIosHint,
+    }
+  }
+
+  if (isIos && !hintDismissed) {
+    return {
+      status: 'ios_instructions',
+      canInstall: false,
+      installed: false,
+      isIos: true,
+      showIosHint: true,
+      install: async () => null,
+      dismissIosHint,
+    }
+  }
+
   return {
-    /** Dialog install native siap dipicu lewat tombol kustom */
-    canInstall: promptEvent !== null,
-    /** Aplikasi sudah berjalan sebagai PWA terpasang */
-    installed,
+    status: 'unsupported',
+    canInstall: false,
+    installed: false,
     isIos,
-    /** Petunjuk Add to Home Screen untuk iPhone yang belum ditutup anak/orang tua */
-    showIosHint: isIos && !installed && !hintDismissed,
-    install,
+    showIosHint: false,
+    install: async () => null,
     dismissIosHint,
   }
 }
