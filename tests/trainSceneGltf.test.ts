@@ -322,4 +322,79 @@ describe('TrainScene GLTF integration (Fase 3 & 4)', () => {
     expect(foundOaks).toBe(4)
     scene.dispose()
   })
+
+  it('menggunakan model GLTF masinis dan penumpang saat cache karakter tersedia', async () => {
+    const mockDriver = new THREE.Group()
+    mockDriver.name = 'MockDriver'
+    const mockPassenger = new THREE.Group()
+    mockPassenger.name = 'MockPassenger'
+
+    const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js')
+    vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad) => {
+      const p = String(path)
+      let sceneModel = mockDriver
+      if (p.includes('passenger')) sceneModel = mockPassenger
+      if (onLoad) {
+        // @ts-expect-error test stub
+        onLoad({ scene: sceneModel, animations: [] })
+      }
+    })
+
+    const { loadCharacterModel, clearCharacterModelCache } =
+      await import('../src/lib/characterModelLoader')
+    clearCharacterModelCache()
+    await loadCharacterModel('driver')
+    await loadCharacterModel('passenger')
+
+    const scene = new TrainScene(document.createElement('canvas'), { useGltf: true })
+
+    let foundDriver = false
+    let foundPassengerCount = 0
+
+    // @ts-expect-error test inspection
+    scene.driverGroup.traverse((o: THREE.Object3D) => {
+      if (o.userData?.part === 'gltf-driver') foundDriver = true
+    })
+
+    // @ts-expect-error test inspection
+    scene.passengerGroup.traverse((o: THREE.Object3D) => {
+      if (o.userData?.part === 'gltf-passenger') foundPassengerCount++
+    })
+
+    expect(foundDriver).toBe(true)
+    expect(foundPassengerCount).toBe(2)
+    scene.dispose()
+  })
+
+  it('menggunakan bantalan rel GLTF dan dual parallel rails', async () => {
+    const mockSleeper = new THREE.Group()
+    mockSleeper.name = 'MockSleeper'
+
+    const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js')
+    vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((_path, onLoad) => {
+      if (onLoad) {
+        // @ts-expect-error test stub
+        onLoad({ scene: mockSleeper, animations: [] })
+      }
+    })
+
+    const { loadTrackModel, clearTrackModelCache } = await import('../src/lib/trackModelLoader')
+    clearTrackModelCache()
+    await loadTrackModel('sleeper')
+
+    const scene = new TrainScene(document.createElement('canvas'), { useGltf: true })
+
+    let foundGltfSleeper = 0
+    let foundDualRails = 0
+
+    // @ts-expect-error test inspection
+    scene.trackGroup.traverse((o: THREE.Object3D) => {
+      if (o.userData?.part === 'gltf-sleeper') foundGltfSleeper++
+      if (o.userData?.part === 'dual-rail') foundDualRails++
+    })
+
+    expect(foundGltfSleeper).toBe(23) // 8 main + 3*5 branches = 23 sleepers
+    expect(foundDualRails).toBe(8) // 2 main + 3*2 branches = 8 dual rails
+    scene.dispose()
+  })
 })

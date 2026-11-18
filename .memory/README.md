@@ -1,10 +1,11 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-11-18 17:02:00
+Last Updated: 2026-11-18 17:30:00
 Format Version: 1
 
 ## Current State
-- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.20.0`.
+- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.21.0`.
+- Model GLTF orang & rel kereta (CC0): Aset GLB Masinis Asya (`driver.glb`, 749 KB, Quaternius CC0), Penumpang Stasiun (`passenger.glb`, 776 KB, Quaternius CC0), dan Bantalan Rel (`sleeper.glb`, 4.8 KB, Kenney CC0) terintegrasi ke `TrainScene.ts` dengan rel ganda paralel (`dual parallel rails` offset transversal ±0.36), animasi `Idle` & selebrasi `'Victory'` saat tiba di stasiun, in-memory loader `characterModelLoader.ts` & `trackModelLoader.ts`, PWA precache 69 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/173000-model-gltf-orang-dan-rel-kereta.md`. Plan: `plans/2026-11-18-modernisasi-model-orang-dan-rel-kereta.md`.
 - Model GLTF pohon & flora kereta (CC0): Aset GLB Pohon Rindang (`tree_default.glb`, 9.4 KB), Pohon Pinus (`tree_pine.glb`, 17.2 KB), dan Pohon Oak (`tree_oak.glb`, 14.6 KB) dari Kenney Nature Kit terintegrasi ke `TrainScene.ts` dengan deteksi sub-mesh daun untuk animasi goyang angin (`sway`), in-memory loader `treeModelLoader.ts`, isolasi `instancedTreeGroup`, PWA precache 63 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/170000-model-gltf-pohon-flora-kereta.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-pohon-flora-kereta.md`.
 - Model GLTF lingkungan akuarium (CC0): Aset GLB Terumbu Karang (`coral.glb`, 395 KB, MiniPoly CC0), Rumput Laut (`seaweed.glb`, 3.4 KB, Kenney CC0), dan Batu Karang (`rock.glb`, 3.0 KB, Kenney CC0) terintegrasi ke `AquariumEnvironment3D.tsx` dengan variasi rotasi alami, in-memory loader `aquariumEnvLoader.ts`, PWA precache 57 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/163000-model-gltf-lingkungan-akuarium.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-lingkungan-akuarium.md`.
 - Model GLTF bangunan kereta (CC0): Aset GLB Rumah Warga (`house.glb`, 49 KB) dan Lumbung Pertanian (`barn.glb`, 96 KB) dari Quaternius terintegrasi ke `TrainScene.ts` dengan ground alignment dan centering pivot presisi, in-memory loader `buildingModelLoader.ts`, PWA precache 51 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/160500-model-gltf-bangunan-kereta.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-bangunan-kereta.md`.
@@ -65,6 +66,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-11-18 17:30:00 — Model GLTF Orang (Masinis & Penumpang) dan Rel Kereta Bebas Atribusi (CC0)](2026-11-18/173000-model-gltf-orang-dan-rel-kereta.md)
 - [2026-11-18 17:00:00 — Model GLTF Pohon & Flora Kereta (Rindang, Pinus, Oak)](2026-11-18/170000-model-gltf-pohon-flora-kereta.md)
 - [2026-11-18 16:30:00 — Model GLTF Lingkungan Akuarium (Karang, Rumput Laut, Batu)](2026-11-18/163000-model-gltf-lingkungan-akuarium.md)
 - [2026-11-18 16:05:00 — Model GLTF Bangunan Kereta (Rumah & Lumbung)](2026-11-18/160500-model-gltf-bangunan-kereta.md)
@@ -84,7 +86,6 @@ Format Version: 1
 - [2026-10-07 16:05:00 — Articulasi gerbong kereta, pivot terpisah saat belok (v1.13.0)](2026-10-07/160500-kereta-artikulasi-gerbong.md)
 - [2026-10-07 15:20:00 — Detail visual objek 3D kereta Fase 3–5 selesai (v1.12.0)](2026-10-07/152000-kereta-detail-visual-fase-3-5.md)
 - [2026-10-07 14:50:00 — Detail visual objek 3D kereta Fase 1–2 (v1.11.0)](2026-10-07/145000-kereta-detail-visual-fase-1-2.md)
-- [2026-10-07 14:10:24 — Ancang-ancang maneuver terlihat (kamera stabil, maju teranimasi, rel melengkung) v1.10.0](2026-10-07/141024-kereta-ancang-ancang-mulus.md)
 - [2026-10-07 13:03:51 — Akar masalah bodi kereta hilang saat belok (fix diterapkan v1.9.2)](2026-10-07/130351-akar-masalah-bodi-kereta-hilang.md)
 - [2026-09-26 09:55:00 — Bugfix kereta: mute header & jawaban ganda](2026-09-26/095500-bugfix-kereta-mute-jawaban-ganda.md)
 - [2026-09-25 20:40:00 — Kereta Fase 5 (variant acak, drag kamera, detail instanced, maneuver belok)](2026-09-25/204000-kereta-fase-5-variant-drag-detail.md)

@@ -16,6 +16,11 @@ import { instantiateTrainModel, type TrainModelKey } from '../../lib/trainModelL
 import { instantiateAnimalModel } from '../../lib/animalModelLoader'
 import { instantiateBuildingModel } from '../../lib/buildingModelLoader'
 import { instantiateTreeModel } from '../../lib/treeModelLoader'
+import {
+  instantiateCharacterModel,
+  type LoadedCharacterEntity,
+} from '../../lib/characterModelLoader'
+import { instantiateTrackModel } from '../../lib/trackModelLoader'
 
 export type BranchIndex = 0 | 1 | 2
 
@@ -161,6 +166,16 @@ export class TrainScene {
   private gltfTrees: THREE.Group[] = []
   private proceduralLeaves: THREE.Mesh[] = []
   private instancedTreeGroup = new THREE.Group()
+  private characterMixers: THREE.AnimationMixer[] = []
+  private driverGroup = new THREE.Group()
+  private proceduralDriverGroup: THREE.Group | null = null
+  private gltfDriver: LoadedCharacterEntity | null = null
+  private passengerGroup = new THREE.Group()
+  private proceduralPassengerGroup: THREE.Group | null = null
+  private gltfPassengers: LoadedCharacterEntity[] = []
+  private trackGroup = new THREE.Group()
+  private gltfSleepers: THREE.Group[] = []
+  private proceduralSleepers: THREE.Mesh[] = []
   private butterflies: THREE.Group[] = []
   private butterflyBase: [number, number, number][] = []
   private flowersGroup = new THREE.Group()
@@ -362,6 +377,8 @@ export class TrainScene {
     this.refreshAnimalMeshes()
     this.refreshBuildingMeshes()
     this.refreshTreeMeshes()
+    this.refreshCharacterMeshes()
+    this.refreshTrackMeshes()
   }
 
   isGltfEnabled(): boolean {
@@ -456,6 +473,16 @@ export class TrainScene {
       )
       if (this.t >= 1 && !this.stationFired) {
         this.stationFired = true
+        if (this.gltfDriver?.actions.has('Victory')) {
+          this.gltfDriver.actions.get('Idle')?.fadeOut(0.3)
+          this.gltfDriver.actions.get('Victory')?.reset().fadeIn(0.3).play()
+        }
+        for (const p of this.gltfPassengers) {
+          if (p.actions.has('Victory')) {
+            p.actions.get('Idle')?.fadeOut(0.3)
+            p.actions.get('Victory')?.reset().fadeIn(0.3).play()
+          }
+        }
         this.cb.onReachStation?.()
       }
     }
@@ -497,6 +524,11 @@ export class TrainScene {
     }
     if (!this.rm && this.farmGroup.visible) {
       for (const mixer of this.animalMixers) {
+        mixer.update(dtc)
+      }
+    }
+    if (!this.rm) {
+      for (const mixer of this.characterMixers) {
         mixer.update(dtc)
       }
     }
@@ -1057,29 +1089,9 @@ export class TrainScene {
     this.flag = cloth
     this.scene.add(pole, cloth)
 
-    // Penumpang ×2 menunggu di stasiun — kepala + mata sebagai anak capsule
-    // agar ikut animasi lompat; wajah menghadap rel datang (+z)
-    const passengerColors = ['#38bdf8', '#fb7185']
-    const passengerX = [-1.5, -0.5]
-    const eyeGeo = new THREE.SphereGeometry(0.035, 6, 5)
-    const eyeMat = this.lambert('#0f172a')
-    for (let i = 0; i < 2; i++) {
-      const p = new THREE.Mesh(
-        new THREE.CapsuleGeometry(0.25, 0.6, 4, 8),
-        this.lambert(passengerColors[i]!),
-      )
-      p.position.set(passengerX[i]!, 0.8, -15)
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 8, 6), this.lambert('#ffd9b3'))
-      head.position.set(0, 0.68, 0)
-      for (const side of [-1, 1] as const) {
-        const eye = new THREE.Mesh(eyeGeo, eyeMat)
-        eye.position.set(0.06 * side, 0.03, 0.15)
-        head.add(eye)
-      }
-      p.add(head)
-      this.passengers.push(p)
-      this.scene.add(p)
-    }
+    // Penumpang ×2 menunggu di stasiun (GLTF dengan fallback prosedural capsule)
+    this.scene.add(this.passengerGroup)
+    this.buildPassengers()
 
     // Rambu sinyal ×4: tiang + 3 bola (0=kiri/atas, 1=tengah, 2=kanan/bawah)
     const signalPole = new THREE.Mesh(
@@ -1164,10 +1176,26 @@ export class TrainScene {
   private sleeperAt(curve: THREE.Curve<THREE.Vector3>, t: number): void {
     const pos = curve.getPointAt(t)
     const tan = curve.getTangentAt(t)
+    const rotY = Math.atan2(tan.x, tan.z)
+
+    if (this.useGltf) {
+      const gltfSleeper = instantiateTrackModel('sleeper')
+      if (gltfSleeper) {
+        gltfSleeper.position.set(pos.x, 0.04, pos.z)
+        gltfSleeper.rotation.y = rotY
+        gltfSleeper.userData.part = 'gltf-sleeper'
+        this.trackGroup.add(gltfSleeper)
+        this.gltfSleepers.push(gltfSleeper)
+        return
+      }
+    }
+
     const sleeper = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.08, 0.28), this.lambert('#7c5a3a'))
     sleeper.position.set(pos.x, 0.06, pos.z)
-    sleeper.rotation.y = Math.atan2(tan.x, tan.z)
-    this.scene.add(sleeper)
+    sleeper.rotation.y = rotY
+    sleeper.userData.part = 'sleeper'
+    this.trackGroup.add(sleeper)
+    this.proceduralSleepers.push(sleeper)
   }
 
   private drawBoard(i: number, text: string): void {
@@ -1529,18 +1557,68 @@ export class TrainScene {
     this.buildTrees()
   }
 
+  private createParallelCurves(
+    centerCurve: THREE.Curve<THREE.Vector3>,
+    offset: number,
+    samples = 32,
+  ): [THREE.Curve<THREE.Vector3>, THREE.Curve<THREE.Vector3>] {
+    const leftPoints: THREE.Vector3[] = []
+    const rightPoints: THREE.Vector3[] = []
+
+    for (let i = 0; i <= samples; i++) {
+      const t = i / samples
+      const p = centerCurve.getPointAt(t)
+      const tan = centerCurve.getTangentAt(t)
+      // Normal horizontal tegak lurus terhadap arah tangen di bidang XZ
+      const norm = new THREE.Vector3(-tan.z, 0, tan.x).normalize()
+
+      leftPoints.push(new THREE.Vector3(p.x - norm.x * offset, p.y + 0.04, p.z - norm.z * offset))
+      rightPoints.push(new THREE.Vector3(p.x + norm.x * offset, p.y + 0.04, p.z + norm.z * offset))
+    }
+
+    const leftCurve = new THREE.CatmullRomCurve3(leftPoints)
+    const rightCurve = new THREE.CatmullRomCurve3(rightPoints)
+    return [leftCurve, rightCurve]
+  }
+
   private buildTracks(): void {
+    this.scene.add(this.trackGroup)
+    const railMatSteel = this.lambert('#94a3b8')
     const railMatMain = this.lambert('#8a8f98')
+
     const mainTube = new THREE.Mesh(
-      new THREE.TubeGeometry(this.mainCurve, 32, 0.07, 6),
+      new THREE.TubeGeometry(this.mainCurve, 32, 0.06, 6),
       railMatMain,
     )
-    this.scene.add(mainTube)
+    this.trackGroup.add(mainTube)
+
+    // Dual parallel rails untuk kurva utama
+    const [mainLeft, mainRight] = this.createParallelCurves(this.mainCurve, 0.36)
+    const leftMainMesh = new THREE.Mesh(
+      new THREE.TubeGeometry(mainLeft, 32, 0.035, 6),
+      railMatSteel,
+    )
+    const rightMainMesh = new THREE.Mesh(
+      new THREE.TubeGeometry(mainRight, 32, 0.035, 6),
+      railMatSteel,
+    )
+    leftMainMesh.userData.part = 'dual-rail'
+    rightMainMesh.userData.part = 'dual-rail'
+    this.trackGroup.add(leftMainMesh, rightMainMesh)
+
     for (const branch of this.branchCurves) {
       const m = this.lambert('#8a8f98')
       this.branchMats.push(m)
-      const tube = new THREE.Mesh(new THREE.TubeGeometry(branch, 32, 0.07, 6), m)
-      this.scene.add(tube)
+      const tube = new THREE.Mesh(new THREE.TubeGeometry(branch, 32, 0.06, 6), m)
+      this.trackGroup.add(tube)
+
+      // Dual parallel rails untuk kurva cabang
+      const [bLeft, bRight] = this.createParallelCurves(branch, 0.36)
+      const bLeftMesh = new THREE.Mesh(new THREE.TubeGeometry(bLeft, 32, 0.035, 6), railMatSteel)
+      const bRightMesh = new THREE.Mesh(new THREE.TubeGeometry(bRight, 32, 0.035, 6), railMatSteel)
+      bLeftMesh.userData.part = 'dual-rail'
+      bRightMesh.userData.part = 'dual-rail'
+      this.trackGroup.add(bLeftMesh, bRightMesh)
     }
     // Bantalan: main 8, tiap cabang 5 → total 23
     for (let i = 0; i < 8; i++) {
@@ -1549,6 +1627,50 @@ export class TrainScene {
     for (const branch of this.branchCurves) {
       for (let i = 0; i < 5; i++) {
         this.sleeperAt(branch, (i + 0.5) / 5)
+      }
+    }
+  }
+
+  private refreshTrackMeshes(): void {
+    if (this.disposed) return
+    for (const s of this.gltfSleepers) {
+      this.trackGroup.remove(s)
+    }
+    this.gltfSleepers = []
+
+    if (this.useGltf) {
+      for (let i = 0; i < 8; i++) {
+        const pos = this.mainCurve.getPointAt((i + 0.5) / 8)
+        const tan = this.mainCurve.getTangentAt((i + 0.5) / 8)
+        const gltfSleeper = instantiateTrackModel('sleeper')
+        if (gltfSleeper) {
+          gltfSleeper.position.set(pos.x, 0.04, pos.z)
+          gltfSleeper.rotation.y = Math.atan2(tan.x, tan.z)
+          gltfSleeper.userData.part = 'gltf-sleeper'
+          this.trackGroup.add(gltfSleeper)
+          this.gltfSleepers.push(gltfSleeper)
+        }
+      }
+      for (const branch of this.branchCurves) {
+        for (let i = 0; i < 5; i++) {
+          const pos = branch.getPointAt((i + 0.5) / 5)
+          const tan = branch.getTangentAt((i + 0.5) / 5)
+          const gltfSleeper = instantiateTrackModel('sleeper')
+          if (gltfSleeper) {
+            gltfSleeper.position.set(pos.x, 0.04, pos.z)
+            gltfSleeper.rotation.y = Math.atan2(tan.x, tan.z)
+            gltfSleeper.userData.part = 'gltf-sleeper'
+            this.trackGroup.add(gltfSleeper)
+            this.gltfSleepers.push(gltfSleeper)
+          }
+        }
+      }
+      for (const s of this.proceduralSleepers) {
+        s.visible = this.gltfSleepers.length === 0
+      }
+    } else {
+      for (const s of this.proceduralSleepers) {
+        s.visible = true
       }
     }
     // Papan jawaban 3D ×3 (cermin DOM saja, bukan antarmuka) — diletakkan di
@@ -1621,45 +1743,152 @@ export class TrainScene {
     headlight.rotation.x = -Math.PI / 2
     this.trainGroup.add(headlight)
 
-    // Masinis Asya — torso, kepala bermata, topi berbrim, dua tangan
-    const skinMat = this.lambert('#ffd9b3')
-    const torso = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.15, 0.22, 4, 8),
-      this.lambert('#2563eb'),
-    )
-    torso.position.set(0, 1.6, -0.3)
-    torso.userData.part = 'driver-torso'
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 8), skinMat)
-    head.position.set(0, 1.95, -0.3)
-    this.driverHead = head
-    const hat = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.3, 0.3, 0.18, 10),
-      this.lambert('#2563eb'),
-    )
-    hat.position.set(0, 2.2, -0.3)
-    const brim = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.44, 0.44, 0.04, 12),
-      this.lambert('#1d4ed8'),
-    )
-    brim.position.set(0, 2.12, -0.3)
-    brim.userData.part = 'driver-brim'
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.6), this.lambert('#e05555'))
-    arm.position.set(0.55, 1.8, -0.3)
-    arm.userData.part = 'driver-arm'
-    this.driverArm = arm
-    const arm2 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.6), this.lambert('#e05555'))
-    arm2.position.set(-0.55, 1.8, -0.3)
-    arm2.userData.part = 'driver-arm'
-    const eyeGeo = new THREE.SphereGeometry(0.035, 6, 5)
-    const eyeMat = this.lambert('#0f172a')
-    for (const side of [-1, 1] as const) {
-      const eye = new THREE.Mesh(eyeGeo, eyeMat)
-      eye.position.set(0.09 * side, 2.0, -0.05)
-      eye.userData.part = 'driver-eye'
-      head.add(eye)
-    }
-    this.trainGroup.add(torso, head, hat, brim, arm, arm2)
+    // Masinis Asya (GLTF dengan fallback prosedural torso, kepala, topi, lengan)
+    this.trainGroup.add(this.driverGroup)
+    this.buildDriver()
     this.scene.add(this.trainGroup)
+  }
+
+  private buildDriver(): void {
+    if (this.gltfDriver) {
+      this.driverGroup.remove(this.gltfDriver.root)
+      this.gltfDriver = null
+    }
+
+    if (!this.proceduralDriverGroup) {
+      this.proceduralDriverGroup = new THREE.Group()
+      const skinMat = this.lambert('#ffd9b3')
+      const torso = new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.15, 0.22, 4, 8),
+        this.lambert('#2563eb'),
+      )
+      torso.position.set(0, 1.6, -0.3)
+      torso.userData.part = 'driver-torso'
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 8), skinMat)
+      head.position.set(0, 1.95, -0.3)
+      this.driverHead = head
+      const hat = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.3, 0.3, 0.18, 10),
+        this.lambert('#2563eb'),
+      )
+      hat.position.set(0, 2.2, -0.3)
+      const brim = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.44, 0.44, 0.04, 12),
+        this.lambert('#1d4ed8'),
+      )
+      brim.position.set(0, 2.12, -0.3)
+      brim.userData.part = 'driver-brim'
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.6), this.lambert('#e05555'))
+      arm.position.set(0.55, 1.8, -0.3)
+      arm.userData.part = 'driver-arm'
+      this.driverArm = arm
+      const arm2 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.6), this.lambert('#e05555'))
+      arm2.position.set(-0.55, 1.8, -0.3)
+      arm2.userData.part = 'driver-arm'
+      const eyeGeo = new THREE.SphereGeometry(0.035, 6, 5)
+      const eyeMat = this.lambert('#0f172a')
+      for (const side of [-1, 1] as const) {
+        const eye = new THREE.Mesh(eyeGeo, eyeMat)
+        eye.position.set(0.09 * side, 2.0, -0.05)
+        eye.userData.part = 'driver-eye'
+        head.add(eye)
+      }
+      this.proceduralDriverGroup.add(torso, head, hat, brim, arm, arm2)
+      this.driverGroup.add(this.proceduralDriverGroup)
+    }
+
+    if (this.useGltf) {
+      const driverEntity = instantiateCharacterModel('driver')
+      if (driverEntity) {
+        driverEntity.root.position.set(0, 1.35, -0.3)
+        driverEntity.root.rotation.y = 0
+        driverEntity.root.userData.part = 'gltf-driver'
+        this.driverGroup.add(driverEntity.root)
+        this.gltfDriver = driverEntity
+        if (driverEntity.mixer) {
+          this.characterMixers.push(driverEntity.mixer)
+        }
+        this.proceduralDriverGroup.visible = false
+      } else {
+        this.proceduralDriverGroup.visible = true
+      }
+    } else {
+      this.proceduralDriverGroup.visible = true
+    }
+  }
+
+  private buildPassengers(): void {
+    for (const p of this.gltfPassengers) {
+      this.passengerGroup.remove(p.root)
+    }
+    this.gltfPassengers = []
+
+    const passengerPositions: [number, number, number][] = [
+      [-1.5, 0.4, -15],
+      [-0.5, 0.4, -15],
+    ]
+
+    if (!this.proceduralPassengerGroup) {
+      this.proceduralPassengerGroup = new THREE.Group()
+      const passengerColors = ['#38bdf8', '#fb7185']
+      const passengerX = [-1.5, -0.5]
+      const eyeGeo = new THREE.SphereGeometry(0.035, 6, 5)
+      const eyeMat = this.lambert('#0f172a')
+
+      for (let i = 0; i < 2; i++) {
+        const p = new THREE.Mesh(
+          new THREE.CapsuleGeometry(0.25, 0.6, 4, 8),
+          this.lambert(passengerColors[i]!),
+        )
+        p.position.set(passengerX[i]!, 0.8, -15)
+        p.userData.part = 'passenger-capsule'
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 8, 6), this.lambert('#ffd9b3'))
+        head.position.set(0, 0.68, 0)
+        head.userData.part = 'passenger-head'
+        for (const side of [-1, 1] as const) {
+          const eye = new THREE.Mesh(eyeGeo, eyeMat)
+          eye.position.set(0.06 * side, 0.03, 0.15)
+          eye.userData.part = 'passenger-eye'
+          head.add(eye)
+        }
+        p.add(head)
+        this.passengers.push(p)
+        this.proceduralPassengerGroup.add(p)
+      }
+
+      this.passengerGroup.add(this.proceduralPassengerGroup)
+    }
+
+    if (this.useGltf) {
+      const p1 = instantiateCharacterModel('passenger')
+      const p2 = instantiateCharacterModel('passenger')
+      if (p1 && p2) {
+        const entities = [p1, p2]
+        for (let i = 0; i < 2; i++) {
+          const entity = entities[i]!
+          const [x, y, z] = passengerPositions[i]!
+          entity.root.position.set(x, y, z)
+          entity.root.rotation.y = 0
+          entity.root.userData.part = 'gltf-passenger'
+          this.passengerGroup.add(entity.root)
+          this.gltfPassengers.push(entity)
+          if (entity.mixer) {
+            this.characterMixers.push(entity.mixer)
+          }
+        }
+        this.proceduralPassengerGroup.visible = false
+      } else {
+        this.proceduralPassengerGroup.visible = true
+      }
+    } else {
+      this.proceduralPassengerGroup.visible = true
+    }
+  }
+
+  private refreshCharacterMeshes(): void {
+    if (this.disposed) return
+    this.buildDriver()
+    this.buildPassengers()
   }
 
   private buildSmoke(): void {
