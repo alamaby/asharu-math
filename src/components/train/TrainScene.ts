@@ -15,6 +15,7 @@ import { MANEUVER_TOTAL_MS, computeManeuver } from '../../lib/trainManeuver'
 import { instantiateTrainModel, type TrainModelKey } from '../../lib/trainModelLoader'
 import { instantiateAnimalModel } from '../../lib/animalModelLoader'
 import { instantiateBuildingModel } from '../../lib/buildingModelLoader'
+import { instantiateTreeModel } from '../../lib/treeModelLoader'
 
 export type BranchIndex = 0 | 1 | 2
 
@@ -155,6 +156,11 @@ export class TrainScene {
   private barnGroup = new THREE.Group()
   private proceduralBarnGroup: THREE.Group | null = null
   private gltfBarn: THREE.Group | null = null
+  private treeGroup = new THREE.Group()
+  private proceduralTreeGroup: THREE.Group | null = null
+  private gltfTrees: THREE.Group[] = []
+  private proceduralLeaves: THREE.Mesh[] = []
+  private instancedTreeGroup = new THREE.Group()
   private butterflies: THREE.Group[] = []
   private butterflyBase: [number, number, number][] = []
   private flowersGroup = new THREE.Group()
@@ -355,6 +361,7 @@ export class TrainScene {
     this.refreshTrainMesh()
     this.refreshAnimalMeshes()
     this.refreshBuildingMeshes()
+    this.refreshTreeMeshes()
   }
 
   isGltfEnabled(): boolean {
@@ -934,25 +941,9 @@ export class TrainScene {
       this.scene.add(hill)
     }
 
-    // Pohon ×4 (trunk + daun), geometry/material dipakai ulang dalam instance
-    const trunkGeo = new THREE.CylinderGeometry(0.12, 0.16, 0.8, 7)
-    const leafGeo = new THREE.ConeGeometry(0.7, 1.4, 7)
-    const trunkMat = this.lambert('#8a5a3b')
-    const leafMat = this.lambert('#3e9e4f')
-    const treeSpots: [number, number][] = [
-      [-8, 4],
-      [8, 2],
-      [-9, -8],
-      [9, -6],
-    ]
-    for (const [x, z] of treeSpots) {
-      const trunk = new THREE.Mesh(trunkGeo, trunkMat)
-      trunk.position.set(x, 0.4, z)
-      const leaf = new THREE.Mesh(leafGeo, leafMat)
-      leaf.position.set(x, 1.4, z)
-      this.leaves.push(leaf)
-      this.scene.add(trunk, leaf)
-    }
+    // Pohon (GLTF dengan fallback prosedural trunk + daun)
+    this.scene.add(this.treeGroup)
+    this.buildTrees()
 
     // Rumah ×2 (GLTF dengan fallback prosedural box + atap overhang + pintu + cerobong)
     this.scene.add(this.houseGroup)
@@ -1426,6 +1417,118 @@ export class TrainScene {
     this.buildBarn()
   }
 
+  private buildTrees(): void {
+    for (const t of this.gltfTrees) {
+      this.treeGroup.remove(t)
+    }
+    this.gltfTrees = []
+    this.leaves = []
+
+    const treeSpots: [number, number, number][] = [
+      [-8, 4, 0],
+      [8, 2, Math.PI * 0.5],
+      [-9, -8, Math.PI * 1.2],
+      [9, -6, -Math.PI * 0.4],
+    ]
+
+    const pineSpots: [number, number, number][] = [
+      [-13, 2, 0.2],
+      [13, 0, 1.4],
+      [-12, -6, 2.5],
+      [12, -8, 0.8],
+      [-11, 10, 1.9],
+      [11, 12, 3.1],
+    ]
+
+    const roundSpots: [number, number, number][] = [
+      [-6, 12, 0.4],
+      [6, 14, 1.8],
+      [-14, -12, 2.6],
+      [14, -14, 0.9],
+    ]
+
+    if (!this.proceduralTreeGroup) {
+      this.proceduralTreeGroup = new THREE.Group()
+      const trunkGeo = new THREE.CylinderGeometry(0.12, 0.16, 0.8, 7)
+      const leafGeo = new THREE.ConeGeometry(0.7, 1.4, 7)
+      const trunkMat = this.lambert('#8a5a3b')
+      const leafMat = this.lambert('#3e9e4f')
+
+      for (const [x, z] of treeSpots) {
+        const trunk = new THREE.Mesh(trunkGeo, trunkMat)
+        trunk.position.set(x, 0.4, z)
+        trunk.userData.part = 'tree-trunk'
+        const leaf = new THREE.Mesh(leafGeo, leafMat)
+        leaf.position.set(x, 1.4, z)
+        leaf.userData.part = 'tree-leaf'
+        this.proceduralLeaves.push(leaf)
+        this.proceduralTreeGroup.add(trunk, leaf)
+      }
+
+      this.treeGroup.add(this.proceduralTreeGroup)
+    }
+
+    if (this.useGltf) {
+      const gltfTreeEntities = treeSpots.map(() => instantiateTreeModel('tree_default'))
+      const allDefaultLoaded = gltfTreeEntities.every((t) => t !== null)
+
+      if (allDefaultLoaded) {
+        for (let i = 0; i < treeSpots.length; i++) {
+          const entity = gltfTreeEntities[i]!
+          const [x, z, rotY] = treeSpots[i]!
+          entity.root.position.set(x, 0, z)
+          entity.root.rotation.y = rotY
+          entity.root.userData.part = 'gltf-tree'
+          if (entity.leafMesh) {
+            this.leaves.push(entity.leafMesh)
+          }
+          this.treeGroup.add(entity.root)
+          this.gltfTrees.push(entity.root)
+        }
+
+        for (let i = 0; i < pineSpots.length; i++) {
+          const entity = instantiateTreeModel('tree_pine')
+          if (entity) {
+            const [x, z, rotY] = pineSpots[i]!
+            entity.root.position.set(x, 0, z)
+            entity.root.rotation.y = rotY
+            entity.root.userData.part = 'gltf-pine'
+            this.treeGroup.add(entity.root)
+            this.gltfTrees.push(entity.root)
+          }
+        }
+
+        for (let i = 0; i < roundSpots.length; i++) {
+          const entity = instantiateTreeModel('tree_oak')
+          if (entity) {
+            const [x, z, rotY] = roundSpots[i]!
+            entity.root.position.set(x, 0, z)
+            entity.root.rotation.y = rotY
+            entity.root.userData.part = 'gltf-oak'
+            this.treeGroup.add(entity.root)
+            this.gltfTrees.push(entity.root)
+          }
+        }
+
+        this.proceduralTreeGroup.visible = false
+        this.instancedTreeGroup.visible = false
+      } else {
+        this.proceduralTreeGroup.visible = true
+        this.instancedTreeGroup.visible = true
+        this.leaves = [...this.proceduralLeaves]
+      }
+    } else {
+      this.proceduralTreeGroup.visible = true
+      this.instancedTreeGroup.visible = true
+      this.leaves = [...this.proceduralLeaves]
+    }
+  }
+
+  private refreshTreeMeshes(): void {
+    if (this.disposed) return
+    this.buildTrees()
+  }
+
   private buildTracks(): void {
     const railMatMain = this.lambert('#8a8f98')
     const mainTube = new THREE.Mesh(
@@ -1590,6 +1693,7 @@ export class TrainScene {
     geo: THREE.BufferGeometry,
     mat: THREE.Material,
     transforms: { pos: [number, number, number]; rotY?: number; scale?: number }[],
+    parent: THREE.Group = this.detailGroup,
   ): THREE.InstancedMesh {
     const mesh = new THREE.InstancedMesh(geo, mat, transforms.length)
     const dummy = new THREE.Object3D()
@@ -1602,11 +1706,12 @@ export class TrainScene {
       mesh.setMatrixAt(i, dummy.matrix)
     }
     mesh.instanceMatrix.needsUpdate = true
-    this.detailGroup.add(mesh)
+    parent.add(mesh)
     return mesh
   }
 
   private buildInstancedDetail(): void {
+    this.detailGroup.add(this.instancedTreeGroup)
     const tint = new THREE.Color()
     // Pohon pinus ×6 (daun 2 lapis bertumpuk + batang), warna sedikit bervariasi
     const pineSpots: [number, number][] = [
@@ -1621,16 +1726,19 @@ export class TrainScene {
       new THREE.ConeGeometry(0.7, 1.6, 6),
       this.lambert('#2f8f4a'),
       pineSpots.map(([x, z]) => ({ pos: [x, 1.3, z] as [number, number, number] })),
+      this.instancedTreeGroup,
     )
     this.addInstanced(
       new THREE.ConeGeometry(0.48, 1.1, 6),
       this.lambert('#2f8f4a'),
       pineSpots.map(([x, z]) => ({ pos: [x, 2.05, z] as [number, number, number] })),
+      this.instancedTreeGroup,
     )
     this.addInstanced(
       new THREE.CylinderGeometry(0.1, 0.14, 0.5, 6),
       this.lambert('#8a5a3b'),
       pineSpots.map(([x, z]) => ({ pos: [x, 0.25, z] as [number, number, number] })),
+      this.instancedTreeGroup,
     )
     for (let i = 0; i < pineSpots.length; i++) {
       pineLower.setColorAt(i, tint.set('#2f8f4a').offsetHSL(0, 0, (i % 3) * 0.05 - 0.05))
@@ -1647,6 +1755,7 @@ export class TrainScene {
       new THREE.SphereGeometry(0.75, 8, 6),
       this.lambert('#4caf50'),
       roundSpots.map(([x, z]) => ({ pos: [x, 1.35, z] as [number, number, number] })),
+      this.instancedTreeGroup,
     )
     this.addInstanced(
       new THREE.SphereGeometry(0.5, 8, 6),
@@ -1654,11 +1763,13 @@ export class TrainScene {
       roundSpots.map(([x, z], i) => ({
         pos: [x + (i % 2 === 0 ? 0.35 : -0.35), 1.8, z + 0.15] as [number, number, number],
       })),
+      this.instancedTreeGroup,
     )
     this.addInstanced(
       new THREE.CylinderGeometry(0.1, 0.14, 0.6, 6),
       this.lambert('#8a5a3b'),
       roundSpots.map(([x, z]) => ({ pos: [x, 0.3, z] as [number, number, number] })),
+      this.instancedTreeGroup,
     )
     for (let i = 0; i < roundSpots.length; i++) {
       canopy.setColorAt(i, tint.set('#4caf50').offsetHSL(0.01, 0, (i % 3) * 0.045 - 0.045))

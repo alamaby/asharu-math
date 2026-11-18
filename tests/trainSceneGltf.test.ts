@@ -270,4 +270,56 @@ describe('TrainScene GLTF integration (Fase 3 & 4)', () => {
     expect(foundBarn).toBe(true)
     scene.dispose()
   })
+
+  it('menggunakan model GLTF pohon saat cache pohon tersedia', async () => {
+    const mockTreeDefault = new THREE.Group()
+    mockTreeDefault.name = 'MockTreeDefault'
+    const leaf = new THREE.Mesh(
+      new THREE.ConeGeometry(1, 1, 1),
+      new THREE.MeshBasicMaterial({ name: 'leafsGreen' }),
+    )
+    leaf.name = 'leaf'
+    mockTreeDefault.add(leaf)
+
+    const mockTreePine = new THREE.Group()
+    mockTreePine.name = 'MockTreePine'
+    const mockTreeOak = new THREE.Group()
+    mockTreeOak.name = 'MockTreeOak'
+
+    const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js')
+    vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad) => {
+      const p = String(path)
+      let sceneModel = mockTreeDefault
+      if (p.includes('pine')) sceneModel = mockTreePine
+      if (p.includes('oak')) sceneModel = mockTreeOak
+      if (onLoad) {
+        // @ts-expect-error test stub
+        onLoad({ scene: sceneModel, animations: [] })
+      }
+    })
+
+    const { loadTreeModel, clearTreeModelCache } = await import('../src/lib/treeModelLoader')
+    clearTreeModelCache()
+    await loadTreeModel('tree_default')
+    await loadTreeModel('tree_pine')
+    await loadTreeModel('tree_oak')
+
+    const scene = new TrainScene(document.createElement('canvas'), { useGltf: true })
+
+    let foundTrees = 0
+    let foundPines = 0
+    let foundOaks = 0
+
+    // @ts-expect-error test inspection
+    scene.treeGroup.traverse((o: THREE.Object3D) => {
+      if (o.userData?.part === 'gltf-tree') foundTrees++
+      if (o.userData?.part === 'gltf-pine') foundPines++
+      if (o.userData?.part === 'gltf-oak') foundOaks++
+    })
+
+    expect(foundTrees).toBe(4)
+    expect(foundPines).toBe(6)
+    expect(foundOaks).toBe(4)
+    scene.dispose()
+  })
 })

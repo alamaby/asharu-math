@@ -1,10 +1,11 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-11-18 16:30:00
+Last Updated: 2026-11-18 17:02:00
 Format Version: 1
 
 ## Current State
-- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.19.0`.
+- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.20.0`.
+- Model GLTF pohon & flora kereta (CC0): Aset GLB Pohon Rindang (`tree_default.glb`, 9.4 KB), Pohon Pinus (`tree_pine.glb`, 17.2 KB), dan Pohon Oak (`tree_oak.glb`, 14.6 KB) dari Kenney Nature Kit terintegrasi ke `TrainScene.ts` dengan deteksi sub-mesh daun untuk animasi goyang angin (`sway`), in-memory loader `treeModelLoader.ts`, isolasi `instancedTreeGroup`, PWA precache 63 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/170000-model-gltf-pohon-flora-kereta.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-pohon-flora-kereta.md`.
 - Model GLTF lingkungan akuarium (CC0): Aset GLB Terumbu Karang (`coral.glb`, 395 KB, MiniPoly CC0), Rumput Laut (`seaweed.glb`, 3.4 KB, Kenney CC0), dan Batu Karang (`rock.glb`, 3.0 KB, Kenney CC0) terintegrasi ke `AquariumEnvironment3D.tsx` dengan variasi rotasi alami, in-memory loader `aquariumEnvLoader.ts`, PWA precache 57 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/163000-model-gltf-lingkungan-akuarium.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-lingkungan-akuarium.md`.
 - Model GLTF bangunan kereta (CC0): Aset GLB Rumah Warga (`house.glb`, 49 KB) dan Lumbung Pertanian (`barn.glb`, 96 KB) dari Quaternius terintegrasi ke `TrainScene.ts` dengan ground alignment dan centering pivot presisi, in-memory loader `buildingModelLoader.ts`, PWA precache 51 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/160500-model-gltf-bangunan-kereta.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-bangunan-kereta.md`.
 - Model GLTF biota akuarium (CC0): Aset GLB Clownfish (ikan satuan oranye) dan Blue Fish (ikan puluhan biru bersirip kuning) dari Quaternius terintegrasi ke `Fish3D.tsx` & `TensFishGroup3D.tsx` dengan animasi kibasan ekor alami via `AnimationMixer`, in-memory loader `fishModelLoader.ts`, PWA precache 47 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/155000-model-gltf-biota-akuarium.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-biota-akuarium.md`.
@@ -64,6 +65,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-11-18 17:00:00 — Model GLTF Pohon & Flora Kereta (Rindang, Pinus, Oak)](2026-11-18/170000-model-gltf-pohon-flora-kereta.md)
 - [2026-11-18 16:30:00 — Model GLTF Lingkungan Akuarium (Karang, Rumput Laut, Batu)](2026-11-18/163000-model-gltf-lingkungan-akuarium.md)
 - [2026-11-18 16:05:00 — Model GLTF Bangunan Kereta (Rumah & Lumbung)](2026-11-18/160500-model-gltf-bangunan-kereta.md)
 - [2026-11-18 15:50:00 — Model GLTF Biota Akuarium (Clownfish & Blue Fish)](2026-11-18/155000-model-gltf-biota-akuarium.md)

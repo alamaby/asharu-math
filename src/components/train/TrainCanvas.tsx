@@ -6,6 +6,7 @@ import type { TrainVariant } from '../../lib/trainVariants'
 import { preloadTrainModels } from '../../lib/trainModelLoader'
 import { preloadAnimalModels } from '../../lib/animalModelLoader'
 import { preloadBuildingModels } from '../../lib/buildingModelLoader'
+import { preloadTreeModels } from '../../lib/treeModelLoader'
 import TrainFallback2D from './TrainFallback2D'
 
 export interface TrainCanvasProps {
@@ -93,13 +94,16 @@ export default function TrainCanvas({
 
   useEffect(() => {
     let active = true
-    Promise.allSettled([preloadTrainModels(), preloadAnimalModels(), preloadBuildingModels()]).then(
-      () => {
-        if (active && sceneRef.current && !sceneRef.current.isDisposed()) {
-          sceneRef.current.setGltfEnabled(true)
-        }
-      },
-    )
+    Promise.allSettled([
+      preloadTrainModels(),
+      preloadAnimalModels(),
+      preloadBuildingModels(),
+      preloadTreeModels(),
+    ]).then(() => {
+      if (active && sceneRef.current && !sceneRef.current.isDisposed()) {
+        sceneRef.current.setGltfEnabled(true)
+      }
+    })
     return () => {
       active = false
     }
