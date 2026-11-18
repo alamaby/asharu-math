@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import ConceptQuestionView from '../components/concept/ConceptQuestionView'
 import ConfirmDialog from '../components/common/ConfirmDialog'
-import FeedbackMessage, { type Feedback } from '../components/guide/FeedbackMessage'
+import FeedbackMessage from '../components/guide/FeedbackMessage'
 import ProgressBar from '../components/guide/ProgressBar'
 import MascotBubble from '../components/layout/MascotBubble'
 import { getLevel, getNextLevelId } from '../data/levels'
@@ -9,21 +9,11 @@ import { useI18n } from '../i18n/LanguageContext'
 import { conceptChoices, conceptPrompt } from '../i18n/concept'
 import { generateConceptSession } from '../lib/conceptGenerator'
 import { starsFor } from '../lib/scoring'
-import { playCorrect, playWrong } from '../lib/sound'
 import { useNavigation } from '../state/NavigationContext'
 import { useProgress } from '../state/ProgressContext'
 import type { ConceptProblem, ConceptSettings, SessionSummary } from '../types'
-
-interface ConceptLearnState {
-  problems: ConceptProblem[]
-  index: number
-  attempts: number
-  wrongInProblem: number
-  feedback: Feedback | null
-  locked: boolean
-  results: { problem: ConceptProblem; wrongAttempts: number }[]
-  finished: boolean
-}
+import { useQuestionSession } from '../hooks/useQuestionSession'
+import type { QuestionResult } from '../lib/questionSessionMachine'
 
 export interface ConceptLearnScreenProps {
   levelId: string
@@ -42,45 +32,32 @@ export default function ConceptLearnScreen({
   const level = getLevel(levelId)
   const title = level ? level.name[lang] : t('learn.adhocTitle')
 
-  const [state, setState] = useState<ConceptLearnState>(() => {
-    const initial =
-      provided && provided.length > 0
-        ? provided
-        : level && level.levelKind === 'concept'
-          ? generateConceptSession(
-              (level.settings as ConceptSettings).conceptKind,
-              level.questionCount,
-            )
-          : generateConceptSession('counting', 5)
-    return {
-      problems: initial,
-      index: 0,
-      attempts: 0,
-      wrongInProblem: 0,
-      feedback: null,
-      locked: false,
-      results: [],
-      finished: false,
+  const problems = useMemo<ConceptProblem[]>(() => {
+    if (provided && provided.length > 0) return provided
+    if (level && level.levelKind === 'concept') {
+      return generateConceptSession(
+        (level.settings as ConceptSettings).conceptKind,
+        level.questionCount,
+      )
     }
-  })
+    return generateConceptSession('counting', 5)
+  }, [provided, level])
 
   useEffect(() => {
     markLevelStarted(levelId)
   }, [levelId, markLevelStarted])
 
-  const problem = state.problems[state.index]
-
   const finishSession = useCallback(
-    (finished: ConceptLearnState) => {
-      const totalQuestions = finished.results.length
-      const correctFirstTry = finished.results.filter((r) => r.wrongAttempts === 0).length
-      const wrongAttempts = finished.results.reduce((s, r) => s + r.wrongAttempts, 0)
-      const recovered = finished.results.filter((r) => r.wrongAttempts > 0).length
+    (results: QuestionResult<ConceptProblem>[]) => {
+      const totalQuestions = results.length
+      const correctFirstTry = results.filter((r) => r.wrongAttempts === 0).length
+      const wrongAttempts = results.reduce((s, r) => s + r.wrongAttempts, 0)
+      const recovered = results.filter((r) => r.wrongAttempts > 0).length
       const stars = starsFor(correctFirstTry, totalQuestions)
       const newAchievementIds: string[] = []
-      for (const r of finished.results) {
+      for (const r of results) {
         newAchievementIds.push(
-          ...recordConceptAnswer({ kind: r.problem.kind, wrongAttempts: r.wrongAttempts }).map(
+          ...recordConceptAnswer({ kind: r.item.kind, wrongAttempts: r.wrongAttempts }).map(
             (a) => a.id,
           ),
         )
@@ -104,85 +81,41 @@ export default function ConceptLearnScreen({
     [completeLevel, levelId, navigate, recordConceptAnswer, setLeaveGuard, title],
   )
 
-  const timerRef = useRef<number | null>(null)
-  useEffect(
-    () => () => {
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current)
-    },
-    [],
-  )
+  const {
+    currentItem: problem,
+    isLocked,
+    isCompleted,
+    attempts,
+    feedback,
+    index,
+    totalItems,
+    submitAnswer,
+  } = useQuestionSession<ConceptProblem>({
+    items: problems,
+    onComplete: finishSession,
+  })
 
   const handleChoice = (choice: string) => {
-    if (state.locked || !problem) return
-    const snapshot = state
+    if (isLocked || !problem) return
     const correct = choice === problem.expectedAnswer
     if (correct) {
-      const feedback: Feedback = { kind: 'correct', text: t('concept.correctFeedback') }
-      const nextResults = [...snapshot.results, { problem, wrongAttempts: snapshot.wrongInProblem }]
-      setState((s) => ({ ...s, feedback, locked: true }))
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current)
-      timerRef.current = window.setTimeout(() => {
-        if (snapshot.index + 1 < snapshot.problems.length) {
-          setState({
-            problems: snapshot.problems,
-            index: snapshot.index + 1,
-            attempts: 0,
-            wrongInProblem: 0,
-            feedback: null,
-            locked: false,
-            results: nextResults,
-            finished: false,
-          })
-        } else {
-          finishSession({ ...snapshot, results: nextResults, finished: true })
-        }
-      }, 700)
+      submitAnswer(true, { kind: 'correct', text: t('concept.correctFeedback') })
       return
     }
-    const attempts = snapshot.attempts + 1
-    const wrongInProblem = snapshot.wrongInProblem + 1
-    if (attempts >= 3) {
+    const nextAttempts = attempts + 1
+    if (nextAttempts >= 3) {
       const expectedLabel =
         problem.kind === 'compare'
           ? (conceptChoices(problem, t)[problem.choices.indexOf(problem.expectedAnswer)] ??
             problem.expectedAnswer)
           : problem.expectedAnswer
-      setState((s) => ({
-        ...s,
-        attempts: 0,
-        wrongInProblem,
-        feedback: { kind: 'info', text: t('concept.revealedFeedback', { answer: expectedLabel }) },
-        locked: true,
-      }))
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current)
-      timerRef.current = window.setTimeout(() => {
-        const nextResults = [...snapshot.results, { problem, wrongAttempts: wrongInProblem }]
-        if (snapshot.index + 1 < snapshot.problems.length) {
-          setState({
-            problems: snapshot.problems,
-            index: snapshot.index + 1,
-            attempts: 0,
-            wrongInProblem: 0,
-            feedback: null,
-            locked: false,
-            results: nextResults,
-            finished: false,
-          })
-        } else {
-          finishSession({ ...snapshot, results: nextResults, finished: true })
-        }
-      }, 1200)
+      submitAnswer(false, {
+        kind: 'info',
+        text: t('concept.revealedFeedback', { answer: expectedLabel }),
+      })
       return
     }
-    setState((s) => ({
-      ...s,
-      attempts,
-      wrongInProblem,
-      feedback: { kind: 'wrong', text: t('concept.wrongFeedback') },
-      locked: true,
-    }))
-    if (timerRef.current !== null) window.clearTimeout(timerRef.current)
-    timerRef.current = window.setTimeout(() => setState((s) => ({ ...s, locked: false })), 600)
+    submitAnswer(false, { kind: 'wrong', text: t('concept.wrongFeedback') })
   }
 
   const prompt = useMemo(() => (problem ? conceptPrompt(problem.question, t) : ''), [problem, t])
@@ -191,19 +124,13 @@ export default function ConceptLearnScreen({
   const [exitOpen, setExitOpen] = useState(false)
   const openExit = useCallback(() => setExitOpen(true), [setExitOpen])
   useEffect(() => {
-    if (state.finished) {
+    if (isCompleted) {
       setLeaveGuard(null)
       return
     }
     setLeaveGuard(openExit)
     return () => setLeaveGuard(null)
-  }, [state.finished, setLeaveGuard, openExit])
-
-  useEffect(() => {
-    if (!state.feedback) return
-    if (state.feedback.kind === 'correct') playCorrect()
-    else if (state.feedback.kind === 'wrong') playWrong()
-  }, [state.feedback])
+  }, [isCompleted, setLeaveGuard, openExit])
 
   if (!problem) {
     return (
@@ -219,32 +146,32 @@ export default function ConceptLearnScreen({
         <div className="flex items-baseline justify-between">
           <h1 className="text-base font-black text-slate-800 md:text-lg">{title}</h1>
           <p className="text-xs font-bold text-slate-500">
-            {t('learn.questionOf', { current: state.index + 1, total: state.problems.length })}
+            {t('learn.questionOf', { current: index + 1, total: totalItems })}
           </p>
         </div>
         <ProgressBar
-          value={state.index / state.problems.length}
+          value={index / totalItems}
           label={t('learn.progressLabel', {
-            current: state.index + 1,
-            total: state.problems.length,
+            current: index + 1,
+            total: totalItems,
           })}
         />
       </section>
 
-      <MascotBubble text={prompt} mood={state.feedback?.kind === 'correct' ? 'cheer' : 'happy'} />
+      <MascotBubble text={prompt} mood={feedback?.kind === 'correct' ? 'cheer' : 'happy'} />
 
       <div className="rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm">
         <ConceptQuestionView problem={problem} />
       </div>
 
       <div className="space-y-2">
-        <FeedbackMessage feedback={state.feedback} />
+        <FeedbackMessage feedback={feedback} />
         <div className="grid grid-cols-2 gap-2">
           {problem.choices.map((choice, i) => (
             <button
               key={choice + String(i)}
               type="button"
-              disabled={state.locked}
+              disabled={isLocked}
               onClick={() => handleChoice(choice)}
               className="min-h-14 rounded-2xl border-2 border-sky-200 bg-white px-3 py-3 text-sm font-black text-slate-700 hover:bg-sky-50 disabled:opacity-50"
             >

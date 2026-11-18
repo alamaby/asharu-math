@@ -21,6 +21,7 @@ Mengidentifikasi seluruh mesin status implisit (*implicit state machines*) di da
 
 ## Tasks
 - [x] Buat fungsi kanonikal `resolveScreenForLevel(levelId: string): Screen` untuk menyelesaikan rute level di satu sumber kebenaran.
+- [x] Satukan siklus hidup kuis konsep dan soal cerita ke dalam pure reducer `questionSessionMachine` dan hook `useQuestionSession`.
 - [ ] Satukan dual-session state di `PracticeScreen.tsx` menjadi single discriminated union.
 - [ ] Gantikan `autoAdvanceToken` dan ref guard di `LearnScreen.tsx` dengan explicit step status lifecycle.
 - [ ] Satukan 15+ flag di `MagicAppleGarden.tsx` dan `CheerfulAquarium.tsx` ke dalam `placeValueWorldReducer`.
@@ -36,6 +37,7 @@ Mengidentifikasi seluruh mesin status implisit (*implicit state machines*) di da
 ## Progress Log
 - 2026-11-18 08:55:00 — Dokumen plan disusun berdasarkan audit mendalam terhadap seluruh berkas sumber di `src/`.
 - 2026-11-18 09:12:00 — Prioritas 1 selesai: implementasi `resolveScreenForLevel` di `src/data/levels.ts` dan integrasi di `LevelSelectScreen`, `HomeScreen`, dan `ResultScreen`. 33 test suites lulus (v1.14.2).
+- 2026-11-18 09:32:00 — Prioritas 2 selesai: pembuatan pure reducer `questionSessionMachine` dan custom hook `useQuestionSession` untuk unifikasi `ConceptLearnScreen` dan `StoryLearnScreen`. 62 test files (438 tests) lulus 100%.
 
 ## Notes
 - Semua usulan perubahan mempertahankan kontrak props publik, aturan pedagogis matematika anak SD (mis. susunan angka tanpa `reverse()`), dan sistem penyimpanan lokal saat ini.

@@ -1,10 +1,11 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-11-18 09:12:00
+Last Updated: 2026-11-18 09:35:00
 Format Version: 1
 
 ## Current State
-- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.14.2` (fix: kanonikal level routing resolver via `resolveScreenForLevel` untuk konsistensi rute kebun, akuarium, konsep, cerita, dan kolom).
+- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.14.2`.
+- Mesin status kuis terpadu: `questionSessionMachine` (pure reducer) dan hook `useQuestionSession` menyatukan siklus hidup kuis konsep (`ConceptLearnScreen`) dan soal cerita (`StoryLearnScreen`), mencegah race conditions, timer leak, dan memperbaiki leave-guard pada tombol bantuan hitung bersusun. Entri: `2026-11-18/093500-unifikasi-mesin-kuis-terpadu.md`. Plan: `plans/2026-11-18-explicit-state-machines-modernization.md`.
 - Routing level kanonikal: `resolveScreenForLevel` menyelesaikan diskrepansi rute di `HomeScreen`, `LevelSelectScreen`, dan `ResultScreen`. Tombol Lanjutkan dan Ulangi/Next Level kini konsisten membuka kebun (`garden`) dan akuarium (`aquarium`). Entri: `2026-11-18/091200-kanonikal-level-routing-resolver.md`. Plan: `plans/2026-11-18-explicit-state-machines-modernization.md`.
 - Kereta detail visual Fase 1–2 (v1.11.0): batang roda beranimasi, cowcatcher, coupling, jendela kabin, dome uap, kupu-kupu bersayap flapping, masinis bertorso+mata+brim, penumpang berkepala+mata. Entri: `2026-10-07/145000-kereta-detail-visual-fase-1-2.md`.
 - Kereta detail visual Fase 3–5 (v1.12.0): pinus bertumpuk + kanopi cluster + setColorAt + apel, rumah berpintu/cerobong/atap overhang, kanopi+bangku+jam stasiun, awan klaster, pagar berpengikat, sapi bertanduk. Keputusan: jendela instanced dihentikan (dobel dengan emissive dusk). **Semua 5 fase selesai** — plan: `plans/2026-10-07-kereta-detail-visual.md`. Entri: `2026-10-07/152000-kereta-detail-visual-fase-3-5.md`.
@@ -52,6 +53,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-11-18 09:35:00 — Unifikasi Mesin Kuis Terpadu (questionSessionMachine & useQuestionSession)](2026-11-18/093500-unifikasi-mesin-kuis-terpadu.md)
 - [2026-11-18 09:12:00 — Kanonikal Level Routing Resolver (v1.14.2)](2026-11-18/091200-kanonikal-level-routing-resolver.md)
 - [2026-10-07 16:20:00 — Paket detailing kereta A–D: smokebox, chuff, bogie, decal, crank rod, sway (v1.14.0)](2026-10-07/162000-kereta-detailing-paket-A-D.md)
 - [2026-10-07 16:05:00 — Articulasi gerbong kereta, pivot terpisah saat belok (v1.13.0)](2026-10-07/160500-kereta-artikulasi-gerbong.md)

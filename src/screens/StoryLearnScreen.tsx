@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import ConfirmDialog from '../components/common/ConfirmDialog'
-import FeedbackMessage, { type Feedback } from '../components/guide/FeedbackMessage'
+import FeedbackMessage from '../components/guide/FeedbackMessage'
 import ProgressBar from '../components/guide/ProgressBar'
 import MascotBubble from '../components/layout/MascotBubble'
 import NumericKeypad from '../components/input/NumericKeypad'
@@ -9,26 +9,15 @@ import { getLevel, getNextLevelId } from '../data/levels'
 import { useI18n } from '../i18n/LanguageContext'
 import { generateStorySession } from '../lib/storyGenerator'
 import { starsFor } from '../lib/scoring'
-import { playCorrect, playWrong } from '../lib/sound'
 import { useNavigation } from '../state/NavigationContext'
 import { useProgress } from '../state/ProgressContext'
 import type { StoryPart, StoryProblem, StorySettings } from '../types'
+import { useQuestionSession } from '../hooks/useQuestionSession'
+import type { QuestionResult } from '../lib/questionSessionMachine'
 
 interface StoryQueueItem {
   story: StoryProblem
   part: StoryPart
-}
-
-interface StoryLearnState {
-  queue: StoryQueueItem[]
-  index: number
-  interim: string
-  attempts: number
-  wrongInPart: number
-  feedback: Feedback | null
-  locked: boolean
-  results: { part: StoryPart; wrongAttempts: number }[]
-  finished: boolean
 }
 
 export interface StoryLearnScreenProps {
@@ -67,37 +56,21 @@ export default function StoryLearnScreen({ levelId, problems: provided }: StoryL
     [initProblems],
   )
 
-  const [state, setState] = useState<StoryLearnState>(() => ({
-    queue,
-    index: 0,
-    interim: '',
-    attempts: 0,
-    wrongInPart: 0,
-    feedback: null,
-    locked: false,
-    results: [],
-    finished: false,
-  }))
-
   useEffect(() => {
     markLevelStarted(levelId)
   }, [levelId, markLevelStarted])
 
-  const item = state.queue[state.index]
-  const part = item?.part
-  const story = item?.story
-
   const finishSession = useCallback(
-    (finished: StoryLearnState) => {
-      const totalQuestions = finished.results.length
-      const correctFirstTry = finished.results.filter((r) => r.wrongAttempts === 0).length
-      const wrongAttempts = finished.results.reduce((s, r) => s + r.wrongAttempts, 0)
-      const recovered = finished.results.filter((r) => r.wrongAttempts > 0).length
+    (results: QuestionResult<StoryQueueItem>[]) => {
+      const totalQuestions = results.length
+      const correctFirstTry = results.filter((r) => r.wrongAttempts === 0).length
+      const wrongAttempts = results.reduce((s, r) => s + r.wrongAttempts, 0)
+      const recovered = results.filter((r) => r.wrongAttempts > 0).length
       const stars = starsFor(correctFirstTry, totalQuestions)
       const newAchievementIds: string[] = []
-      for (const r of finished.results) {
+      for (const r of results) {
         newAchievementIds.push(
-          ...recordAnswer({ problem: r.part.math, wrongAttempts: r.wrongAttempts }).map(
+          ...recordAnswer({ problem: r.item.part.math, wrongAttempts: r.wrongAttempts }).map(
             (a) => a.id,
           ),
         )
@@ -121,111 +94,60 @@ export default function StoryLearnScreen({ levelId, problems: provided }: StoryL
     [completeLevel, levelId, navigate, recordAnswer, setLeaveGuard, title],
   )
 
-  const timerRef = useRef<number | null>(null)
-  useEffect(
-    () => () => {
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current)
-    },
-    [],
-  )
+  const {
+    currentItem: item,
+    isLocked,
+    isCompleted,
+    interim,
+    attempts,
+    wrongInCurrent,
+    feedback,
+    index,
+    totalItems,
+    results,
+    handleDigit,
+    handleBackspace,
+    submitAnswer,
+  } = useQuestionSession<StoryQueueItem>({
+    items: queue,
+    onComplete: finishSession,
+  })
 
-  const handleDigit = (digit: number) => {
-    if (state.locked || !part) return
-    setState((s) => ({
-      ...s,
-      interim: (s.interim + String(digit)).slice(0, 3),
-      feedback: null,
-    }))
-  }
-
-  const handleBackspace = () => {
-    if (state.locked) return
-    setState((s) => ({ ...s, interim: s.interim.slice(0, -1) }))
-  }
+  const part = item?.part
+  const story = item?.story
 
   const handleCheck = () => {
-    if (!part || state.locked || state.interim === '') return
-    const snapshot = state
-    const answer = Number(snapshot.interim)
+    if (!part || isLocked || interim === '') return
+    const answer = Number(interim)
     if (answer === part.expectedAnswer) {
-      const feedback: Feedback = { kind: 'correct', text: t('concept.correctFeedback') }
-      const nextResults = [...snapshot.results, { part, wrongAttempts: snapshot.wrongInPart }]
-      setState((s) => ({ ...s, feedback, locked: true }))
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current)
-      timerRef.current = window.setTimeout(() => {
-        if (snapshot.index + 1 < snapshot.queue.length) {
-          setState({
-            queue: snapshot.queue,
-            index: snapshot.index + 1,
-            interim: '',
-            attempts: 0,
-            wrongInPart: 0,
-            feedback: null,
-            locked: false,
-            results: nextResults,
-            finished: false,
-          })
-        } else {
-          finishSession({ ...snapshot, results: nextResults, finished: true })
-        }
-      }, 700)
+      submitAnswer(true, { kind: 'correct', text: t('concept.correctFeedback') })
       return
     }
-    const attempts = snapshot.attempts + 1
-    const wrongInPart = snapshot.wrongInPart + 1
-    if (attempts >= 3) {
-      setState((s) => ({
-        ...s,
-        attempts: 0,
-        wrongInPart,
-        interim: String(part.expectedAnswer),
-        feedback: {
+    const nextAttempts = attempts + 1
+    if (nextAttempts >= 3) {
+      submitAnswer(
+        false,
+        {
           kind: 'info',
           text: t('concept.revealedFeedback', { answer: String(part.expectedAnswer) }),
         },
-        locked: true,
-      }))
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current)
-      timerRef.current = window.setTimeout(() => {
-        const nextResults = [...snapshot.results, { part, wrongAttempts: wrongInPart }]
-        if (snapshot.index + 1 < snapshot.queue.length) {
-          setState({
-            queue: snapshot.queue,
-            index: snapshot.index + 1,
-            interim: '',
-            attempts: 0,
-            wrongInPart: 0,
-            feedback: null,
-            locked: false,
-            results: nextResults,
-            finished: false,
-          })
-        } else {
-          finishSession({ ...snapshot, results: nextResults, finished: true })
-        }
-      }, 1200)
+        String(part.expectedAnswer),
+      )
       return
     }
-    setState((s) => ({
-      ...s,
-      attempts,
-      wrongInPart,
-      feedback: { kind: 'wrong', text: t('concept.wrongFeedback') },
-      locked: true,
-    }))
-    if (timerRef.current !== null) window.clearTimeout(timerRef.current)
-    timerRef.current = window.setTimeout(() => setState((s) => ({ ...s, locked: false })), 600)
+    submitAnswer(false, { kind: 'wrong', text: t('concept.wrongFeedback') })
   }
 
   const switchToGuided = () => {
     if (!part) return
-    const remaining = state.queue.slice(state.index)
+    const remaining = queue.slice(index)
     const initialStats = {
-      correctFirstTry: state.results.filter((r) => r.wrongAttempts === 0).length,
-      wrongAttempts: state.results.reduce((sum, r) => sum + r.wrongAttempts, 0) + state.wrongInPart,
-      recovered: state.results.filter((r) => r.wrongAttempts > 0).length,
-      totalDone: state.results.length,
+      correctFirstTry: results.filter((r) => r.wrongAttempts === 0).length,
+      wrongAttempts: results.reduce((sum, r) => sum + r.wrongAttempts, 0) + wrongInCurrent,
+      recovered: results.filter((r) => r.wrongAttempts > 0).length,
+      totalDone: results.length,
     }
+    setLeaveGuard(null)
     navigate({
       name: 'learn',
       levelId: null,
@@ -238,21 +160,15 @@ export default function StoryLearnScreen({ levelId, problems: provided }: StoryL
   const [exitOpen, setExitOpen] = useState(false)
   const openExit = useCallback(() => setExitOpen(true), [setExitOpen])
   useEffect(() => {
-    if (state.finished) {
+    if (isCompleted) {
       setLeaveGuard(null)
       return
     }
     setLeaveGuard(openExit)
     return () => setLeaveGuard(null)
-  }, [state.finished, setLeaveGuard, openExit])
+  }, [isCompleted, setLeaveGuard, openExit])
 
-  useEffect(() => {
-    if (!state.feedback) return
-    if (state.feedback.kind === 'correct') playCorrect()
-    else if (state.feedback.kind === 'wrong') playWrong()
-  }, [state.feedback])
-
-  if (!item) {
+  if (!item || !part || !story) {
     return (
       <div className="flex flex-col items-center gap-4 py-10 text-center">
         <p className="text-sm font-bold text-slate-500">{t('learn.preparingResult')}</p>
@@ -260,30 +176,31 @@ export default function StoryLearnScreen({ levelId, problems: provided }: StoryL
     )
   }
 
-  const checkDisabled = state.interim === '' || state.locked
-
   return (
     <div className="space-y-4">
       <section aria-label={t('learn.sessionAria')} className="space-y-1.5">
         <div className="flex items-baseline justify-between">
           <h1 className="text-base font-black text-slate-800 md:text-lg">{title}</h1>
           <p className="text-xs font-bold text-slate-500">
-            {t('learn.questionOf', { current: state.index + 1, total: state.queue.length })}
+            {t('learn.questionOf', { current: index + 1, total: totalItems })}
           </p>
         </div>
         <ProgressBar
-          value={state.index / state.queue.length}
+          value={index / totalItems}
           label={t('learn.progressLabel', {
-            current: state.index + 1,
-            total: state.queue.length,
+            current: index + 1,
+            total: totalItems,
           })}
         />
       </section>
 
-      <MascotBubble text={t('story.tryColumn')} mood="happy" />
+      <MascotBubble
+        text={t('story.tryColumn')}
+        mood={feedback?.kind === 'correct' ? 'cheer' : 'happy'}
+      />
 
       <div className="rounded-3xl border-2 border-sky-100 bg-white p-4 shadow-sm">
-        <StoryCard story={story!} part={part} />
+        <StoryCard story={story} part={part} />
       </div>
 
       <div className="flex flex-col items-center gap-3">
@@ -291,16 +208,17 @@ export default function StoryLearnScreen({ levelId, problems: provided }: StoryL
           aria-live="polite"
           className="flex h-16 w-full max-w-xs items-center justify-center rounded-2xl border-2 border-sky-200 bg-white text-3xl font-black text-slate-800"
         >
-          {state.interim || <span className="text-slate-300">...</span>}
+          {interim || <span className="text-slate-300">...</span>}
         </div>
         <NumericKeypad
           onDigit={handleDigit}
           onBackspace={handleBackspace}
           onCheck={handleCheck}
-          checkDisabled={checkDisabled}
+          checkDisabled={isLocked || interim === ''}
+          digitsDisabled={isLocked}
           checkLabel={t('keypad.checkDefault')}
         />
-        {state.attempts >= 2 && !state.locked && (
+        {attempts >= 2 && !isLocked && (
           <button
             type="button"
             onClick={switchToGuided}
@@ -309,7 +227,7 @@ export default function StoryLearnScreen({ levelId, problems: provided }: StoryL
             {t('story.tryColumn')}
           </button>
         )}
-        <FeedbackMessage feedback={state.feedback} />
+        <FeedbackMessage feedback={feedback} />
       </div>
 
       <ConfirmDialog
