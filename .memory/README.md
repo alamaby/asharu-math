@@ -1,10 +1,11 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-11-18 15:50:00
+Last Updated: 2026-11-18 16:05:00
 Format Version: 1
 
 ## Current State
-- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.17.0`.
+- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.18.0`.
+- Model GLTF bangunan kereta (CC0): Aset GLB Rumah Warga (`house.glb`, 49 KB) dan Lumbung Pertanian (`barn.glb`, 96 KB) dari Quaternius terintegrasi ke `TrainScene.ts` dengan ground alignment dan centering pivot presisi, in-memory loader `buildingModelLoader.ts`, PWA precache 51 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/160500-model-gltf-bangunan-kereta.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-bangunan-kereta.md`.
 - Model GLTF biota akuarium (CC0): Aset GLB Clownfish (ikan satuan oranye) dan Blue Fish (ikan puluhan biru bersirip kuning) dari Quaternius terintegrasi ke `Fish3D.tsx` & `TensFishGroup3D.tsx` dengan animasi kibasan ekor alami via `AnimationMixer`, in-memory loader `fishModelLoader.ts`, PWA precache 47 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/155000-model-gltf-biota-akuarium.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-biota-akuarium.md`.
 - Model GLTF fauna kereta (CC0): Aset GLB sapi dan domba teroptimasi dari Quaternius terintegrasi ke `TrainScene.ts` dengan pemutaran animasi idle alami via `AnimationMixer`, in-memory loader `animalModelLoader.ts`, PWA precache 42 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/152600-model-gltf-fauna-kereta.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-fauna-kereta.md`.
 - Model GLTF kereta & gerbong (CC0) Fase 1–4: Aset GLB dari Kenney Train Kit (v1.1) terintegrasi penuh ke `TrainScene.ts` dengan auto-fallback prosedural, rotasi dinamis seluruh roda GLTF, artikulasi belokan kurva rel terjaga, background preload di `TrainCanvas.tsx`, PWA precaching aktif, 100% test lulus. Entri: `2026-11-18/142600-model-gltf-kereta-fase-3-4.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-kereta.md`.
@@ -62,6 +63,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-11-18 16:05:00 — Model GLTF Bangunan Kereta (Rumah & Lumbung)](2026-11-18/160500-model-gltf-bangunan-kereta.md)
 - [2026-11-18 15:50:00 — Model GLTF Biota Akuarium (Clownfish & Blue Fish)](2026-11-18/155000-model-gltf-biota-akuarium.md)
 - [2026-11-18 15:26:00 — Model GLTF Fauna Kereta (Sapi & Domba)](2026-11-18/152600-model-gltf-fauna-kereta.md)
 - [2026-11-18 14:26:00 — Model GLTF Kereta & Gerbong (Fase 3-4: Integrasi & Animasi)](2026-11-18/142600-model-gltf-kereta-fase-3-4.md)

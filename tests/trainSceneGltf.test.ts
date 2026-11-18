@@ -226,4 +226,48 @@ describe('TrainScene GLTF integration (Fase 3 & 4)', () => {
     expect(foundSheepCount).toBe(2)
     scene.dispose()
   })
+
+  it('menggunakan model GLTF rumah dan lumbung saat cache bangunan tersedia', async () => {
+    const mockHouse = new THREE.Group()
+    mockHouse.name = 'MockHouse'
+    const mockBarn = new THREE.Group()
+    mockBarn.name = 'MockBarn'
+
+    const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js')
+    vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad) => {
+      const p = String(path)
+      let sceneModel = mockHouse
+      if (p.includes('barn')) sceneModel = mockBarn
+      if (onLoad) {
+        // @ts-expect-error test stub
+        onLoad({ scene: sceneModel, animations: [] })
+      }
+    })
+
+    const { loadBuildingModel, clearBuildingModelCache } =
+      await import('../src/lib/buildingModelLoader')
+    clearBuildingModelCache()
+    await loadBuildingModel('house')
+    await loadBuildingModel('barn')
+
+    const scene = new TrainScene(document.createElement('canvas'), { useGltf: true })
+    scene.applyTheme(2, 'DESA')
+
+    let foundHouseCount = 0
+    let foundBarn = false
+
+    // @ts-expect-error test inspection
+    scene.houseGroup.traverse((o: THREE.Object3D) => {
+      if (o.userData?.part === 'gltf-house') foundHouseCount++
+    })
+
+    // @ts-expect-error test inspection
+    scene.farmGroup.traverse((o: THREE.Object3D) => {
+      if (o.userData?.part === 'gltf-barn') foundBarn = true
+    })
+
+    expect(foundHouseCount).toBe(2)
+    expect(foundBarn).toBe(true)
+    scene.dispose()
+  })
 })

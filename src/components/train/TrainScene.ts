@@ -14,6 +14,7 @@ import { isValidTrainVariant, type LocoShape, type TrainVariant } from '../../li
 import { MANEUVER_TOTAL_MS, computeManeuver } from '../../lib/trainManeuver'
 import { instantiateTrainModel, type TrainModelKey } from '../../lib/trainModelLoader'
 import { instantiateAnimalModel } from '../../lib/animalModelLoader'
+import { instantiateBuildingModel } from '../../lib/buildingModelLoader'
 
 export type BranchIndex = 0 | 1 | 2
 
@@ -148,6 +149,12 @@ export class TrainScene {
   private proceduralCowGroup: THREE.Group | null = null
   private gltfSheep: THREE.Group[] = []
   private proceduralSheepGroup: THREE.Group | null = null
+  private houseGroup = new THREE.Group()
+  private proceduralHouseGroup: THREE.Group | null = null
+  private gltfHouses: THREE.Group[] = []
+  private barnGroup = new THREE.Group()
+  private proceduralBarnGroup: THREE.Group | null = null
+  private gltfBarn: THREE.Group | null = null
   private butterflies: THREE.Group[] = []
   private butterflyBase: [number, number, number][] = []
   private flowersGroup = new THREE.Group()
@@ -347,6 +354,7 @@ export class TrainScene {
     this.useGltf = enabled
     this.refreshTrainMesh()
     this.refreshAnimalMeshes()
+    this.refreshBuildingMeshes()
   }
 
   isGltfEnabled(): boolean {
@@ -946,28 +954,9 @@ export class TrainScene {
       this.scene.add(trunk, leaf)
     }
 
-    // Rumah ×2 (box + atap overhang + pintu + cerobong)
-    const houseMat = this.lambert('#f5e6c8')
-    const roofMat = this.lambert('#d95f5f')
-    const doorMat = this.lambert('#8a5a3b')
-    const chimneyMat = this.lambert('#94a3b8')
-    const houseSpots: [number, number][] = [
-      [-11, -2],
-      [11, -3],
-    ]
-    for (const [x, z] of houseSpots) {
-      const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.4, 1.8), houseMat)
-      body.position.set(x, 0.7, z)
-      // Atap lebih lebar dari badan (overhang)
-      const roof = new THREE.Mesh(new THREE.CylinderGeometry(0, 1.7, 1.1, 4), roofMat)
-      roof.position.set(x, 1.95, z)
-      roof.rotation.y = Math.PI / 4
-      const door = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 0.06), doorMat)
-      door.position.set(x + 0.5, 0.4, z + 0.93)
-      const chimney = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.55, 8), chimneyMat)
-      chimney.position.set(x - 0.55, 2.2, z - 0.35)
-      this.scene.add(body, roof, door, chimney)
-    }
+    // Rumah ×2 (GLTF dengan fallback prosedural box + atap overhang + pintu + cerobong)
+    this.scene.add(this.houseGroup)
+    this.buildHouses()
 
     // Awan ×2 (klaster 3 sphere per awan)
     const cloudGeo = new THREE.SphereGeometry(1, 8, 6)
@@ -1334,6 +1323,109 @@ export class TrainScene {
     this.buildSheep()
   }
 
+  private buildHouses(): void {
+    for (const h of this.gltfHouses) {
+      this.houseGroup.remove(h)
+    }
+    this.gltfHouses = []
+
+    if (!this.proceduralHouseGroup) {
+      this.proceduralHouseGroup = new THREE.Group()
+      const houseMat = this.lambert('#f5e6c8')
+      const roofMat = this.lambert('#d95f5f')
+      const doorMat = this.lambert('#8a5a3b')
+      const chimneyMat = this.lambert('#94a3b8')
+      const houseSpots: [number, number][] = [
+        [-11, -2],
+        [11, -3],
+      ]
+      for (const [x, z] of houseSpots) {
+        const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.4, 1.8), houseMat)
+        body.position.set(x, 0.7, z)
+        body.userData.part = 'house'
+        const roof = new THREE.Mesh(new THREE.CylinderGeometry(0, 1.7, 1.1, 4), roofMat)
+        roof.position.set(x, 1.95, z)
+        roof.rotation.y = Math.PI / 4
+        roof.userData.part = 'house'
+        const door = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 0.06), doorMat)
+        door.position.set(x + 0.5, 0.4, z + 0.93)
+        door.userData.part = 'house'
+        const chimney = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.55, 8), chimneyMat)
+        chimney.position.set(x - 0.55, 2.2, z - 0.35)
+        chimney.userData.part = 'house'
+        this.proceduralHouseGroup.add(body, roof, door, chimney)
+      }
+      this.houseGroup.add(this.proceduralHouseGroup)
+    }
+
+    if (this.useGltf) {
+      const house1 = instantiateBuildingModel('house')
+      const house2 = instantiateBuildingModel('house')
+      if (house1 && house2) {
+        house1.position.set(-11, 0, -2)
+        house1.rotation.y = Math.PI / 4
+        house1.userData.part = 'gltf-house'
+
+        house2.position.set(11, 0, -3)
+        house2.rotation.y = -Math.PI / 4
+        house2.userData.part = 'gltf-house'
+
+        this.houseGroup.add(house1, house2)
+        this.gltfHouses.push(house1, house2)
+        this.proceduralHouseGroup.visible = false
+      } else {
+        this.proceduralHouseGroup.visible = true
+      }
+    } else {
+      this.proceduralHouseGroup.visible = true
+    }
+  }
+
+  private buildBarn(): void {
+    if (this.gltfBarn) {
+      this.barnGroup.remove(this.gltfBarn)
+      this.gltfBarn = null
+    }
+
+    if (!this.proceduralBarnGroup) {
+      this.proceduralBarnGroup = new THREE.Group()
+      const barnBody = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.0, 1.2), this.lambert('#b45309'))
+      barnBody.position.set(-12, 0.5, -16)
+      barnBody.userData.part = 'barn'
+      const barnRoof = new THREE.Mesh(
+        new THREE.CylinderGeometry(0, 0.9, 0.6, 4),
+        this.lambert('#7f1d1d'),
+      )
+      barnRoof.position.set(-12, 1.3, -16)
+      barnRoof.rotation.y = Math.PI / 4
+      barnRoof.userData.part = 'barn'
+      this.proceduralBarnGroup.add(barnBody, barnRoof)
+      this.barnGroup.add(this.proceduralBarnGroup)
+    }
+
+    if (this.useGltf) {
+      const barn = instantiateBuildingModel('barn')
+      if (barn) {
+        barn.position.set(-12, 0, -16)
+        barn.rotation.y = Math.PI / 4
+        barn.userData.part = 'gltf-barn'
+        this.barnGroup.add(barn)
+        this.gltfBarn = barn
+        this.proceduralBarnGroup.visible = false
+      } else {
+        this.proceduralBarnGroup.visible = true
+      }
+    } else {
+      this.proceduralBarnGroup.visible = true
+    }
+  }
+
+  private refreshBuildingMeshes(): void {
+    if (this.disposed) return
+    this.buildHouses()
+    this.buildBarn()
+  }
+
   private buildTracks(): void {
     const railMatMain = this.lambert('#8a8f98')
     const mainTube = new THREE.Mesh(
@@ -1662,15 +1754,9 @@ export class TrainScene {
       padiRows.push({ pos: [x, 0.15, z] })
     }
     this.addInstanced(new THREE.BoxGeometry(0.9, 0.25, 0.9), this.lambert('#c2d94f'), padiRows)
-    const barnBody = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.0, 1.2), this.lambert('#b45309'))
-    barnBody.position.set(-12, 0.5, -16)
-    const barnRoof = new THREE.Mesh(
-      new THREE.CylinderGeometry(0, 0.9, 0.6, 4),
-      this.lambert('#7f1d1d'),
-    )
-    barnRoof.position.set(-12, 1.3, -16)
-    barnRoof.rotation.y = Math.PI / 4
-    this.farmGroup.add(barnBody, barnRoof)
+    // Lumbung (K2) — GLTF dengan fallback prosedural
+    this.farmGroup.add(this.barnGroup)
+    this.buildBarn()
     // Domba (K2) — GLTF dengan fallback prosedural
     this.buildSheep()
     // K3: kunang-kunang (sprite) + jendela menyala
