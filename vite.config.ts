@@ -10,7 +10,12 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'og-image.png'],
+      includeAssets: [
+        'favicon.svg',
+        'apple-touch-icon.png',
+        'og-image.png',
+        'models/train/**/*.{glb,png}',
+      ],
       manifest: {
         id: '/',
         name: 'Asharu Math',
@@ -47,6 +52,7 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         navigateFallback: 'index.html',
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,glb}'],
       },
     }),
   ],

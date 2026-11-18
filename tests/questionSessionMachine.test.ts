@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  initQuestionSessionState,
-  questionSessionReducer,
-} from '../src/lib/questionSessionMachine'
+import { initQuestionSessionState, questionSessionReducer } from '../src/lib/questionSessionMachine'
 
 describe('questionSessionMachine (Pure Reducer)', () => {
   const sampleItems = ['soal-1', 'soal-2', 'soal-3']
@@ -148,7 +145,7 @@ describe('questionSessionMachine (Pure Reducer)', () => {
   })
 
   it('advance diabaikan jika tidak sedang dalam fase showing_correct atau showing_reveal', () => {
-    let state = initQuestionSessionState(sampleItems)
+    const state = initQuestionSessionState(sampleItems)
     const sameState = questionSessionReducer(state, { type: 'advance' })
     expect(sameState).toBe(state)
   })

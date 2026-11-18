@@ -146,7 +146,6 @@ export default function TrainScreen() {
     [voiceActive],
   )
 
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     sendEvent('LOAD_OK')
     return () => {
@@ -156,7 +155,6 @@ export default function TrainScreen() {
       stopTrainSpeech()
     }
   }, [clearTimers, sendEvent])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const question = questions[round] ?? null
   const starsSoFar = useMemo(() => sumTrainStars(attemptsLog), [attemptsLog])
