@@ -625,4 +625,129 @@ describe('TrainScene GLTF integration (Fase 3 & 4)', () => {
 
     scene.dispose()
   })
+
+  it('roda kereta api berputar kinematik saat melaju dan berhenti saat kereta diam di junction / stasiun', () => {
+    const scene = new TrainScene(document.createElement('canvas'))
+
+    // Kondisi awal (t = 0): roda diam, belum ada putaran
+    expect(scene.currentWheelAngle).toBe(0)
+    expect(scene.moving).toBe(false)
+
+    // Update frame saat melaju (step maju): roda harus berputar dan status moving = true
+    scene.update(0.016)
+    expect(scene.moving).toBe(true)
+    expect(scene.currentWheelAngle).toBeGreaterThan(0)
+    const angleAfterMove = scene.currentWheelAngle
+
+    // Simulasikan kereta sampai di junction (t = 1)
+    // Jalankan update berulang kali sampai progress mencapai 1
+    for (let i = 0; i < 600 && scene.progress < 1; i++) {
+      scene.update(0.05)
+    }
+    expect(scene.progress).toBe(1)
+
+    // Catat sudut putaran saat sampai junction
+    const angleAtJunction = scene.currentWheelAngle
+    expect(angleAtJunction).toBeGreaterThan(angleAfterMove)
+
+    // Di junction (kereta menunggu kuis dijawab): panggil update frame baru
+    // Roda WAJIB berhenti berputar (sudut tidak bertambah) dan status moving = false
+    scene.update(0.016)
+    scene.update(0.016)
+    expect(scene.moving).toBe(false)
+    expect(scene.currentWheelAngle).toBe(angleAtJunction)
+
+    // Uji manuver ancang-ancang mundur saat percabangan dipilih
+    scene.setBranch(1)
+    // Update frame awal maneuver (m.t bergerak mundur dari 1.0 ke ~0.9)
+    scene.update(0.02)
+    // Roda berputar mundur: sudut putaran roda lebih kecil dari saat junction
+    expect(scene.moving).toBe(true)
+    expect(scene.currentWheelAngle).toBeLessThan(angleAtJunction)
+
+    // Jalankan terus sampai melewati maneuver dan mencapai stasiun peron akhir
+    for (let i = 0; i < 800 && !scene.isStationReached; i++) {
+      scene.update(0.05)
+    }
+    expect(scene.isStationReached).toBe(true)
+    expect(scene.currentPhase).toBe('branch')
+    expect(scene.progress).toBe(1)
+    const angleAtStation = scene.currentWheelAngle
+
+    // Di stasiun peron akhir: panggil update
+    // Roda WAJIB berhenti berputar seketika
+    scene.update(0.016)
+    scene.update(0.016)
+    expect(scene.moving).toBe(false)
+    expect(scene.currentWheelAngle).toBe(angleAtStation)
+
+    scene.dispose()
+  })
+
+  it('animasi selebrasi karakter (masinis & penumpang) kembali ke Idle saat reset dipanggil', async () => {
+    const mockDriver = new THREE.Group()
+    mockDriver.name = 'MockDriver'
+    const mockPassenger = new THREE.Group()
+    mockPassenger.name = 'MockPassenger'
+
+    const idleClip = new THREE.AnimationClip('Idle', 1, [])
+    const victoryClip = new THREE.AnimationClip('Victory', 1, [])
+    const clips = [idleClip, victoryClip]
+
+    const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js')
+    vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad) => {
+      const p = String(path)
+      let sceneModel = mockDriver
+      if (p.includes('passenger')) sceneModel = mockPassenger
+      if (onLoad) {
+        // @ts-expect-error test stub
+        onLoad({ scene: sceneModel, animations: clips })
+      }
+    })
+
+    const { loadCharacterModel, clearCharacterModelCache } =
+      await import('../src/lib/characterModelLoader')
+    clearCharacterModelCache()
+    await loadCharacterModel('driver')
+    await loadCharacterModel('passenger')
+
+    const scene = new TrainScene(document.createElement('canvas'), { useGltf: true })
+
+    // @ts-expect-error test inspection
+    const driver = scene.gltfDriver
+    // @ts-expect-error test inspection
+    const passengers = scene.gltfPassengers
+
+    expect(driver).not.toBeNull()
+    expect(passengers.length).toBe(2)
+
+    // Awal mula: animasi Idle aktif
+    expect(driver?.actions.has('Idle')).toBe(true)
+    expect(driver?.actions.has('Victory')).toBe(true)
+
+    // Bawa kereta sampai stasiun di cabang agar memicu selebrasi Victory
+    scene.setBranch(1)
+    for (let i = 0; i < 800 && !scene.isStationReached; i++) {
+      scene.update(0.05)
+    }
+    expect(scene.isStationReached).toBe(true)
+    expect(scene.progress).toBe(1)
+
+    // Di stasiun akhir, action Victory diputar
+    // @ts-expect-error test inspection
+    expect(scene.stationFired).toBe(true)
+
+    // Sekarang simulasikan round baru dimulai dengan memanggil reset()
+    scene.reset()
+
+    // Verifikasi: progress di-reset ke 0, phase kembali ke main
+    expect(scene.progress).toBe(0)
+    expect(scene.moving).toBe(false)
+    // @ts-expect-error test inspection
+    expect(scene.stationFired).toBe(false)
+    // @ts-expect-error test inspection
+    expect(scene.hopT).toBe(99)
+
+    scene.dispose()
+  })
 })

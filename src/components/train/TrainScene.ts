@@ -230,6 +230,9 @@ export class TrainScene {
   private birdDummy = new THREE.Object3D()
   private maneuverActive = false
   private maneuverStart = -1
+  private wheelAngle = 0
+  private prevJourneyDist = 0
+  private isMoving = false
   private canvasEl: HTMLCanvasElement | null = null
   private yawOffset = 0
   private dragging = false
@@ -300,8 +303,32 @@ export class TrainScene {
     return this.t
   }
 
+  get progress(): number {
+    return this.t
+  }
+
   get selectedBranch(): BranchIndex {
     return this.selected
+  }
+
+  get currentWheelAngle(): number {
+    return this.wheelAngle
+  }
+
+  get moving(): boolean {
+    return this.isMoving
+  }
+
+  get currentPhase(): 'main' | 'branch' {
+    return this.phase
+  }
+
+  get maneuvering(): boolean {
+    return this.maneuverActive
+  }
+
+  get isStationReached(): boolean {
+    return this.stationFired
   }
 
   setBranch(i: BranchIndex): void {
@@ -325,10 +352,25 @@ export class TrainScene {
     this.stationFired = false
     this.maneuverActive = false
     this.maneuverStart = -1
+    this.prevJourneyDist = 0
+    this.isMoving = false
     this.placeAllUnits(0)
     this.setSelectedGlow(null)
     this.setSignal(null, true)
     this.setCameraMode('fixed')
+
+    // Kembalikan animasi masinis Asya dan seluruh penumpang dari 'Victory' ke 'Idle'
+    if (this.gltfDriver?.actions.has('Idle')) {
+      this.gltfDriver.actions.get('Victory')?.fadeOut(0.25)
+      this.gltfDriver.actions.get('Idle')?.reset().fadeIn(0.25).play()
+    }
+    for (const p of this.gltfPassengers) {
+      if (p.actions.has('Idle')) {
+        p.actions.get('Victory')?.fadeOut(0.25)
+        p.actions.get('Idle')?.reset().fadeIn(0.25).play()
+      }
+    }
+    this.hopT = 99
   }
 
   setPaused(p: boolean): void {
@@ -481,64 +523,85 @@ export class TrainScene {
     if (!Number.isFinite(dt) || dt <= 0) return
     const dtc = Math.min(dt, 0.05)
     this.elapsed += dtc
-    const wheelRate = this.rm ? 4 : 8
-    const spin = dtc * wheelRate
-    for (const w of this.wheels) w.rotation.x += spin
-    for (const unit of this.wagonUnits) {
-      for (const w of (unit.userData.wheels as THREE.Object3D[]) ?? []) w.rotation.x += spin
-    }
-    // Batang roda mengikuti pin crank (gerak melingkar penuh, radius 0.14 agar
-    // jelas terlihat); kiri dan kanan 180° berlawanan fase
-    if (!this.useGltf) {
-      for (const rod of this.rods) {
-        const side = rod.userData.side as number
-        rod.position.y = 0.28 + 0.14 * Math.cos(this.elapsed * wheelRate) * side
-        rod.position.z = 0.3 + 0.14 * Math.sin(this.elapsed * wheelRate) * side
-      }
-    }
+
+    let currentDist: number
     if (this.maneuverActive) {
       const elapsedMs = (this.elapsed - this.maneuverStart) * 1000
       const m = computeManeuver(elapsedMs)
-      this.placeAllUnits(m.t * this.mainCurve.getLength())
+      currentDist = m.t * this.mainCurve.getLength()
+      this.placeAllUnits(currentDist)
       if (elapsedMs >= MANEUVER_TOTAL_MS) {
         this.maneuverActive = false
         this.phase = 'branch'
         this.t = 0
       }
+    } else {
+      const step = dtc * this.speed
+      if (this.phase === 'main') {
+        this.t = Math.min(1, this.t + step)
+        currentDist = this.t * this.mainCurve.getLength()
+        this.placeAllUnits(currentDist)
+        if (this.t >= 1 && !this.junctionFired) {
+          this.junctionFired = true
+          this.cb.onReachJunction?.()
+        }
+      } else {
+        this.t = Math.min(1, this.t + step)
+        currentDist =
+          this.mainCurve.getLength() + this.t * this.branchCurves[this.selected].getLength()
+        this.placeAllUnits(currentDist)
+        if (this.t >= 1 && !this.stationFired) {
+          this.stationFired = true
+          if (this.gltfDriver?.actions.has('Victory')) {
+            this.gltfDriver.actions.get('Idle')?.fadeOut(0.3)
+            this.gltfDriver.actions.get('Victory')?.reset().fadeIn(0.3).play()
+          }
+          for (const p of this.gltfPassengers) {
+            if (p.actions.has('Victory')) {
+              p.actions.get('Idle')?.fadeOut(0.3)
+              p.actions.get('Victory')?.reset().fadeIn(0.3).play()
+            }
+          }
+          this.cb.onReachStation?.()
+        }
+      }
+    }
+
+    // Kinematika roda pure rolling: rotasi roda tersinkron presisi dengan delta
+    // perpindahan jarak tempuh kereta di atas rel (Δθ = Δs / r, r = 0.28).
+    // Roda dan batang piston otomatis berhenti saat kereta diam di junction / stasiun.
+    const deltaDist = currentDist - this.prevJourneyDist
+    this.prevJourneyDist = currentDist
+    this.isMoving = Math.abs(deltaDist) > 0.0001
+    if (this.isMoving) {
+      const deltaAngle = deltaDist / 0.28
+      this.wheelAngle += deltaAngle
+      for (const w of this.wheels) w.rotation.x = this.wheelAngle
+      for (const unit of this.wagonUnits) {
+        for (const w of (unit.userData.wheels as THREE.Object3D[]) ?? []) {
+          w.rotation.x = this.wheelAngle
+        }
+      }
+    }
+    // Batang roda mengikuti pin crank lokomotif secara sinkron
+    if (!this.useGltf) {
+      for (const rod of this.rods) {
+        const side = rod.userData.side as number
+        rod.position.y = 0.28 + 0.14 * Math.cos(this.wheelAngle) * side
+        rod.position.z = 0.3 + 0.14 * Math.sin(this.wheelAngle) * side
+      }
+    }
+
+    if (this.maneuverActive) {
       this.updateSmoke()
       this.updateCamera(dtc)
       return
     }
-    const step = dtc * this.speed
-    if (this.phase === 'main') {
-      this.t = Math.min(1, this.t + step)
-      this.placeAllUnits(this.t * this.mainCurve.getLength())
-      if (this.t >= 1 && !this.junctionFired) {
-        this.junctionFired = true
-        this.cb.onReachJunction?.()
-      }
-    } else {
-      this.t = Math.min(1, this.t + step)
-      this.placeAllUnits(
-        this.mainCurve.getLength() + this.t * this.branchCurves[this.selected].getLength(),
-      )
-      if (this.t >= 1 && !this.stationFired) {
-        this.stationFired = true
-        if (this.gltfDriver?.actions.has('Victory')) {
-          this.gltfDriver.actions.get('Idle')?.fadeOut(0.3)
-          this.gltfDriver.actions.get('Victory')?.reset().fadeIn(0.3).play()
-        }
-        for (const p of this.gltfPassengers) {
-          if (p.actions.has('Victory')) {
-            p.actions.get('Idle')?.fadeOut(0.3)
-            p.actions.get('Victory')?.reset().fadeIn(0.3).play()
-          }
-        }
-        this.cb.onReachStation?.()
-      }
-    }
+
     if (!this.rm) {
-      this.trainGroup.position.y += Math.sin(this.elapsed * 10) * 0.02
+      this.trainGroup.position.y += this.isMoving
+        ? Math.sin(this.elapsed * 10) * 0.02
+        : Math.sin(this.elapsed * 3) * 0.005
     }
     this.updateSmoke()
     for (const c of this.clouds) {
@@ -2461,15 +2524,30 @@ export class TrainScene {
     this.trainGroup.updateMatrixWorld()
     const chimney = new THREE.Vector3(0, 1.7, 1.1)
     this.trainGroup.localToWorld(chimney)
-    // Chuff: 2 ledakan uap per putaran roda, tersinkron laju roda. 3 sprite
-    // bergilir fase sehingga selalu ada puff yang naik dan memudar.
-    const rate = this.rm ? 4 : 8
-    for (let i = 0; i < this.smokes.length; i++) {
-      const s = this.smokes[i]!
-      const phase = ((this.elapsed * rate) / Math.PI + i / this.smokes.length) % 1
-      s.position.set(chimney.x, chimney.y + phase * 1.3, chimney.z)
-      s.scale.setScalar(0.35 + phase * 0.95)
-      ;(s.material as THREE.SpriteMaterial).opacity = 0.55 * (1 - phase)
+    if (this.isMoving) {
+      // Chuff: 2 ledakan uap per putaran roda, tersinkron laju roda. 3 sprite
+      // bergilir fase sehingga selalu ada puff yang naik dan memudar.
+      for (let i = 0; i < this.smokes.length; i++) {
+        const s = this.smokes[i]!
+        const phase = (this.wheelAngle / Math.PI + i / this.smokes.length) % 1
+        const posPhase = phase < 0 ? phase + 1 : phase
+        s.position.set(chimney.x, chimney.y + posPhase * 1.3, chimney.z)
+        s.scale.setScalar(0.35 + posPhase * 0.95)
+        ;(s.material as THREE.SpriteMaterial).opacity = 0.55 * (1 - posPhase)
+      }
+    } else {
+      // Idle waft: kepulan uap halus santai saat lokomotif diam di junction / stasiun
+      for (let i = 0; i < this.smokes.length; i++) {
+        const s = this.smokes[i]!
+        const phase = (this.elapsed * 0.8 + i / this.smokes.length) % 1
+        s.position.set(
+          chimney.x + Math.sin(this.elapsed * 1.5 + i) * 0.06,
+          chimney.y + phase * 0.9,
+          chimney.z,
+        )
+        s.scale.setScalar(0.25 + phase * 0.45)
+        ;(s.material as THREE.SpriteMaterial).opacity = 0.3 * (1 - phase)
+      }
     }
   }
 
@@ -2589,16 +2667,17 @@ export class TrainScene {
     // quaternion menjadi terjungkir (bodi terkubur di tanah).
     const lean =
       this.phase === 'branch' && this.t < 0.3 ? (this.selected - 1) * 0.08 * (1 - this.t / 0.3) : 0
-    // Sway halus per unit dengan fase independen (dilewati saat reduced-motion)
-    const sway = this.rm ? 0 : Math.sin(this.elapsed * 6) * 0.008
+    // Sway halus per unit dengan fase independen (hanya saat melaju dan bukan reduced-motion)
+    const sway = this.rm || !this.isMoving ? 0 : Math.sin(this.elapsed * 6) * 0.008
     this.trainGroup.rotateZ(lean + sway)
-    // Flex coupling: jarak antar unit berdenyut tipis mengikuti waktu
-    const flex = this.rm ? 1 : 1 + 0.02 * Math.sin(this.elapsed * 2.5)
+    // Flex coupling: jarak antar unit berdenyut tipis mengikuti waktu saat melaju
+    const flex = this.rm || !this.isMoving ? 1 : 1 + 0.02 * Math.sin(this.elapsed * 2.5)
     let back = 2.0
     for (let i = 0; i < this.wagonUnits.length; i++) {
       const unit = this.wagonUnits[i]!
       this.placeUnitOnJourney(locoS - back * flex, unit)
-      const unitSway = this.rm ? 0 : Math.sin(this.elapsed * 6 + (i + 1) * 2.1) * 0.014
+      const unitSway =
+        this.rm || !this.isMoving ? 0 : Math.sin(this.elapsed * 6 + (i + 1) * 2.1) * 0.014
       unit.rotateZ(lean + unitSway)
       back += 1.9
     }
