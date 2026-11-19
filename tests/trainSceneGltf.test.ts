@@ -463,4 +463,83 @@ describe('TrainScene GLTF integration (Fase 3 & 4)', () => {
 
     scene.dispose()
   })
+
+  it('menggunakan model GLTF rambu sinyal junction dan plang rambu jawaban cabang', async () => {
+    const mockSignal = new THREE.Group()
+    mockSignal.name = 'MockSignalPost'
+    for (let i = 0; i < 3; i++) {
+      const lamp = new THREE.Mesh(
+        new THREE.SphereGeometry(0.1),
+        new THREE.MeshStandardMaterial({ color: '#222222' }),
+      )
+      lamp.name = `signal_lamp_${i}`
+      mockSignal.add(lamp)
+    }
+
+    const mockSign = new THREE.Group()
+    mockSign.name = 'MockBranchSign'
+    const display = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshStandardMaterial({ color: '#ffffff' }),
+    )
+    display.name = 'sign_display'
+    mockSign.add(display)
+
+    const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js')
+    vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad) => {
+      if (onLoad) {
+        let scene = mockSignal
+        if (typeof path === 'string') {
+          if (path.includes('branch_sign')) scene = mockSign
+        }
+        // @ts-expect-error test stub
+        onLoad({ scene, animations: [] })
+      }
+    })
+
+    const { preloadSignalModels, clearSignalModelCache } =
+      await import('../src/lib/signalModelLoader')
+    clearSignalModelCache()
+    await preloadSignalModels()
+
+    const scene = new TrainScene(document.createElement('canvas'), { useGltf: true })
+
+    let foundSignalPost = false
+    let foundBranchSigns = 0
+
+    // @ts-expect-error test inspection
+    scene.signalGroup.traverse((o: THREE.Object3D) => {
+      if (o.userData?.part === 'gltf-signal-post') foundSignalPost = true
+    })
+
+    // @ts-expect-error test inspection
+    scene.trackGroup.traverse((o: THREE.Object3D) => {
+      if (o.userData?.part === 'gltf-branch-sign') foundBranchSigns++
+    })
+
+    expect(foundSignalPost).toBe(true)
+    expect(foundBranchSigns).toBe(3)
+
+    // @ts-expect-error test inspection
+    expect(scene.proceduralSignalGroup.visible).toBe(false)
+
+    // Tes dinamis sinyal emissive lampu
+    scene.setSignal(1, true)
+    // @ts-expect-error test inspection
+    const activeLamp = scene.gltfSignalEntity.lamps[1] as THREE.Mesh
+    const activeMat = activeLamp.material as THREE.MeshStandardMaterial
+    expect(activeMat.emissive.getHexString()).toBe('22c55e')
+    expect(activeMat.emissiveIntensity).toBe(1.2)
+
+    // @ts-expect-error test inspection
+    const inactiveLamp = scene.gltfSignalEntity.lamps[0] as THREE.Mesh
+    const inactiveMat = inactiveLamp.material as THREE.MeshStandardMaterial
+    expect(inactiveMat.emissive.getHexString()).toBe('000000')
+
+    // Matikan sinyal
+    scene.setSignal(null, true)
+    expect(activeMat.emissive.getHexString()).toBe('000000')
+
+    scene.dispose()
+  })
 })

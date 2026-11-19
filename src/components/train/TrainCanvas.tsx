@@ -10,6 +10,7 @@ import { preloadTreeModels } from '../../lib/treeModelLoader'
 import { preloadCharacterModels } from '../../lib/characterModelLoader'
 import { preloadTrackModels } from '../../lib/trackModelLoader'
 import { preloadStationModels } from '../../lib/stationModelLoader'
+import { preloadSignalModels } from '../../lib/signalModelLoader'
 import TrainFallback2D from './TrainFallback2D'
 
 export interface TrainCanvasProps {
@@ -105,6 +106,7 @@ export default function TrainCanvas({
       preloadCharacterModels(),
       preloadTrackModels(),
       preloadStationModels(),
+      preloadSignalModels(),
     ]).then(() => {
       if (active && sceneRef.current && !sceneRef.current.isDisposed()) {
         sceneRef.current.setGltfEnabled(true)

@@ -1,10 +1,11 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-11-19 11:55:00
+Last Updated: 2026-11-19 13:15:00
 Format Version: 1
 
 ## Current State
-- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.22.0`.
+- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.23.0`.
+- Model GLTF rambu sinyal junction & plang rambu jawaban cabang (CC0): Aset GLB Tiang Sinyal Rel 3 Lampu (`signal_post.glb`, 40.3 KB) dan Plang Rambu Jawaban Berpancang Tanah (`branch_sign.glb`, 22.4 KB) terintegrasi ke `TrainScene.ts` dengan isolasi `signalGroup`, kontrol dinamis emissive hijau/kuning pada 3 lensa lampu aktif via `setSignal`, display bidang rambu yang mengikat tekstur canvas 2D jawaban cabang via `CanvasTexture`, in-memory loader `signalModelLoader.ts`, PWA precache 83 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-19/131500-model-gltf-rambu-sinyal-dan-papan-jawaban.md`. Plan: `plans/2026-11-19-modernisasi-rambu-sinyal-dan-papan-jawaban.md`.
 - Model GLTF area stasiun kereta (CC0): Aset GLB Bangku Peron (`station_bench.glb`, 10.8 KB, Kenney Furniture Kit CC0), Kanopi Peneduh (`station_canopy.glb`, 34.5 KB, Kenney City Kit CC0), Tiang Bendera Berkibar (`station_flag.glb`, 17.0 KB, Kenney Castle Kit CC0), Jam Dinding Stasiun (`station_clock.glb`, 43.4 KB, Kenney CC0), dan Peron Semen Modular (`station_platform.glb`, 5.9 KB) terintegrasi ke `TrainScene.ts` dengan isolasi `stationGroup`, papan nama dinamis canvas "STASIUN", animasi kibasan bendera, in-memory loader `stationModelLoader.ts`, PWA precache 79 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-19/115500-model-gltf-stasiun-kereta.md`. Plan: `plans/2026-11-19-modernisasi-model-stasiun-kereta.md`.
 - Model GLTF orang & rel kereta (CC0): Aset GLB Masinis Asya (`driver.glb`, 749 KB, Quaternius CC0), Penumpang Stasiun (`passenger.glb`, 776 KB, Quaternius CC0), dan Bantalan Rel (`sleeper.glb`, 4.8 KB, Kenney CC0) terintegrasi ke `TrainScene.ts` dengan rel ganda paralel (`dual parallel rails` offset transversal ±0.36), animasi `Idle` & selebrasi `'Victory'` saat tiba di stasiun, in-memory loader `characterModelLoader.ts` & `trackModelLoader.ts`, PWA precache 69 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/173000-model-gltf-orang-dan-rel-kereta.md`. Plan: `plans/2026-11-18-modernisasi-model-orang-dan-rel-kereta.md`.
 - Model GLTF pohon & flora kereta (CC0): Aset GLB Pohon Rindang (`tree_default.glb`, 9.4 KB), Pohon Pinus (`tree_pine.glb`, 17.2 KB), dan Pohon Oak (`tree_oak.glb`, 14.6 KB) dari Kenney Nature Kit terintegrasi ke `TrainScene.ts` dengan deteksi sub-mesh daun untuk animasi goyang angin (`sway`), in-memory loader `treeModelLoader.ts`, isolasi `instancedTreeGroup`, PWA precache 63 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/170000-model-gltf-pohon-flora-kereta.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-pohon-flora-kereta.md`.
@@ -67,6 +68,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-11-19 13:15:00 — Model GLTF Rambu Sinyal Junction & Papan Rambu Jawaban Cabang](2026-11-19/131500-model-gltf-rambu-sinyal-dan-papan-jawaban.md)
 - [2026-11-19 11:55:00 — Model GLTF Area Stasiun Kereta (Peron, Kanopi, Bangku, Jam, Bendera)](2026-11-19/115500-model-gltf-stasiun-kereta.md)
 - [2026-11-18 17:30:00 — Model GLTF Orang (Masinis & Penumpang) dan Rel Kereta Bebas Atribusi (CC0)](2026-11-18/173000-model-gltf-orang-dan-rel-kereta.md)
 - [2026-11-18 17:00:00 — Model GLTF Pohon & Flora Kereta (Rindang, Pinus, Oak)](2026-11-18/170000-model-gltf-pohon-flora-kereta.md)
@@ -86,33 +88,6 @@ Format Version: 1
 - [2026-11-18 09:12:00 — Kanonikal Level Routing Resolver (v1.14.2)](2026-11-18/091200-kanonikal-level-routing-resolver.md)
 - [2026-10-07 16:20:00 — Paket detailing kereta A–D: smokebox, chuff, bogie, decal, crank rod, sway (v1.14.0)](2026-10-07/162000-kereta-detailing-paket-A-D.md)
 - [2026-10-07 16:05:00 — Articulasi gerbong kereta, pivot terpisah saat belok (v1.13.0)](2026-10-07/160500-kereta-artikulasi-gerbong.md)
-- [2026-10-07 15:20:00 — Detail visual objek 3D kereta Fase 3–5 selesai (v1.12.0)](2026-10-07/152000-kereta-detail-visual-fase-3-5.md)
-- [2026-10-07 14:50:00 — Detail visual objek 3D kereta Fase 1–2 (v1.11.0)](2026-10-07/145000-kereta-detail-visual-fase-1-2.md)
-- [2026-10-07 13:03:51 — Akar masalah bodi kereta hilang saat belok (fix diterapkan v1.9.2)](2026-10-07/130351-akar-masalah-bodi-kereta-hilang.md)
-- [2026-09-26 09:55:00 — Bugfix kereta: mute header & jawaban ganda](2026-09-26/095500-bugfix-kereta-mute-jawaban-ganda.md)
-- [2026-09-25 20:40:00 — Kereta Fase 5 (variant acak, drag kamera, detail instanced, maneuver belok)](2026-09-25/204000-kereta-fase-5-variant-drag-detail.md)
-- [2026-09-25 17:15:00 — Kereta Fase 4 (TTS narasi + resume sesi)](2026-09-25/171500-kereta-fase-4-tts-resume.md)
-- [2026-09-25 16:00:00 — Kereta Fase 3 (musik adaptif, rambu, animasi, verifikasi)](2026-09-25/160000-kereta-fase-3.md)
-- [2026-09-25 15:00:00 — Kereta visual-audio Fase 1+2](2026-09-25/150000-kereta-visual-audio-fase-1-2.md)
-- [2026-09-23 21:35:00 — Petualangan Kereta Angka (MVP train)](2026-09-23/213500-petualangan-kereta-angka.md)
-- [2026-09-23 13:45:00 — Perbaiki flake test PracticeScreenStory (seed-dependent)](2026-09-23/134500-perbaiki-flake-practice-screen-story.md)
-- [2026-09-23 12:52:00 — Buka semua level + visual 3 status bintang](2026-09-23/125200-buka-semua-level-visual-bintang.md)
-- [2026-09-23 00:15:00 — Review fix papan ratusan (crash 3-digit, fase macet, visual)](2026-09-23/001500-review-fix-papan-ratusan.md)
-- [2026-09-22 23:20:00 — Papan R/P/S sejajar + ratusan 3-digit + fix Periksa](2026-09-22/232000-aquarium-garden-ratusan-dan-periksa.md)
-- [2026-09-22 19:38:00 — Soal cerita Kelas 2 multi-langkah (4 level + generator + i18n)](2026-09-22/193800-soal-cerita-kelas-2.md)
-- [2026-09-13 21:45:00 — Sesi belajar input angka sekali per kolom](2026-09-13/214500-sesi-belajar-input-angka-sekali.md)
-- [2026-09-06 18:?? — Review M3 polish](2026-09-06/1810-review-k1-m3-fixes.md)
-- [2026-09-06 16:50:00 — Review M2 fixes (sound, determinisme, i18n)](2026-09-06/1650-review-k1-m2-fixes.md)
-- [2026-09-06 15:00:00 — M2 concept levels membilang/banding/nilai-tempat](2026-09-06/1500-m2-concept-levels.md)
-- [2026-09-06 11:15:00 — Review M1 fixes (veteran unlock)](2026-09-06/1115-review-k1-m1-fixes.md)
-- [2026-09-06 — Kelas 1 track (K1) feat](k1-track.md)
-- [2026-08-26 09:30:12 — Fix temuan review AdSense](2026-08-26/093012-adsense-review-fixes.md)
-- [2026-08-26 08:53:30 — AdSense + legal pages](2026-08-26/085330-adsense-and-legal.md)
-- [2026-08-25 20:47:34 — Fix temuan review i18n](2026-08-25/204734-i18n-review-fixes.md)
-- [2026-08-25 19:46:54 — Bilingual ID/EN](2026-08-25/190113-bilingual-id-en.md)
-- [2026-08-25 14:18:03 — PWA install button](2026-08-25/141803-pwa-install-button.md)
-- [2026-08-25 12:12:57 — Fix level completion review dead-end](2026-08-25/121257-fix-level-completion-review-dead-end.md)
-- [2026-08-24 22:39:49 — Quality improvement: CI, testing, tooling](2026-08-24/223949-quality-improvement-ci-testing-tooling.md)
 
 ## Legacy Archive
 - Tidak ada `PROJECT_MEMORY.md` (memori dimulai baru).

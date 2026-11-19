@@ -22,6 +22,12 @@ import {
 } from '../../lib/characterModelLoader'
 import { instantiateTrackModel } from '../../lib/trackModelLoader'
 import { instantiateStationModel } from '../../lib/stationModelLoader'
+import {
+  instantiateSignalPost,
+  instantiateBranchSign,
+  type LoadedSignalEntity,
+  type LoadedBranchSignEntity,
+} from '../../lib/signalModelLoader'
 
 export type BranchIndex = 0 | 1 | 2
 
@@ -181,6 +187,11 @@ export class TrainScene {
   private proceduralStationGroup: THREE.Group | null = null
   private gltfStationGroup: THREE.Group | null = null
   private gltfFlagCloth: THREE.Object3D | null = null
+  private signalGroup = new THREE.Group()
+  private proceduralSignalGroup: THREE.Group | null = null
+  private gltfSignalEntity: LoadedSignalEntity | null = null
+  private gltfBranchSigns: LoadedBranchSignEntity[] = []
+  private proceduralBranchBoards: THREE.Mesh[] = []
   private butterflies: THREE.Group[] = []
   private butterflyBase: [number, number, number][] = []
   private flowersGroup = new THREE.Group()
@@ -353,6 +364,19 @@ export class TrainScene {
         m.emissiveIntensity = 0
       }
     }
+    if (this.gltfSignalEntity) {
+      for (let i = 0; i < this.gltfSignalEntity.lamps.length; i++) {
+        const lamp = this.gltfSignalEntity.lamps[i]!
+        const mat = lamp.material as THREE.MeshStandardMaterial
+        if (active === i) {
+          mat.emissive.set(ok ? '#22c55e' : '#facc15')
+          mat.emissiveIntensity = 1.2
+        } else {
+          mat.emissive.set('#000000')
+          mat.emissiveIntensity = 0
+        }
+      }
+    }
   }
 
   setStationBoard(label: string, sub: string): void {
@@ -385,6 +409,7 @@ export class TrainScene {
     this.refreshCharacterMeshes()
     this.refreshTrackMeshes()
     this.refreshStationMeshes()
+    this.refreshSignalMeshes()
   }
 
   isGltfEnabled(): boolean {
@@ -1028,23 +1053,9 @@ export class TrainScene {
     this.scene.add(this.passengerGroup)
     this.buildPassengers()
 
-    // Rambu sinyal ×4: tiang + 3 bola (0=kiri/atas, 1=tengah, 2=kanan/bawah)
-    const signalPole = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.06, 0.06, 2.4, 8),
-      this.lambert('#94a3b8'),
-    )
-    signalPole.position.set(2.5, 1.2, -4)
-    this.scene.add(signalPole)
-    const signalGeo = new THREE.SphereGeometry(0.16, 8, 6)
-    for (let i = 0; i < 3; i++) {
-      const mat = this.lambert('#475569')
-      mat.emissive.set('#000000')
-      mat.emissiveIntensity = 0
-      const lamp = new THREE.Mesh(signalGeo, mat)
-      lamp.position.set(2.5, 2.5 - i * 0.45, -4)
-      this.signalMats.push(mat)
-      this.scene.add(lamp)
-    }
+    // Rambu sinyal junction (GLTF dengan fallback prosedural)
+    this.scene.add(this.signalGroup)
+    this.buildSignalPost()
 
     // Dekor tematik: bunga + kupu (K1)
     const petalColors = ['#f472b6', '#facc15']
@@ -1598,6 +1609,61 @@ export class TrainScene {
     this.refreshStationMeshes()
   }
 
+  private buildSignalPost(): void {
+    this.proceduralSignalGroup = new THREE.Group()
+
+    const signalPole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.06, 2.4, 8),
+      this.lambert('#94a3b8'),
+    )
+    signalPole.position.set(2.5, 1.2, -4)
+    signalPole.userData.part = 'signal-post'
+    this.proceduralSignalGroup.add(signalPole)
+
+    const signalGeo = new THREE.SphereGeometry(0.16, 8, 6)
+    for (let i = 0; i < 3; i++) {
+      const mat = this.lambert('#475569')
+      mat.emissive.set('#000000')
+      mat.emissiveIntensity = 0
+      const lamp = new THREE.Mesh(signalGeo, mat)
+      lamp.position.set(2.5, 2.5 - i * 0.45, -4)
+      lamp.userData.part = 'signal-lamp'
+      this.signalMats.push(mat)
+      this.proceduralSignalGroup.add(lamp)
+    }
+
+    this.signalGroup.add(this.proceduralSignalGroup)
+    this.refreshSignalMeshes()
+  }
+
+  private refreshSignalMeshes(): void {
+    if (this.disposed) return
+
+    if (this.gltfSignalEntity) {
+      this.signalGroup.remove(this.gltfSignalEntity.root)
+      this.gltfSignalEntity = null
+    }
+
+    if (this.useGltf) {
+      const gltfSignal = instantiateSignalPost()
+      if (gltfSignal) {
+        gltfSignal.root.position.set(2.5, 0, -4)
+        gltfSignal.root.userData.part = 'gltf-signal-post'
+        this.gltfSignalEntity = gltfSignal
+        this.signalGroup.add(gltfSignal.root)
+
+        if (this.proceduralSignalGroup) {
+          this.proceduralSignalGroup.visible = false
+        }
+        return
+      }
+    }
+
+    if (this.proceduralSignalGroup) {
+      this.proceduralSignalGroup.visible = true
+    }
+  }
+
   private refreshStationMeshes(): void {
     if (this.disposed) return
 
@@ -1729,6 +1795,34 @@ export class TrainScene {
         this.sleeperAt(branch, (i + 0.5) / 5)
       }
     }
+    this.buildBranchSigns()
+    this.refreshTrackMeshes()
+  }
+
+  private buildBranchSigns(): void {
+    // Papan jawaban 3D ×3 (cermin DOM saja, bukan antarmuka) — diletakkan di
+    // atas kurva cabangnya masing-masing (t=0.85) agar menempel rel melengkung
+    for (let i = 0; i < 3; i++) {
+      let mat: THREE.MeshLambertMaterial
+      if (typeof document !== 'undefined') {
+        const canvas = document.createElement('canvas')
+        canvas.width = 128
+        canvas.height = 64
+        const tex = new THREE.CanvasTexture(canvas)
+        this.boardCanvases.push(canvas)
+        this.boardTextures.push(tex)
+        mat = new THREE.MeshLambertMaterial({ map: tex })
+        this.drawBoard(this.boardCanvases.length - 1, '?')
+      } else {
+        mat = this.lambert('#ffffff')
+      }
+      const board = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.0, 0.15), mat)
+      const p = this.branchCurves[i]!.getPointAt(0.85)
+      board.position.set(p.x, 1.6, p.z)
+      board.userData.part = 'branch-board'
+      this.proceduralBranchBoards.push(board)
+      this.trackGroup.add(board)
+    }
   }
 
   private refreshTrackMeshes(): void {
@@ -1737,6 +1831,11 @@ export class TrainScene {
       this.trackGroup.remove(s)
     }
     this.gltfSleepers = []
+
+    for (const b of this.gltfBranchSigns) {
+      this.trackGroup.remove(b.root)
+    }
+    this.gltfBranchSigns = []
 
     if (this.useGltf) {
       for (let i = 0; i < 8; i++) {
@@ -1768,31 +1867,32 @@ export class TrainScene {
       for (const s of this.proceduralSleepers) {
         s.visible = this.gltfSleepers.length === 0
       }
+
+      for (let i = 0; i < 3; i++) {
+        const gltfSign = instantiateBranchSign()
+        if (gltfSign) {
+          const p = this.branchCurves[i]!.getPointAt(0.85)
+          gltfSign.root.position.set(p.x, 0, p.z)
+          gltfSign.root.userData.part = 'gltf-branch-sign'
+          if (this.boardTextures[i]) {
+            gltfSign.displayMesh.material = new THREE.MeshLambertMaterial({
+              map: this.boardTextures[i],
+            })
+          }
+          this.trackGroup.add(gltfSign.root)
+          this.gltfBranchSigns.push(gltfSign)
+        }
+      }
+      for (const b of this.proceduralBranchBoards) {
+        b.visible = this.gltfBranchSigns.length === 0
+      }
     } else {
       for (const s of this.proceduralSleepers) {
         s.visible = true
       }
-    }
-    // Papan jawaban 3D ×3 (cermin DOM saja, bukan antarmuka) — diletakkan di
-    // atas kurva cabangnya masing-masing (t=0.85) agar menempel rel melengkung
-    for (let i = 0; i < 3; i++) {
-      let mat: THREE.MeshLambertMaterial
-      if (typeof document !== 'undefined') {
-        const canvas = document.createElement('canvas')
-        canvas.width = 128
-        canvas.height = 64
-        const tex = new THREE.CanvasTexture(canvas)
-        this.boardCanvases.push(canvas)
-        this.boardTextures.push(tex)
-        mat = new THREE.MeshLambertMaterial({ map: tex })
-        this.drawBoard(this.boardCanvases.length - 1, '?')
-      } else {
-        mat = this.lambert('#ffffff')
+      for (const b of this.proceduralBranchBoards) {
+        b.visible = true
       }
-      const board = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.0, 0.15), mat)
-      const p = this.branchCurves[i]!.getPointAt(0.85)
-      board.position.set(p.x, 1.6, p.z)
-      this.scene.add(board)
     }
   }
 
