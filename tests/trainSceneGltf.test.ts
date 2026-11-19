@@ -397,4 +397,70 @@ describe('TrainScene GLTF integration (Fase 3 & 4)', () => {
     expect(foundDualRails).toBe(8) // 2 main + 3*2 branches = 8 dual rails
     scene.dispose()
   })
+
+  it('menggunakan model GLTF area stasiun (peron, kanopi, bangku, jam, bendera)', async () => {
+    const mockPlatform = new THREE.Group()
+    mockPlatform.name = 'MockPlatform'
+    const mockCanopy = new THREE.Group()
+    mockCanopy.name = 'MockCanopy'
+    const mockBench = new THREE.Group()
+    mockBench.name = 'MockBench'
+    const mockClock = new THREE.Group()
+    mockClock.name = 'MockClock'
+    const mockFlag = new THREE.Group()
+    mockFlag.name = 'MockFlag'
+    const flagCloth = new THREE.Mesh(new THREE.PlaneGeometry(1, 1))
+    flagCloth.name = 'flag_cloth'
+    mockFlag.add(flagCloth)
+
+    const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js')
+    vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad) => {
+      if (onLoad) {
+        let scene = mockPlatform
+        if (typeof path === 'string') {
+          if (path.includes('canopy')) scene = mockCanopy
+          else if (path.includes('bench')) scene = mockBench
+          else if (path.includes('clock')) scene = mockClock
+          else if (path.includes('flag')) scene = mockFlag
+        }
+        // @ts-expect-error test stub
+        onLoad({ scene, animations: [] })
+      }
+    })
+
+    const { preloadStationModels, clearStationModelCache } =
+      await import('../src/lib/stationModelLoader')
+    clearStationModelCache()
+    await preloadStationModels()
+
+    const scene = new TrainScene(document.createElement('canvas'), { useGltf: true })
+
+    let foundPlatform = false
+    let foundCanopy = false
+    let foundBenchCount = 0
+    let foundClock = false
+    let foundFlag = false
+
+    // @ts-expect-error test inspection
+    scene.stationGroup.traverse((o: THREE.Object3D) => {
+      if (o.userData?.part === 'gltf-station-platform') foundPlatform = true
+      if (o.userData?.part === 'gltf-station-canopy') foundCanopy = true
+      if (o.userData?.part === 'gltf-station-bench') foundBenchCount++
+      if (o.userData?.part === 'gltf-station-clock') foundClock = true
+      if (o.userData?.part === 'gltf-station-flag') foundFlag = true
+    })
+
+    expect(foundPlatform).toBe(true)
+    expect(foundCanopy).toBe(true)
+    expect(foundBenchCount).toBe(2)
+    expect(foundClock).toBe(true)
+    expect(foundFlag).toBe(true)
+
+    // @ts-expect-error test inspection
+    expect(scene.proceduralStationGroup.visible).toBe(false)
+    // @ts-expect-error test inspection
+    expect(scene.gltfStationGroup.visible).toBe(true)
+
+    scene.dispose()
+  })
 })

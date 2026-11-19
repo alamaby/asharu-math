@@ -1,10 +1,11 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-11-18 17:30:00
+Last Updated: 2026-11-19 11:55:00
 Format Version: 1
 
 ## Current State
-- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.21.0`.
+- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.22.0`.
+- Model GLTF area stasiun kereta (CC0): Aset GLB Bangku Peron (`station_bench.glb`, 10.8 KB, Kenney Furniture Kit CC0), Kanopi Peneduh (`station_canopy.glb`, 34.5 KB, Kenney City Kit CC0), Tiang Bendera Berkibar (`station_flag.glb`, 17.0 KB, Kenney Castle Kit CC0), Jam Dinding Stasiun (`station_clock.glb`, 43.4 KB, Kenney CC0), dan Peron Semen Modular (`station_platform.glb`, 5.9 KB) terintegrasi ke `TrainScene.ts` dengan isolasi `stationGroup`, papan nama dinamis canvas "STASIUN", animasi kibasan bendera, in-memory loader `stationModelLoader.ts`, PWA precache 79 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-19/115500-model-gltf-stasiun-kereta.md`. Plan: `plans/2026-11-19-modernisasi-model-stasiun-kereta.md`.
 - Model GLTF orang & rel kereta (CC0): Aset GLB Masinis Asya (`driver.glb`, 749 KB, Quaternius CC0), Penumpang Stasiun (`passenger.glb`, 776 KB, Quaternius CC0), dan Bantalan Rel (`sleeper.glb`, 4.8 KB, Kenney CC0) terintegrasi ke `TrainScene.ts` dengan rel ganda paralel (`dual parallel rails` offset transversal ±0.36), animasi `Idle` & selebrasi `'Victory'` saat tiba di stasiun, in-memory loader `characterModelLoader.ts` & `trackModelLoader.ts`, PWA precache 69 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/173000-model-gltf-orang-dan-rel-kereta.md`. Plan: `plans/2026-11-18-modernisasi-model-orang-dan-rel-kereta.md`.
 - Model GLTF pohon & flora kereta (CC0): Aset GLB Pohon Rindang (`tree_default.glb`, 9.4 KB), Pohon Pinus (`tree_pine.glb`, 17.2 KB), dan Pohon Oak (`tree_oak.glb`, 14.6 KB) dari Kenney Nature Kit terintegrasi ke `TrainScene.ts` dengan deteksi sub-mesh daun untuk animasi goyang angin (`sway`), in-memory loader `treeModelLoader.ts`, isolasi `instancedTreeGroup`, PWA precache 63 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/170000-model-gltf-pohon-flora-kereta.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-pohon-flora-kereta.md`.
 - Model GLTF lingkungan akuarium (CC0): Aset GLB Terumbu Karang (`coral.glb`, 395 KB, MiniPoly CC0), Rumput Laut (`seaweed.glb`, 3.4 KB, Kenney CC0), dan Batu Karang (`rock.glb`, 3.0 KB, Kenney CC0) terintegrasi ke `AquariumEnvironment3D.tsx` dengan variasi rotasi alami, in-memory loader `aquariumEnvLoader.ts`, PWA precache 57 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/163000-model-gltf-lingkungan-akuarium.md`. Plan: `plans/2026-11-18-integrasi-model-gltf-lingkungan-akuarium.md`.
@@ -66,6 +67,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-11-19 11:55:00 — Model GLTF Area Stasiun Kereta (Peron, Kanopi, Bangku, Jam, Bendera)](2026-11-19/115500-model-gltf-stasiun-kereta.md)
 - [2026-11-18 17:30:00 — Model GLTF Orang (Masinis & Penumpang) dan Rel Kereta Bebas Atribusi (CC0)](2026-11-18/173000-model-gltf-orang-dan-rel-kereta.md)
 - [2026-11-18 17:00:00 — Model GLTF Pohon & Flora Kereta (Rindang, Pinus, Oak)](2026-11-18/170000-model-gltf-pohon-flora-kereta.md)
 - [2026-11-18 16:30:00 — Model GLTF Lingkungan Akuarium (Karang, Rumput Laut, Batu)](2026-11-18/163000-model-gltf-lingkungan-akuarium.md)

@@ -21,6 +21,7 @@ import {
   type LoadedCharacterEntity,
 } from '../../lib/characterModelLoader'
 import { instantiateTrackModel } from '../../lib/trackModelLoader'
+import { instantiateStationModel } from '../../lib/stationModelLoader'
 
 export type BranchIndex = 0 | 1 | 2
 
@@ -176,6 +177,10 @@ export class TrainScene {
   private trackGroup = new THREE.Group()
   private gltfSleepers: THREE.Group[] = []
   private proceduralSleepers: THREE.Mesh[] = []
+  private stationGroup = new THREE.Group()
+  private proceduralStationGroup: THREE.Group | null = null
+  private gltfStationGroup: THREE.Group | null = null
+  private gltfFlagCloth: THREE.Object3D | null = null
   private butterflies: THREE.Group[] = []
   private butterflyBase: [number, number, number][] = []
   private flowersGroup = new THREE.Group()
@@ -379,6 +384,7 @@ export class TrainScene {
     this.refreshTreeMeshes()
     this.refreshCharacterMeshes()
     this.refreshTrackMeshes()
+    this.refreshStationMeshes()
   }
 
   isGltfEnabled(): boolean {
@@ -516,8 +522,14 @@ export class TrainScene {
         if (p.position.y !== 0.8) p.position.y = 0.8
       }
     }
-    if (this.flag && !this.rm) {
-      this.flag.rotation.y = Math.sin(this.elapsed * 3) * 0.35
+    if (!this.rm) {
+      const flagWave = Math.sin(this.elapsed * 3) * 0.35
+      if (this.flag) {
+        this.flag.rotation.y = flagWave
+      }
+      if (this.gltfFlagCloth) {
+        this.gltfFlagCloth.rotation.y = flagWave
+      }
     }
     if (this.cowHead && !this.rm && !this.gltfCow) {
       this.cowHead.rotation.x = Math.sin(this.elapsed * 0.8) * 0.15
@@ -1008,86 +1020,9 @@ export class TrainScene {
       this.scene.add(cloud)
     }
 
-    // Stasiun: platform + papan nama bertekstur
-    const plat = new THREE.Mesh(new THREE.BoxGeometry(10, 0.4, 4), this.lambert('#cbd5e1'))
-    plat.position.set(0, 0.2, -16)
-    this.scene.add(plat)
-    if (typeof document !== 'undefined') {
-      const canvas = document.createElement('canvas')
-      canvas.width = 256
-      canvas.height = 80
-      const tex = new THREE.CanvasTexture(canvas)
-      const mat = new THREE.MeshLambertMaterial({ map: tex })
-      const sign = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1, 0.2), mat)
-      sign.position.set(0, 1.8, -16)
-      this.signCanvas = canvas
-      this.signTexture = tex
-      this.drawSign('STASIUN')
-      this.scene.add(sign)
-    } else {
-      const sign = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1, 0.2), this.lambert('#fbbf24'))
-      sign.position.set(0, 1.8, -16)
-      this.scene.add(sign)
-    }
-
-    // Kanopi stasiun: 4 tiang + atap, di sisi belakang peron
-    const postMat = this.lambert('#94a3b8')
-    const canopyRoof = new THREE.Mesh(
-      new THREE.BoxGeometry(4.2, 0.12, 2.0),
-      this.lambert('#d95f5f'),
-    )
-    canopyRoof.position.set(0, 2.05, -17)
-    this.scene.add(canopyRoof)
-    for (const [px, pz] of [
-      [-1.7, -16.2],
-      [1.7, -16.2],
-      [-1.7, -17.8],
-      [1.7, -17.8],
-    ] as [number, number][]) {
-      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.6, 8), postMat)
-      post.position.set(px, 1.2, pz)
-      this.scene.add(post)
-    }
-
-    // Bangku ×2 (dudukan + sandaran), menghadap rel
-    const benchMat = this.lambert('#8a5a3b')
-    for (const bx of [-2.6, 2.6]) {
-      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.1, 0.35), benchMat)
-      seat.position.set(bx, 0.55, -16.6)
-      const back = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 0.07), benchMat)
-      back.position.set(bx, 0.75, -16.8)
-      this.scene.add(seat, back)
-    }
-
-    // Jam stasiun: piringan + 2 jarum di sisi papan nama
-    const clockDisc = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.26, 0.26, 0.05, 16),
-      this.lambert('#ffffff'),
-    )
-    clockDisc.rotation.x = Math.PI / 2
-    clockDisc.position.set(1.15, 1.85, -15.86)
-    this.scene.add(clockDisc)
-    const handMat = this.lambert('#0f172a')
-    const hourHand = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.14, 0.02), handMat)
-    hourHand.position.set(1.15, 1.87, -15.82)
-    hourHand.rotation.z = -Math.PI / 5
-    this.scene.add(hourHand)
-    const minuteHand = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.2, 0.02), handMat)
-    minuteHand.position.set(1.15, 1.9, -15.81)
-    minuteHand.rotation.z = Math.PI / 3
-    this.scene.add(minuteHand)
-
-    // Tiang bendera + kain
-    const pole = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.05, 0.05, 2.2, 8),
-      this.lambert('#94a3b8'),
-    )
-    pole.position.set(-4.4, 1.3, -16)
-    const clothMat = new THREE.MeshLambertMaterial({ color: '#ef4444', side: THREE.DoubleSide })
-    const cloth = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.55), clothMat)
-    cloth.position.set(-3.9, 2.1, -16)
-    this.flag = cloth
-    this.scene.add(pole, cloth)
+    // Stasiun: platform, kanopi, bangku, jam, bendera (GLTF dengan fallback prosedural) + papan nama
+    this.scene.add(this.stationGroup)
+    this.buildStation()
 
     // Penumpang ×2 menunggu di stasiun (GLTF dengan fallback prosedural capsule)
     this.scene.add(this.passengerGroup)
@@ -1555,6 +1490,171 @@ export class TrainScene {
   private refreshTreeMeshes(): void {
     if (this.disposed) return
     this.buildTrees()
+  }
+
+  private buildStation(): void {
+    if (this.proceduralStationGroup) {
+      this.stationGroup.remove(this.proceduralStationGroup)
+      this.proceduralStationGroup.clear()
+    }
+    this.proceduralStationGroup = new THREE.Group()
+
+    // 1. Platform peron semen prosedural
+    const plat = new THREE.Mesh(new THREE.BoxGeometry(10, 0.4, 4), this.lambert('#cbd5e1'))
+    plat.position.set(0, 0.2, -16)
+    plat.userData.part = 'station-platform'
+    this.proceduralStationGroup.add(plat)
+
+    // 2. Kanopi stasiun: 4 tiang + atap
+    const postMat = this.lambert('#94a3b8')
+    const canopyRoof = new THREE.Mesh(
+      new THREE.BoxGeometry(4.2, 0.12, 2.0),
+      this.lambert('#d95f5f'),
+    )
+    canopyRoof.position.set(0, 2.05, -17)
+    canopyRoof.userData.part = 'station-canopy'
+    this.proceduralStationGroup.add(canopyRoof)
+
+    for (const [px, pz] of [
+      [-1.7, -16.2],
+      [1.7, -16.2],
+      [-1.7, -17.8],
+      [1.7, -17.8],
+    ] as [number, number][]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.6, 8), postMat)
+      post.position.set(px, 1.2, pz)
+      post.userData.part = 'station-canopy'
+      this.proceduralStationGroup.add(post)
+    }
+
+    // 3. Bangku ×2
+    const benchMat = this.lambert('#8a5a3b')
+    for (const bx of [-2.6, 2.6]) {
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.1, 0.35), benchMat)
+      seat.position.set(bx, 0.55, -16.6)
+      seat.userData.part = 'station-bench'
+      const back = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 0.07), benchMat)
+      back.position.set(bx, 0.75, -16.8)
+      back.userData.part = 'station-bench'
+      this.proceduralStationGroup.add(seat, back)
+    }
+
+    // 4. Jam stasiun
+    const clockDisc = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.26, 0.26, 0.05, 16),
+      this.lambert('#ffffff'),
+    )
+    clockDisc.rotation.x = Math.PI / 2
+    clockDisc.position.set(1.15, 1.85, -15.86)
+    clockDisc.userData.part = 'station-clock'
+    const handMat = this.lambert('#0f172a')
+    const hourHand = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.14, 0.02), handMat)
+    hourHand.position.set(1.15, 1.87, -15.82)
+    hourHand.rotation.z = -Math.PI / 5
+    hourHand.userData.part = 'station-clock'
+    const minuteHand = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.2, 0.02), handMat)
+    minuteHand.position.set(1.15, 1.9, -15.81)
+    minuteHand.rotation.z = Math.PI / 3
+    minuteHand.userData.part = 'station-clock'
+    this.proceduralStationGroup.add(clockDisc, hourHand, minuteHand)
+
+    // 5. Tiang bendera + kain
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.05, 0.05, 2.2, 8),
+      this.lambert('#94a3b8'),
+    )
+    pole.position.set(-4.4, 1.3, -16)
+    pole.userData.part = 'station-flag'
+    const clothMat = new THREE.MeshLambertMaterial({ color: '#ef4444', side: THREE.DoubleSide })
+    const cloth = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.55), clothMat)
+    cloth.position.set(-3.9, 2.1, -16)
+    cloth.userData.part = 'station-flag'
+    this.flag = cloth
+    this.proceduralStationGroup.add(pole, cloth)
+
+    this.stationGroup.add(this.proceduralStationGroup)
+
+    // 6. Papan nama stasiun bertekstur
+    if (typeof document !== 'undefined') {
+      const canvas = document.createElement('canvas')
+      canvas.width = 256
+      canvas.height = 80
+      const tex = new THREE.CanvasTexture(canvas)
+      const mat = new THREE.MeshLambertMaterial({ map: tex })
+      const sign = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1, 0.2), mat)
+      sign.position.set(0, 1.8, -16)
+      sign.userData.part = 'station-sign'
+      this.signCanvas = canvas
+      this.signTexture = tex
+      this.drawSign('STASIUN')
+      this.stationGroup.add(sign)
+    } else {
+      const sign = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1, 0.2), this.lambert('#fbbf24'))
+      sign.position.set(0, 1.8, -16)
+      sign.userData.part = 'station-sign'
+      this.stationGroup.add(sign)
+    }
+
+    this.refreshStationMeshes()
+  }
+
+  private refreshStationMeshes(): void {
+    if (this.disposed) return
+
+    if (this.gltfStationGroup) {
+      this.stationGroup.remove(this.gltfStationGroup)
+      this.gltfStationGroup = null
+      this.gltfFlagCloth = null
+    }
+
+    if (this.useGltf) {
+      const platform = instantiateStationModel('platform')
+      const canopy = instantiateStationModel('canopy')
+      const benchL = instantiateStationModel('bench')
+      const benchR = instantiateStationModel('bench')
+      const clock = instantiateStationModel('clock')
+      const flag = instantiateStationModel('flag')
+
+      if (platform && canopy && benchL && benchR && clock && flag) {
+        this.gltfStationGroup = new THREE.Group()
+
+        platform.position.set(0, 0, -16)
+        platform.userData.part = 'gltf-station-platform'
+
+        canopy.position.set(0, 0.38, -17)
+        canopy.userData.part = 'gltf-station-canopy'
+
+        benchL.position.set(-2.6, 0.38, -16.7)
+        benchL.rotation.y = Math.PI
+        benchL.userData.part = 'gltf-station-bench'
+
+        benchR.position.set(2.6, 0.38, -16.7)
+        benchR.rotation.y = Math.PI
+        benchR.userData.part = 'gltf-station-bench'
+
+        clock.position.set(1.15, 1.85, -15.86)
+        clock.userData.part = 'gltf-station-clock'
+
+        flag.position.set(-4.4, 0.38, -16)
+        flag.userData.part = 'gltf-station-flag'
+        const flagCloth = flag.getObjectByName('flag_cloth')
+        if (flagCloth) {
+          this.gltfFlagCloth = flagCloth
+        }
+
+        this.gltfStationGroup.add(platform, canopy, benchL, benchR, clock, flag)
+        this.stationGroup.add(this.gltfStationGroup)
+
+        if (this.proceduralStationGroup) {
+          this.proceduralStationGroup.visible = false
+        }
+        return
+      }
+    }
+
+    if (this.proceduralStationGroup) {
+      this.proceduralStationGroup.visible = true
+    }
   }
 
   private createParallelCurves(
