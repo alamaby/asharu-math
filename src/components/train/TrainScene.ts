@@ -28,6 +28,13 @@ import {
   type LoadedSignalEntity,
   type LoadedBranchSignEntity,
 } from '../../lib/signalModelLoader'
+import {
+  instantiateStationLantern,
+  instantiateFlowerPatch,
+  instantiateButterfly,
+  type LoadedLanternEntity,
+  type LoadedButterflyEntity,
+} from '../../lib/decorModelLoader'
 
 export type BranchIndex = 0 | 1 | 2
 
@@ -194,9 +201,15 @@ export class TrainScene {
   private proceduralBranchBoards: THREE.Mesh[] = []
   private butterflies: THREE.Group[] = []
   private butterflyBase: [number, number, number][] = []
+  private proceduralButterflies: THREE.Group[] = []
+  private gltfButterflies: LoadedButterflyEntity[] = []
   private flowersGroup = new THREE.Group()
+  private proceduralFlowerMeshes: THREE.Mesh[] = []
+  private gltfFlowers: THREE.Group[] = []
   private farmGroup = new THREE.Group()
   private duskGroup = new THREE.Group()
+  private proceduralLanternMeshes: THREE.Mesh[] = []
+  private gltfLanterns: LoadedLanternEntity[] = []
   private lanternMats: THREE.MeshLambertMaterial[] = []
   private signalMats: THREE.MeshLambertMaterial[] = []
   private groundMat: THREE.MeshLambertMaterial | null = null
@@ -410,6 +423,7 @@ export class TrainScene {
     this.refreshTrackMeshes()
     this.refreshStationMeshes()
     this.refreshSignalMeshes()
+    this.refreshDecorMeshes()
   }
 
   isGltfEnabled(): boolean {
@@ -441,6 +455,12 @@ export class TrainScene {
     this.duskGroup.visible = true
     for (const m of this.lanternMats) {
       m.emissiveIntensity = theme.stationLight ? 1.4 : 0.15
+    }
+    for (const lantern of this.gltfLanterns) {
+      if (lantern.glassMesh) {
+        const mat = lantern.glassMesh.material as THREE.MeshStandardMaterial
+        mat.emissiveIntensity = theme.stationLight ? 1.4 : 0.15
+      }
     }
     this.drawSign(stationLabel)
     if (this.signTexture) this.signTexture.needsUpdate = true
@@ -584,6 +604,16 @@ export class TrainScene {
         const wings = b.userData.wings as THREE.Mesh[]
         wings[0]!.rotation.z = flap
         wings[1]!.rotation.z = -flap
+      }
+      for (let i = 0; i < this.gltfButterflies.length; i++) {
+        const b = this.gltfButterflies[i]!
+        const base = this.butterflyBase[i]!
+        b.root.position.x = base[0] + Math.sin(this.elapsed + i) * 0.8
+        b.root.position.y = base[1] + Math.sin(this.elapsed * 2 + i) * 0.3
+        b.root.rotation.y = Math.sin(this.elapsed * 8 + i) * 0.6
+        const flap = Math.sin(this.elapsed * 12 + i * 2) * 0.7
+        if (b.wingRight) b.wingRight.rotation.z = flap
+        if (b.wingLeft) b.wingLeft.rotation.z = -flap
       }
       if (this.birds) {
         for (let i = 0; i < 3; i++) {
@@ -1070,6 +1100,8 @@ export class TrainScene {
         this.lambert(petalColors[i]!),
       )
       petal.position.set(x, 0.25, z)
+      petal.userData.part = 'procedural-flower'
+      this.proceduralFlowerMeshes.push(petal)
       this.flowersGroup.add(petal)
     }
     const butterflySpots: [number, number, number][] = [
@@ -1080,6 +1112,7 @@ export class TrainScene {
       // Grup kupu: tubuh + 2 sayap dengan hinge di badan (flap rotation.z)
       const butterfly = new THREE.Group()
       butterfly.position.set(x, y, z)
+      butterfly.userData.part = 'procedural-butterfly'
       const body = new THREE.Mesh(
         new THREE.CapsuleGeometry(0.03, 0.1, 3, 6),
         this.lambert('#5b21b6'),
@@ -1097,6 +1130,7 @@ export class TrainScene {
       butterfly.add(body, wingR, wingL)
       butterfly.userData.wings = [wingR, wingL]
       this.butterflies.push(butterfly)
+      this.proceduralButterflies.push(butterfly)
       this.butterflyBase.push([x, y, z])
       this.flowersGroup.add(butterfly)
     }
@@ -1113,10 +1147,14 @@ export class TrainScene {
       mat.emissiveIntensity = 0.15
       const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6), mat)
       lamp.position.set(x, 2.4, -16)
+      lamp.userData.part = 'procedural-lantern'
+      this.proceduralLanternMeshes.push(lamp)
       this.lanternMats.push(mat)
       this.duskGroup.add(lamp)
     }
     this.scene.add(this.duskGroup)
+
+    this.refreshDecorMeshes()
   }
 
   private sleeperAt(curve: THREE.Curve<THREE.Vector3>, t: number): void {
@@ -1720,6 +1758,91 @@ export class TrainScene {
 
     if (this.proceduralStationGroup) {
       this.proceduralStationGroup.visible = true
+    }
+  }
+
+  private refreshDecorMeshes(): void {
+    if (this.disposed) return
+
+    for (const l of this.gltfLanterns) {
+      this.duskGroup.remove(l.root)
+    }
+    this.gltfLanterns = []
+
+    for (const f of this.gltfFlowers) {
+      this.flowersGroup.remove(f)
+    }
+    this.gltfFlowers = []
+
+    for (const b of this.gltfButterflies) {
+      this.flowersGroup.remove(b.root)
+    }
+    this.gltfButterflies = []
+
+    if (this.useGltf) {
+      // 1. Lentera Tiang Stasiun (K3)
+      for (const x of [-4.4, 4.4]) {
+        const gltfLantern = instantiateStationLantern()
+        if (gltfLantern) {
+          gltfLantern.root.position.set(x, 0.38, -16)
+          gltfLantern.root.userData.part = 'gltf-station-lantern'
+          if (gltfLantern.glassMesh) {
+            const mat = gltfLantern.glassMesh.material as THREE.MeshStandardMaterial
+            mat.emissiveIntensity = 0.15
+          }
+          this.duskGroup.add(gltfLantern.root)
+          this.gltfLanterns.push(gltfLantern)
+        }
+      }
+      for (const l of this.proceduralLanternMeshes) {
+        l.visible = this.gltfLanterns.length === 0
+      }
+
+      // 2. Rumpun Bunga (K1)
+      const flowerSpots: [number, number][] = [
+        [4, 6],
+        [-5, 8],
+      ]
+      for (const [x, z] of flowerSpots) {
+        const gltfFlower = instantiateFlowerPatch()
+        if (gltfFlower) {
+          gltfFlower.root.position.set(x, 0, z)
+          gltfFlower.root.userData.part = 'gltf-flower-patch'
+          this.flowersGroup.add(gltfFlower.root)
+          this.gltfFlowers.push(gltfFlower.root)
+        }
+      }
+      for (const f of this.proceduralFlowerMeshes) {
+        f.visible = this.gltfFlowers.length === 0
+      }
+
+      // 3. Kupu-kupu (K1)
+      const butterflySpots: [number, number, number][] = [
+        [3, 2, 4],
+        [-4, 2.2, 7],
+      ]
+      for (const [x, y, z] of butterflySpots) {
+        const gltfB = instantiateButterfly()
+        if (gltfB) {
+          gltfB.root.position.set(x, y, z)
+          gltfB.root.userData.part = 'gltf-butterfly'
+          this.flowersGroup.add(gltfB.root)
+          this.gltfButterflies.push(gltfB)
+        }
+      }
+      for (const b of this.proceduralButterflies) {
+        b.visible = this.gltfButterflies.length === 0
+      }
+    } else {
+      for (const l of this.proceduralLanternMeshes) {
+        l.visible = true
+      }
+      for (const f of this.proceduralFlowerMeshes) {
+        f.visible = true
+      }
+      for (const b of this.proceduralButterflies) {
+        b.visible = true
+      }
     }
   }
 

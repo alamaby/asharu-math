@@ -542,4 +542,87 @@ describe('TrainScene GLTF integration (Fase 3 & 4)', () => {
 
     scene.dispose()
   })
+
+  it('menggunakan model GLTF dekorasi sekunder (lentera tiang, rumpun bunga, kupu-kupu)', async () => {
+    const mockLantern = new THREE.Group()
+    mockLantern.name = 'MockStationLantern'
+    const glass = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.1, 0.2),
+      new THREE.MeshStandardMaterial({ color: '#fb923c' }),
+    )
+    glass.name = 'lantern_glass'
+    mockLantern.add(glass)
+
+    const mockFlowers = new THREE.Group()
+    mockFlowers.name = 'MockFlowerPatch'
+
+    const mockButterfly = new THREE.Group()
+    mockButterfly.name = 'MockButterfly'
+    const wingL = new THREE.Group()
+    wingL.name = 'wing_left'
+    const wingR = new THREE.Group()
+    wingR.name = 'wing_right'
+    mockButterfly.add(wingL, wingR)
+
+    const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js')
+    vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((path, onLoad) => {
+      if (onLoad) {
+        let scene = mockLantern
+        if (typeof path === 'string') {
+          if (path.includes('flower_patch')) scene = mockFlowers
+          else if (path.includes('butterfly')) scene = mockButterfly
+        }
+        // @ts-expect-error test stub
+        onLoad({ scene, animations: [] })
+      }
+    })
+
+    const { preloadDecorModels, clearDecorModelCache } = await import('../src/lib/decorModelLoader')
+    clearDecorModelCache()
+    await preloadDecorModels()
+
+    const scene = new TrainScene(document.createElement('canvas'), { useGltf: true })
+
+    let foundLanternCount = 0
+    let foundFlowerCount = 0
+    let foundButterflyCount = 0
+
+    // @ts-expect-error test inspection
+    scene.duskGroup.traverse((o: THREE.Object3D) => {
+      if (o.userData?.part === 'gltf-station-lantern') foundLanternCount++
+    })
+
+    // @ts-expect-error test inspection
+    scene.flowersGroup.traverse((o: THREE.Object3D) => {
+      if (o.userData?.part === 'gltf-flower-patch') foundFlowerCount++
+      if (o.userData?.part === 'gltf-butterfly') foundButterflyCount++
+    })
+
+    expect(foundLanternCount).toBe(2)
+    expect(foundFlowerCount).toBe(2)
+    expect(foundButterflyCount).toBe(2)
+
+    // @ts-expect-error test inspection
+    for (const l of scene.proceduralLanternMeshes) {
+      expect(l.visible).toBe(false)
+    }
+    // @ts-expect-error test inspection
+    for (const f of scene.proceduralFlowerMeshes) {
+      expect(f.visible).toBe(false)
+    }
+    // @ts-expect-error test inspection
+    for (const b of scene.proceduralButterflies) {
+      expect(b.visible).toBe(false)
+    }
+
+    // Uji perubahan tema senja K3 mengupdate emissiveIntensity lentera GLTF
+    scene.applyTheme(3, 'STASIUN SENJA')
+    // @ts-expect-error test inspection
+    const lanternGlass = scene.gltfLanterns[0].glassMesh as THREE.Mesh
+    expect(lanternGlass).not.toBeNull()
+    const glassMat = lanternGlass.material as THREE.MeshStandardMaterial
+    expect(glassMat.emissiveIntensity).toBe(1.4)
+
+    scene.dispose()
+  })
 })

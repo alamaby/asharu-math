@@ -11,6 +11,7 @@ import { preloadCharacterModels } from '../../lib/characterModelLoader'
 import { preloadTrackModels } from '../../lib/trackModelLoader'
 import { preloadStationModels } from '../../lib/stationModelLoader'
 import { preloadSignalModels } from '../../lib/signalModelLoader'
+import { preloadDecorModels } from '../../lib/decorModelLoader'
 import TrainFallback2D from './TrainFallback2D'
 
 export interface TrainCanvasProps {
@@ -107,6 +108,7 @@ export default function TrainCanvas({
       preloadTrackModels(),
       preloadStationModels(),
       preloadSignalModels(),
+      preloadDecorModels(),
     ]).then(() => {
       if (active && sceneRef.current && !sceneRef.current.isDisposed()) {
         sceneRef.current.setGltfEnabled(true)

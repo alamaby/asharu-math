@@ -1,10 +1,11 @@
 # Asharu Math — Project Memory Index
 
-Last Updated: 2026-11-19 13:15:00
+Last Updated: 2026-11-19 13:35:00
 Format Version: 1
 
 ## Current State
-- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.23.0`.
+- Aplikasi web edukasi matematika SD (React 18 + TS strict + Vite 6 + Tailwind v4), full client-side, localStorage — versi `1.24.0`.
+- Model GLTF objek dekoratif sekunder (CC0): Aset GLB Tiang Lentera Stasiun (`station_lantern.glb`, 26.7 KB), Rumpun Bunga Padang Rumput (`flower_patch.glb`, 91.1 KB), dan Kupu-Kupu Manis Berengsel Sayap (`butterfly.glb`, 12.9 KB) terintegrasi ke `TrainScene.ts` dengan isolasi `duskGroup` & `flowersGroup`, kontrol dinamis `emissiveIntensity` lentera saat senja via `applyTheme()`, animasi dinamis kepakan sayap kupu-kupu di `update()`, in-memory loader `decorModelLoader.ts`, PWA precache 89 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-19/133500-model-gltf-objek-dekoratif-sekunder.md`. Plan: `plans/2026-11-19-modernisasi-objek-dekoratif-sekunder.md`.
 - Model GLTF rambu sinyal junction & plang rambu jawaban cabang (CC0): Aset GLB Tiang Sinyal Rel 3 Lampu (`signal_post.glb`, 40.3 KB) dan Plang Rambu Jawaban Berpancang Tanah (`branch_sign.glb`, 22.4 KB) terintegrasi ke `TrainScene.ts` dengan isolasi `signalGroup`, kontrol dinamis emissive hijau/kuning pada 3 lensa lampu aktif via `setSignal`, display bidang rambu yang mengikat tekstur canvas 2D jawaban cabang via `CanvasTexture`, in-memory loader `signalModelLoader.ts`, PWA precache 83 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-19/131500-model-gltf-rambu-sinyal-dan-papan-jawaban.md`. Plan: `plans/2026-11-19-modernisasi-rambu-sinyal-dan-papan-jawaban.md`.
 - Model GLTF area stasiun kereta (CC0): Aset GLB Bangku Peron (`station_bench.glb`, 10.8 KB, Kenney Furniture Kit CC0), Kanopi Peneduh (`station_canopy.glb`, 34.5 KB, Kenney City Kit CC0), Tiang Bendera Berkibar (`station_flag.glb`, 17.0 KB, Kenney Castle Kit CC0), Jam Dinding Stasiun (`station_clock.glb`, 43.4 KB, Kenney CC0), dan Peron Semen Modular (`station_platform.glb`, 5.9 KB) terintegrasi ke `TrainScene.ts` dengan isolasi `stationGroup`, papan nama dinamis canvas "STASIUN", animasi kibasan bendera, in-memory loader `stationModelLoader.ts`, PWA precache 79 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-19/115500-model-gltf-stasiun-kereta.md`. Plan: `plans/2026-11-19-modernisasi-model-stasiun-kereta.md`.
 - Model GLTF orang & rel kereta (CC0): Aset GLB Masinis Asya (`driver.glb`, 749 KB, Quaternius CC0), Penumpang Stasiun (`passenger.glb`, 776 KB, Quaternius CC0), dan Bantalan Rel (`sleeper.glb`, 4.8 KB, Kenney CC0) terintegrasi ke `TrainScene.ts` dengan rel ganda paralel (`dual parallel rails` offset transversal ±0.36), animasi `Idle` & selebrasi `'Victory'` saat tiba di stasiun, in-memory loader `characterModelLoader.ts` & `trackModelLoader.ts`, PWA precache 69 entri, dan fallback otomatis ke geometri prosedural. Entri: `2026-11-18/173000-model-gltf-orang-dan-rel-kereta.md`. Plan: `plans/2026-11-18-modernisasi-model-orang-dan-rel-kereta.md`.
@@ -68,6 +69,7 @@ Format Version: 1
 - Konsep: counting 1–20, distraktor pool `1..20\{target}` agar tidak deadlock di tepi; compare helper deterministik untuk angka eksplisit — pertahankan.
 
 ## Recent Entries
+- [2026-11-19 13:35:00 — Model GLTF Objek Dekoratif Sekunder Petualangan Kereta](2026-11-19/133500-model-gltf-objek-dekoratif-sekunder.md)
 - [2026-11-19 13:15:00 — Model GLTF Rambu Sinyal Junction & Papan Rambu Jawaban Cabang](2026-11-19/131500-model-gltf-rambu-sinyal-dan-papan-jawaban.md)
 - [2026-11-19 11:55:00 — Model GLTF Area Stasiun Kereta (Peron, Kanopi, Bangku, Jam, Bendera)](2026-11-19/115500-model-gltf-stasiun-kereta.md)
 - [2026-11-18 17:30:00 — Model GLTF Orang (Masinis & Penumpang) dan Rel Kereta Bebas Atribusi (CC0)](2026-11-18/173000-model-gltf-orang-dan-rel-kereta.md)
@@ -87,7 +89,6 @@ Format Version: 1
 - [2026-11-18 09:35:00 — Unifikasi Mesin Kuis Terpadu (questionSessionMachine & useQuestionSession)](2026-11-18/093500-unifikasi-mesin-kuis-terpadu.md)
 - [2026-11-18 09:12:00 — Kanonikal Level Routing Resolver (v1.14.2)](2026-11-18/091200-kanonikal-level-routing-resolver.md)
 - [2026-10-07 16:20:00 — Paket detailing kereta A–D: smokebox, chuff, bogie, decal, crank rod, sway (v1.14.0)](2026-10-07/162000-kereta-detailing-paket-A-D.md)
-- [2026-10-07 16:05:00 — Articulasi gerbong kereta, pivot terpisah saat belok (v1.13.0)](2026-10-07/160500-kereta-artikulasi-gerbong.md)
 
 ## Legacy Archive
 - Tidak ada `PROJECT_MEMORY.md` (memori dimulai baru).
